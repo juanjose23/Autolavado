@@ -38,7 +38,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="C:\Users\jrios\OneDrive\Escritorio\Autolavado\env"
+VIRTUAL_ENV="D:\Documentos\Autolavado\env"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
