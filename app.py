@@ -9,7 +9,7 @@ from flask import Flask, send_file, session, redirect, url_for, render_template,
 from flask_mail import Mail, Message
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_session import Session
-from sqlalchemy import create_engine, text, not_, and_, func, select
+from sqlalchemy import *
 from sqlalchemy.orm import *
 from model import *
 import requests
@@ -84,20 +84,21 @@ def obtener_servicios():
         print('Error:', str(error))
         return jsonify({'error': 'Ocurrió un error al obtener los servicios'}), 500
     
-
 @app.route('/getserviciosdescripcion', methods=['POST'])
 def obtener_servicios_descripcion():
     try:
-        # Obtener el filtro del cuerpo de la solicitud JSON
         filtro = request.json.get('filtro', None)
-
-        # Construir la consulta SQL con el filtro si está presente
-        query = text('SELECT s.nombre, s.descripcion, ps.precio FROM servicios s LEFT JOIN precio_servicios ps ON s.id = ps.id_servicios WHERE s.estado = 1 AND ps.estado = 1')
-        if filtro:
-            query = query + text(f" AND LOWER(s.nombre) LIKE LOWER('%{filtro}%') LIMIT 1")
+        query = f"""
+            SELECT s.nombre, s.descripcion, ps.precio
+            FROM servicios s
+            LEFT JOIN precio_servicios ps ON s.id = ps.id_servicios
+            WHERE s.estado = 1 AND ps.estado = 1
+            AND (LOWER(s.nombre) LIKE LOWER(:filtro) OR :filtro IS NULL)
+            LIMIT 1
+        """
 
         # Ejecutar la consulta y obtener los resultados
-        result = db_session.execute(query).fetchall()
+        result = db_session.execute(text(query), {'filtro': f'%{filtro}%'}).fetchall()
 
         # Convertir los resultados a una lista de diccionarios
         servicios = []
@@ -117,6 +118,7 @@ def obtener_servicios_descripcion():
         print('Error:', str(error))
         return jsonify({'error': 'Ocurrió un error al obtener los servicios con descripción'}), 500
     
-    
+
+
 if __name__ == '__main__':
     app.run(debug=True)
