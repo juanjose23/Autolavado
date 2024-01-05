@@ -16,7 +16,7 @@ import json
 from datetime import time
 
 app = Flask(__name__)
-#app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 app.config["SESSION_PERMANENT"] = False
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SESSION_TYPE"] = "filesystem"
@@ -67,8 +67,8 @@ def insertar_usuario():
 
 @app.route('/')
 def index():
+    print("Enlace de conexion",db_session)
 
-    
     return render_template('index.html')
 
 
@@ -82,7 +82,7 @@ def obtener_horarios():
     try:
         query = text('SELECT * FROM horarios')
         result = db_session.execute(query).fetchall()
-        #print(result)
+        print(result)
         # Devolver los resultados en formato JSON
         result = db_session.execute(query).fetchall()
         resenas = []
