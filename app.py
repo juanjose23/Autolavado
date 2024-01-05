@@ -64,6 +64,28 @@ def insertar_usuario():
         return codigo_cliente, 200
     return 'null', 400
 
+@cross_origin()
+@app.route('/insertarusuariosobligatorio', methods=['GET', 'POST'])
+def insertar_usuarios():
+    request_data = request.get_json()
+
+    if request.method == 'POST':
+
+        query1 = text("INSERT INTO persona (nombre, celular) VALUES (:nombre,:celular) RETURNING id")
+        id_persona = db_session.execute(query1,{"nombre":request_data['celular'], "celular": request_data['celular']}).fetchone()
+        
+        # Luego de inertar la persona, obtenemos el codigo del cliente mediante el retorno de id_persona
+        codigo_cliente = generar_codigo_cliente(request_data['nombre'], id_persona[0], request_data['celular'])
+
+        query3 = text("INSERT INTO clientes (id_persona, codigo, tipo_cliente, foto, estado) VALUES (:id_persona, :codigo, :tipo_cliente, :foto, :estado)")
+        db_session.execute(query3,{"id_persona": id_persona[0], "codigo": codigo_cliente, "tipo_cliente":'Normal', "foto": 'No hay', "estado": '1'})
+
+        # Aquí puedes insertar el código del cliente en tu base de datos
+
+        db_session.commit()
+        return codigo_cliente, 200
+    return 'null', 400
+
 
 @app.route('/')
 def index():
@@ -107,13 +129,14 @@ def obtener_horarios():
 @app.route('/getservicios', methods=['GET'])
 def obtener_servicios():
     try:
-        query = text('SELECT s.nombre, ps.precio FROM servicios s LEFT JOIN precio_servicios ps ON s.id = ps.id_servicios WHERE s.estado = 1 and ps.estado = 1')
+        query = text('SELECT s.id, s.nombre, ps.precio FROM servicios s LEFT JOIN precio_servicios ps ON s.id = ps.id_servicios WHERE s.estado = 1 and ps.estado = 1')
         result = db_session.execute(query).fetchall()
 
         # Convertir los resultados a una lista de diccionarios
         servicios = []
         for row in result:
             servicio = {
+                "id":row.id,
                 "nombre": row.nombre,
                 "precio": row.precio
             }
@@ -132,17 +155,24 @@ def obtener_servicios():
 def obtener_servicios_descripcion():
     try:
         filtro = request.json.get('filtro', None)
-        query = f"""
+
+        # Verificar si el filtro es un número entero
+        try:
+            filtro_id = int(filtro)
+        except ValueError:
+            # Si no se puede convertir a un número entero, asignar None
+            filtro_id = None
+
+        query = """
             SELECT s.nombre, s.descripcion, ps.precio
             FROM servicios s
             LEFT JOIN precio_servicios ps ON s.id = ps.id_servicios
             WHERE s.estado = 1 AND ps.estado = 1
-            AND (LOWER(s.nombre) LIKE LOWER(:filtro) OR :filtro IS NULL)
-            LIMIT 1
+            AND (s.id = :filtro_id OR :filtro_id IS NULL)
         """
 
         # Ejecutar la consulta y obtener los resultados
-        result = db_session.execute(text(query), {'filtro': f'%{filtro}%'}).fetchall()
+        result = db_session.execute(text(query), {'filtro_id': filtro_id}).fetchall()
 
         # Convertir los resultados a una lista de diccionarios
         servicios = []
@@ -161,6 +191,25 @@ def obtener_servicios_descripcion():
         # Manejar errores y devolver una respuesta apropiada
         print('Error:', str(error))
         return jsonify({'error': 'Ocurrió un error al obtener los servicios con descripción'}), 500
-    
+
+def ValidarNumeroCelularExistente(numero):
+    query = text("SELECT id FROM persona WHERE celular = :numero")
+    exists = db_session.execute(query, {"numero": numero}).scalar()
+    return exists
+
+@app.route('/validarnumerocelular', methods=['POST'])
+def validar_numero_celular():
+    try:
+        numero_celular = request.json.get('numero_celular')
+        existe = ValidarNumeroCelularExistente(numero_celular)
+
+        
+        return jsonify({'existe': existe})
+
+    except Exception as error:
+       
+        print('Error:', str(error))
+        return jsonify({'error': 'Ocurrió un error al validar el número de celular'}), 500
+
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8000, debug=True)
