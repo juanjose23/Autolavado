@@ -129,7 +129,7 @@ def obtener_horarios():
 @app.route('/getservicios', methods=['GET'])
 def obtener_servicios():
     try:
-        query = text('SELECT s.id, s.nombre, ps.precio FROM servicios s LEFT JOIN precio_servicios ps ON s.id = ps.id_servicios WHERE s.estado = 1 and ps.estado = 1')
+        query = text('SELECT s.id,s.descripcion, s.nombre, ps.precio FROM servicios s LEFT JOIN precio_servicios ps ON s.id = ps.id_servicios WHERE s.estado = 1 and ps.estado = 1')
         result = db_session.execute(query).fetchall()
 
         # Convertir los resultados a una lista de diccionarios
@@ -137,6 +137,7 @@ def obtener_servicios():
         for row in result:
             servicio = {
                 "id":row.id,
+                "descripcion":row.descripcion,
                 "nombre": row.nombre,
                 "precio": row.precio
             }
