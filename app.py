@@ -40,8 +40,8 @@ def insertar_persona_natural(db_session: Session, id_persona, apellidos, tipo):
     query = text("INSERT INTO persona_natural (id_persona, apellido, tipo_persona) VALUES (:id_persona, :apellido, :tipo_persona)")
     db_session.execute(query, {"id_persona": id_persona, "apellido": apellidos, "tipo_persona": tipo})
 
-def insertar_cliente(db_session: Session, id_persona, tipo):
-    codigo_cliente = generar_codigo_cliente(id_persona, tipo)
+def insertar_cliente(db_session: Session, id_persona,codigo_cliente, tipo):
+ 
     query = text("INSERT INTO clientes (id_persona, codigo, tipo_cliente, foto, estado) VALUES (:id_persona, :codigo, :tipo_cliente, :foto, :estado)")
     db_session.execute(query, {"id_persona": id_persona, "codigo": codigo_cliente, "tipo_cliente": tipo, "foto": 'No hay', "estado": '1'})
     return codigo_cliente
@@ -478,6 +478,20 @@ def obtener_productos(db_session):
     productos = db_session.execute(query).fetchall()
     return productos
 
+def obtener_precioproductos(db_session):
+    query=text("SELECT pp.*, p.nombre FROM precio pp INNER JOIN producto p ON p.id = pp.id_producto WHERE pp.estado = 1")
+    precios=db_session.execute(query).fetchall()
+    return precios
+
+def ValidarNumeroCelularExistente(numero):
+    query = text("SELECT id FROM persona WHERE celular = :numero")
+    exists = db_session.execute(query, {"numero": numero}).scalar()
+    return exists
+
+def obtener_serviciossistema(db_session: Session):
+    query = text("SELECT *  FROM servicios ")
+    result = db_session.execute(query).fetchall()
+    return result
 
 @cross_origin()
 @app.route('/api/InsertarCliente', methods=['POST'])
@@ -493,7 +507,8 @@ def api_InsertarCliente():
 
             id_persona = insertar_persona(db_session, nombre, correo, celular)
             insertar_persona_natural(db_session, id_persona, apellidos, tipo)
-            codigo_cliente=insertar_cliente(db_session, id_persona, tipo)
+            codigo = generar_codigo_cliente(nombre,id_persona,celular)
+            codigo_cliente=insertar_cliente(db_session, id_persona,codigo, tipo)
 
             db_session.commit()
             return jsonify({"codigo_cliente": codigo_cliente}), 200
@@ -520,7 +535,8 @@ def insertar_usuarios():
         nombre = request_data['nombre']
         celular = request_data['celular']
         id_persona = insertar_persona(db_session, nombre,"No hay", celular)
-        codigo_cliente=insertar_cliente(db_session, id_persona,"Cliente no registrado")
+        codigo = generar_codigo_cliente(nombre,id_persona,celular)
+        codigo_cliente=insertar_cliente(db_session, id_persona,codigo,"Cliente no registrado")
 
         db_session.commit()
 
@@ -528,10 +544,7 @@ def insertar_usuarios():
         
     return 'null', 400
 
-def ValidarNumeroCelularExistente(numero):
-    query = text("SELECT id FROM persona WHERE celular = :numero")
-    exists = db_session.execute(query, {"numero": numero}).scalar()
-    return exists
+
 
 @app.route('/')
 def index():
@@ -665,10 +678,9 @@ def productos():
 def crear_producto():
     nombre = request.form.get('nombre')
     descripcion = request.form.get('descripcion')
-   
     estado = request.form.get('estado')
     archivo = request.files['logo']
-    carpeta_destino = 'static/productos'
+    carpeta_destino = 'static/img/productos'
     logo = guardar_imagen(archivo, carpeta_destino)
     insertar_producto(db_session, nombre, descripcion, logo, estado)
     flash("Se ha registrado correctamente el producto","success")
@@ -683,11 +695,9 @@ def actualizar_productos():
     estado=request.form.get('estado')
     archivo = request.files['logo']
     logos=request.form.get('logos')
-  
     if archivo:
         carpeta_destino = 'static/img/productos'
         logo = guardar_imagen(archivo, carpeta_destino)
-      
         try:
             os.remove(logos)
         except Exception as e:
@@ -709,15 +719,14 @@ def actualizar_productos():
 @app.route('/CambiarEstadoProducto', methods=['POST'])
 def cambiar_estado_producto():
     id_producto = request.form.get('id')
-  
     nuevo_estado = request.form.get('estado')
-   
     cambiar_estado_productos(db_session, id_producto, nuevo_estado)
     flash("Se ha desactivado el producto","success")
     return redirect('/productos')
 
 @app.route('/precioproducto',methods=['GET','POST'])
 def precioproducto():
+    ProductosPrecios=obtener_precioproductos(db_session);
     return render_template("preciosproductos.html")
 
 @app.route('/CrearPrecio',methods=['GET','POST'])
@@ -728,7 +737,54 @@ def crearprecioproducto():
 def cambiaprecioproducto():
     return redirect('/precioproducto')
 
+@app.route('/servicios')
+def servicios():
+    servicios=obtener_serviciossistema(db_session)
+    return render_template("servicios.html" ,servicios=servicios)
 
+@app.route("/crearservicio", methods=["POST"])
+def crearservicios():
+    nombre = request.form.get('nombre')
+    descripcion = request.form.get('descripcion')
+    estado = request.form.get('estado')
+    archivo = request.files['foto']
+    carpeta_destino = 'static/img/servicios'
+    logo = guardar_imagen(archivo, carpeta_destino)
+    insertar_servicio(db_session,nombre,descripcion,logo,estado)
+    flash("Se ha registrado correctamente el servicios", "success")
+    return redirect('/servicios')
+
+
+@app.route('/actualizar_servicios/<int:servicio_id>', methods=['POST', 'GET'])
+def actualizar_servicio(servicio_id):
+   
+    nombre = request.form.get('nombre')
+    descripcion = request.form.get('descripcion')
+    estado = request.form.get('estado')
+    archivo = request.files['foto']
+    logos=request.form.get('logos')
+    if archivo:
+        carpeta_destino = 'static/img/servicios'
+        logo = guardar_imagen(archivo, carpeta_destino)
+        try:
+            os.remove(logos)
+            update_servicio(db_session,servicio_id,nombre,descripcion,logo,estado)
+            flash("Se ha actualizado correctamente el servicios", "success")
+            return redirect(url_for('servicios'))
+        except Exception as e:
+                print(f"No se pudo eliminar la imagen anterior: {e}")
+    else:
+        update_servicio(db_session,servicio_id, nombre, descripcion, logos, estado)
+        flash("Se ha actualizado correctamente el servicios", "success")
+        return redirect(url_for('servicios'))
+    return redirect(url_for('servicios'))
+
+
+@app.route('/eliminar_servicio/<int:servicio_id>', methods=['POST', 'GET'])
+def eliminar_servicio(servicio_id):
+    cambiar_estado_servicio(db_session,servicio_id,2)
+    flash("se ha desactivado el servicio", "success")
+    return redirect("/servicios")
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8000, debug=True)
