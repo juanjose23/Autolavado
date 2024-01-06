@@ -14,6 +14,7 @@ from sqlalchemy.orm import *
 from sqlalchemy.orm import joinedload
 from flask_sqlalchemy import SQLAlchemy
 import pdfkit
+from pdf2image import convert_from_path
 from model import *
 import requests
 
@@ -76,18 +77,9 @@ def generar_pdf_servicios():
     # Aquí es donde se convierte el HTML renderizado a PDF
     options = {
         'enable-local-file-access': '',
-        'quiet': '',
-        'orientation': 'landscape',
-        'margin-top': '0mm',
-    'margin-right': '0mm',
-    'margin-bottom': '0mm',
-    'margin-left': '0',
-    'viewport-size': '1280x1024',
+        'page-size': 'A4',
         'no-outline': None,
         'encoding': 'utf-8',
-        'custom-header': [
-        ('Accept-Encoding', 'gzip')
-    ],
         'cookie': [
             ('cookie-name1', 'cookie-value1'),
             ('cookie-name2', 'cookie-value2'),
@@ -95,13 +87,17 @@ def generar_pdf_servicios():
         'no-outline': None
     }
     css = ['static/css/boostrap4.css', 'static/css/style.css']
-    pdf = pdfkit.from_string(rendered, 'productos.pdf', options=options, css=css)
+    pdf = pdfkit.from_string(rendered, False, options=options, css=css)
 
-    
-    response = make_response(pdf)
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = 'inline; filename=output.pdf'
-    return response
+    # Guardar el PDF en un archivo temporal
+    with open('temp.pdf', 'wb') as f:
+        f.write(pdf)
+
+    # Convertir el PDF a imagen
+    pages = convert_from_path('temp.pdf')
+    pages[0].save('output.jpg', 'JPEG')
+
+    return send_file('output.jpg', mimetype='image/jpeg')
 
 
 @app.route('/pruebita', methods=['GET', 'POST'])
