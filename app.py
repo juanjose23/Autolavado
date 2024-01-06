@@ -479,9 +479,21 @@ def obtener_productos(db_session):
     return productos
 
 def obtener_precioproductos(db_session):
-    query=text("SELECT pp.*, p.nombre FROM precio pp INNER JOIN producto p ON p.id = pp.id_producto WHERE pp.estado = 1")
+    query=text("SELECT pp.*,p.id AS producto, p.nombre FROM precio pp INNER JOIN producto p ON p.id = pp.id_producto ")
     precios=db_session.execute(query).fetchall()
     return precios
+def obtener_productos_sin_precio(db_session):
+    query = text("""
+SELECT p.*
+        FROM producto p
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM precio pp
+            WHERE pp.id_producto = p.id
+        )
+    """)
+    productos_sin_precio = db_session.execute(query).fetchall()
+    return productos_sin_precio
 
 def ValidarNumeroCelularExistente(numero):
     query = text("SELECT id FROM persona WHERE celular = :numero")
@@ -492,6 +504,243 @@ def obtener_serviciossistema(db_session: Session):
     query = text("SELECT *  FROM servicios ")
     result = db_session.execute(query).fetchall()
     return result
+
+
+    # 1. Obtén el nombre del día de hoy y la fecha de hoy
+    dia_hoy = datetime.now().strftime('%A')
+    fecha_hoy = datetime.now().date()
+
+    # 2. Calcula la fecha de 7 días en el futuro
+    fecha_futura = fecha_hoy + timedelta(days=7)
+
+    # 3. Obtiene todos los días de la semana a partir de la fecha de hoy
+    dias_semana = [(fecha_hoy + timedelta(days=i)).strftime('%A') for i in range(7)]
+
+    # 4. Obtener horarios y cupos disponibles para cada día de la semana
+    for dia in dias_semana:
+        query_horarios = text("""
+            SELECT * FROM horarios
+            WHERE dia = :dia AND estado != 2
+        """)
+        horarios_dia = db_session.execute(query_horarios, {"dia": dia}).fetchall()
+
+        # Filtrar horarios según las reservaciones y duración del servicio
+        horarios_dia = [
+            {
+                "id": horario['id'],
+                "dia": horario['dia'],
+                "hora_apertura": horario['hora_apertura'],
+                "hora_cierre": horario['hora_cierre'],
+                "estado": horario['estado']
+            }
+            for horario in horarios_dia
+        ]
+
+        # Imprimir el horario para el día
+        print(f'\nHorario para el día {dia}:')
+        for horario in horarios_dia:
+            print(f'  - Hora de Apertura: {horario["hora_apertura"]}, Hora de Cierre: {horario["hora_cierre"]}')
+
+        # Calcular y mostrar los cupos disponibles para cada hora del día
+        for horario in horarios_dia:
+            hora_actual = datetime.combine(fecha_hoy, horario["hora_apertura"])
+            hora_cierre = datetime.combine(fecha_hoy, horario["hora_cierre"])
+
+            print(f'\nCupos disponibles para el día {dia}, {horario["hora_apertura"]} - {horario["hora_cierre"]}:')
+            while hora_actual < hora_cierre:
+                # Aquí puedes realizar consultas adicionales para contar las reservaciones existentes en cada hora
+                # y calcular los cupos disponibles
+                cupos_disponibles = contar_reservaciones(horario["id"], hora_actual, duracion_servicio=2)
+
+                print(f'  - {hora_actual.strftime("%H:%M")}: {cupos_disponibles} cupos disponibles')
+                
+                # Incrementa la hora actual
+                hora_actual += timedelta(hours=1)
+
+'''def obtener_cupos_disponibles():
+    dias_semana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+    dia_hoy = datetime.now().strftime('%A')
+    fecha_hoy = datetime.now().date()
+
+   
+
+    # Obtiene todos los horarios disponibles para los próximos 7 días
+    query_horarios = text("""
+        SELECT * FROM horarios
+        WHERE estado = 1
+    """)
+    horarios_disponibles = db_session.execute(query_horarios).fetchall()
+
+    # Lista para almacenar la información de los horarios y cupos disponibles
+    horarios_resultado = []
+
+    for horario in horarios_disponibles:
+        dia_horario, hora_apertura, hora_cierre = horario[1], horario[2], horario[3]
+
+        # Verifica que el día del horario esté en los próximos 7 días
+        if dia_horario not in dias_semana:
+            continue
+
+        # Si el estado es 2 (Domingo), omitir ese horario
+        if horario[4] == 2:
+            continue
+
+        # Calcula la fecha del horario sumando días
+        idx_dia_horario = dias_semana.index(dia_horario)
+        fecha_horario = fecha_hoy + timedelta(days=(idx_dia_horario - fecha_hoy.weekday() + 7) % 7)
+
+        # Consulta para obtener las reservaciones en el intervalo horario
+        query_reservaciones = text("""
+            SELECT COUNT(*) FROM reservacion
+            WHERE idhorario = :id_horario
+            AND fecha = :fecha
+            AND hora >= :hora_apertura
+            AND hora <= :hora_cierre
+        """)
+        reservaciones = db_session.execute(query_reservaciones, {
+            'id_horario': horario[0],
+            'fecha': fecha_horario,
+            'hora_apertura': hora_apertura,
+            'hora_cierre': hora_cierre
+        }).scalar()
+
+        # Calcula la cantidad de cupos disponibles
+        duracion_servicio = 2  # Duración del servicio en horas
+        cupos_disponibles = (hora_cierre.hour - hora_apertura.hour) // duracion_servicio - reservaciones
+
+        # Almacena la información del horario y cupos disponibles en la lista
+        horario_info = {
+            "dia": dia_horario,
+            "fecha": fecha_horario,
+            "hora_apertura": hora_apertura,
+            "hora_cierre": hora_cierre,
+            "cupos_disponibles": cupos_disponibles
+        }
+        horarios_resultado.append(horario_info)
+
+  
+
+    # Retorna la lista de horarios y cupos disponibles
+    return horarios_resultado '''
+
+def obtener_cupos_disponibles():
+    dias_semana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+    fecha_hoy = datetime.now().date()
+
+    # Obtiene todos los horarios disponibles para los próximos 7 días
+    query_horarios = text("""
+        SELECT * FROM horarios
+        WHERE estado = 1
+    """)
+    horarios_disponibles = db_session.execute(query_horarios).fetchall()
+
+    # Lista para almacenar la información de los horarios y cupos disponibles
+    horarios_resultado = []
+
+    for horario in horarios_disponibles:
+        dia_horario, hora_apertura, hora_cierre = horario[1], horario[2], horario[3]
+
+        # Si el estado es 2 (Domingo), omitir ese horario
+        if horario[4] == 2:
+            continue
+
+        # Calcula la fecha del horario sumando días
+        idx_dia_horario = dias_semana.index(dia_horario)
+        fecha_horario = fecha_hoy + timedelta(days=(idx_dia_horario - fecha_hoy.weekday() + 7) % 7)
+
+        # Calcula la cantidad de cupos disponibles
+        duracion_servicio = 1.40  # Duración del servicio en horas
+        total_minutos = (hora_cierre.hour - hora_apertura.hour) * 60 + (hora_cierre.minute - hora_apertura.minute)
+        cupos_disponibles = int(total_minutos / (duracion_servicio * 60))
+
+        # Almacena la información del horario y cupos disponibles en la lista
+        horario_info = {
+            "dia": dia_horario,
+            "fecha": fecha_horario,
+            "hora_apertura": hora_apertura,
+            "hora_cierre": hora_cierre,
+            "cupos_disponibles": cupos_disponibles
+        }
+
+        # Verifica si el horario es para el día actual
+        if fecha_horario == fecha_hoy:
+            # Añade información adicional para el día actual
+            horario_info["dia_actual"] = True
+            horario_info["cupos_hoy"] = obtener_cupos_hoy(horario, fecha_hoy)
+
+        horarios_resultado.append(horario_info)
+
+    # Retorna la lista de horarios y cupos disponibles
+    return horarios_resultado
+
+
+def obtener_cupos_hoy(horario, fecha_hoy):
+    # Supongamos que tienes una tabla 'reservas' con un campo 'fecha_reserva' y 'id_horario'
+    # que almacena las reservas realizadas por día.
+    # Esta función debería contar cuántas reservas hay para el día actual y el horario dado.
+
+    id_horario = horario[0]  # Supongamos que el ID del horario está en la posición 0 del resultado de la consulta
+    fecha_actual_str = fecha_hoy.strftime('%Y-%m-%d')
+
+    # Consulta para obtener la cantidad de reservas para el día actual y el horario actual
+    query_reservas_hoy = text("""
+        SELECT COUNT(*) FROM reservacion
+        WHERE fecha = :fecha_actual
+        AND idhorario = :id_horario
+    """)
+
+    # Ejecutar la consulta con los parámetros necesarios
+    cupos_hoy = db_session.execute(query_reservas_hoy, {"fecha_actual": fecha_actual_str, "id_horario": id_horario}).scalar()
+
+    return cupos_hoy
+def mostrar_fechas_y_horas_reservas():
+    # Obtener la fecha de hoy
+    fecha_hoy = datetime.now().date()
+
+    # Calcular la fecha hasta la cual deseas mostrar las reservas (7 días en el futuro)
+    fecha_fin = fecha_hoy + timedelta(days=7)
+
+    # Consultar las reservas dentro del rango de fechas
+    query_reservas = text("""
+        SELECT fecha, hora
+        FROM reservacion
+        WHERE fecha BETWEEN :fecha_hoy AND :fecha_fin
+    """)
+
+    # Ejecutar la consulta con los parámetros necesarios
+    result = db_session.execute(query_reservas, {"fecha_hoy": fecha_hoy, "fecha_fin": fecha_fin}).fetchall()
+
+    # Mostrar las fechas y horas de las reservas
+    fechas_horas_reservas = [(reserva[0].strftime("%Y-%m-%d"), reserva[1].strftime("%H:%M:%S")) for reserva in result]
+
+    return fechas_horas_reservas
+
+def actualizar_horarios_con_reservas(horarios, reservas):
+    for reserva in reservas:
+        fecha_reserva, hora_reserva = reserva
+        for horario in horarios:
+            if fecha_reserva == horario["fecha"]:
+                # Encuentra la hora de la reserva en la lista de horas_cupos
+                if hora_reserva in horario["horas_cupos"]:
+                    # Ajusta las horas_cupos y los cupos disponibles
+                    ajustar_cupos_con_reserva(horario, hora_reserva)
+    
+    return horarios  # Retorna la lista de horarios actualizada
+
+def ajustar_cupos_con_reserva(horario, hora_reserva):
+    # Encuentra la posición de la hora_reserva en la lista de horas_cupos
+    index_hora_reserva = horario["horas_cupos"].index(hora_reserva)
+    
+    # Calcula la duración del servicio en minutos
+    duracion_servicio = 1 * 60 + 40  # Supongamos que la duración es 1 hora y 40 minutos
+    
+    # Ajusta las horas_cupos eliminando la hora_reserva y sumando la duración del servicio
+    horario["horas_cupos"] = horario["horas_cupos"][:index_hora_reserva] + \
+                             [hora_reserva + timedelta(minutes=duracion_servicio * i) for i in range(1, horario["cupos_disponibles"] + 1)] + \
+                             horario["horas_cupos"][index_hora_reserva + 1:]
+    
+    # Ajusta los cupos disponibles restando 1
+    horario["cupos_disponibles"] -= 1
 
 @cross_origin()
 @app.route('/api/InsertarCliente', methods=['POST'])
@@ -548,6 +797,30 @@ def insertar_usuarios():
 
 @app.route('/')
 def index():
+    horarios_resultado = obtener_cupos_disponibles()
+    reservas = mostrar_fechas_y_horas_reservas()
+
+    # Crear la lista de horarios
+    lista_horarios = []
+
+    for horario in horarios_resultado:
+        horario_info = {
+            "dia": horario["dia"],
+            "fecha": horario["fecha"],
+            "hora_apertura": horario["hora_apertura"],
+            "hora_cierre": horario["hora_cierre"],
+            "cupos_disponibles": horario["cupos_disponibles"],
+            "horas_cupos": horario.get("horas_cupos", []).copy()  # Usar get para manejar la ausencia de 'horas_cupos'
+        }
+
+    lista_horarios.append(horario_info)
+
+    # Actualizar la lista de horarios con las reservas
+    lista_horarios_actualizada = actualizar_horarios_con_reservas(lista_horarios, reservas)
+
+    # Imprimir la lista actualizada de horarios
+    print("Lista de horarios actualizada:")
+    print(lista_horarios_actualizada)
     return render_template('index.html')
 
 
@@ -726,15 +999,42 @@ def cambiar_estado_producto():
 
 @app.route('/precioproducto',methods=['GET','POST'])
 def precioproducto():
-    ProductosPrecios=obtener_precioproductos(db_session);
-    return render_template("preciosproductos.html")
+    Precios=obtener_precioproductos(db_session);
+    productos=obtener_productos_sin_precio(db_session)
+    return render_template("precioproducto.html",productos=productos,Precios=Precios)
 
 @app.route('/CrearPrecio',methods=['GET','POST'])
 def crearprecioproducto():
+    idproducto=request.form.get('idproducto')
+    precio=request.form.get('precio')
+    estado=request.form.get('estado')
+    insertar_precio(db_session,idproducto,precio,estado)
+    flash("Se ha registrado correctamente el precio","success")
     return redirect('/precioproducto')
 
-@app.route('/CambiarPrecio',methods=['GET','POST'])
-def cambiaprecioproducto():
+@app.route('/CambiarPrecio/<int:id>',methods=['GET','POST'])
+def cambiaprecioproducto(id):
+    idproducto=request.form.get('idproducto')
+    precio=request.form.get('precio')
+    estado=request.form.get('estado')
+    print("Id producto",idproducto)
+    print("Precio nuevo",precio)
+    print("estado:",estado)
+
+    print("Precio que pasa hacer inactivo:",id)
+
+    insertar_precio(db_session,idproducto,precio,estado)
+
+    cambiar_estado_precio(db_session,id,2)
+    flash("Se ha registrado correctamente el precio","success")
+    return redirect('/precioproducto')
+
+@app.route('/CambiarPrecioestado/<int:id>',methods=['GET','POST'])
+def cambiaprecioproductoestado():
+    id=request.form.get('id')
+    estado=request.form.get('estado')
+    cambiar_estado_precio(db_session,id,2)
+    flash("Se ha desactivado  correctamente el precio","success")
     return redirect('/precioproducto')
 
 @app.route('/servicios')
@@ -757,27 +1057,31 @@ def crearservicios():
 
 @app.route('/actualizar_servicios/<int:servicio_id>', methods=['POST', 'GET'])
 def actualizar_servicio(servicio_id):
-   
     nombre = request.form.get('nombre')
     descripcion = request.form.get('descripcion')
     estado = request.form.get('estado')
     archivo = request.files['foto']
-    logos=request.form.get('logos')
+    logos = request.form.get('logos')
+
     if archivo:
         carpeta_destino = 'static/img/servicios'
         logo = guardar_imagen(archivo, carpeta_destino)
+
+        # Suponiendo que 'logos' es la ruta del archivo antiguo almacenada en la base de datos
         try:
             os.remove(logos)
-            update_servicio(db_session,servicio_id,nombre,descripcion,logo,estado)
-            flash("Se ha actualizado correctamente el servicios", "success")
-            return redirect(url_for('servicios'))
         except Exception as e:
-                print(f"No se pudo eliminar la imagen anterior: {e}")
-    else:
-        update_servicio(db_session,servicio_id, nombre, descripcion, logos, estado)
-        flash("Se ha actualizado correctamente el servicios", "success")
+            print(f"No se pudo eliminar la imagen anterior: {e}")
+
+        update_servicio(db_session, servicio_id, nombre, descripcion, logo, estado)
+        flash("Se ha actualizado correctamente el servicio", "success")
         return redirect(url_for('servicios'))
+
+    update_servicio(db_session, servicio_id, nombre, descripcion, logos, estado)
+    flash("Se ha actualizado correctamente el servicio", "success")
     return redirect(url_for('servicios'))
+
+    
 
 
 @app.route('/eliminar_servicio/<int:servicio_id>', methods=['POST', 'GET'])

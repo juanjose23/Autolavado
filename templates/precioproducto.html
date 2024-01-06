@@ -48,8 +48,8 @@
                             <thead>
                                 <tr>
                                     <th>Producto</th>
-                                    <th>Precio actual</th>
-                                    <th>Precio anterior</th>
+                                    <th>Precio </th>
+                                  
                                     <th>Estado</th>
                                     <th>Action</th>
                                 </tr>
@@ -57,9 +57,9 @@
                             <tbody>
                                 {% for productos in Precios %}
                                 <tr>
-                                    <td>{{ productos.producto.nombre }}</td>
-                                    <td>{{ productos.precio_actual }}</td>
-                                    <td>{{ productos.precio_anterior }}</td>
+                                    <td>{{ productos.nombre }}</td>
+                                    <td>{{ productos.precio }}</td>
+                                
                                     <td>
                                         {% if productos.estado == 1 %}
                                         <span class="badge bg-success">Activo</span>
@@ -92,7 +92,7 @@
     <div id="modal-default" class="modal fade">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form action="/crear_precio" method="post" enctype="multipart/form-data">
+                <form action="/CrearPrecio" method="post" enctype="multipart/form-data">
                     <div class="modal-header">
                         <h4 class="modal-title">Asignar precio</h4>
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
@@ -100,25 +100,17 @@
                     <div class="modal-body">
                         <div class="form-group">
                             <label>Producto: </label>
-                            <select name="producto" id="producto" class="form-control select2bs4">
-                                {% for categoria, subcategorias in categorias_y_productos.items() %}
-                                <optgroup label="{{ categoria }}">
-                                    {% for subcategoria, productos in subcategorias['subcategorias'].items() %}
-                                <optgroup label="{{ subcategoria }}">
-                                    {% for producto in productos['productos'] %}
-                                    <option value="{{ producto.id }}">{{ producto.nombre }}</option>
-                                    {% endfor %}
-                                </optgroup>
-                                {% endfor %}
-                                </optgroup>
+                            <select name="idproducto" id="producto" class="form-control select2bs4">
+                                {% for productos in productos  %}
+                                <option value="{{productos.id}}"> {{productos.nombre}}</option>
                                 {% endfor %}
                             </select>
 
 
                         </div>
                         <div class="form-group">
-                            <label>Nuevo precio</label>
-                            <input type="text" name="precio_actual" class="form-control" required>
+                            <label>Precios</label>
+                            <input type="text" name="precio" class="form-control" required>
                         </div>
 
                         <select name="estado" id class="form-control">
@@ -141,7 +133,7 @@
     <div id="modal-default{{productos.id}}" class="modal fade">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form action="/actualizar_precio/{{productos.id}}" method="post" enctype="multipart/form-data">
+                <form action="/CambiarPrecio/{{productos.id}}" method="post" enctype="multipart/form-data">
                     <div class="modal-header">
                         <h4 class="modal-title">Editar precios</h4>
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
@@ -149,15 +141,14 @@
                     <div class="modal-body">
                         <div class="form-group">
                             <label>Producto: </label>
-                            <input type="text" name="idproducto "value="{{productos.id_producto}}" hidden>
-                            <input type="text" class="form-control" value="{{productos.producto.nombre}}" disabled>
+                            <input type="text" name="idproducto" value="{{productos.producto}}" hidden>
+                            <input type="text" class="form-control" value="{{productos.nombre}}" disabled>
                         </div>
 
                         <div class="form-group">
                             <label>Nuevo precio</label>
-                            <input type="number" name="precio_actual" class="form-control">
-                            <input type="number" name="id" class="form-control"
-                                value="{{productos.precio_actual}}" hidden>
+                            <input type="number" name="precio" class="form-control">
+                         
                         </div>
 
                         <div class="form-group">
@@ -182,7 +173,7 @@
     <div id="modal-danger{{productos.id}}" class="modal fade">
         <div class="modal-dialog">
             <div class="modal-content bg-danger">
-                <form action="/" method="post">
+                <form action="/CambiarPrecioestado/{{productos.id}}" method="post">
                     <div class="modal-header">
                         <h4 class="modal-title">Eliminar  precio producto</h4>
 
