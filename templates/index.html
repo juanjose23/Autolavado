@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block title %} || Categoria{% endblock %}
+{% block css %}
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
+{% endblock %}
+{% block main %}
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Categorias de productos</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="#">Gestion de Productos</a></li>
+                    <li class="breadcrumb-item active">Categorias</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Lista de categorias</h3>
+                        <div class="align-content-end text-right">
+                            <button type="button" class="btn btn-secondary" data-toggle="modal"
+                                data-target="#modal-default">Agregar
+                                categoria</button>
+                        </div>
+
+                    </div>
+                    <!-- /.card-header -->
+                    <div class="card-body">
+                        <table id="example1" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Nombre</th>
+                                    <th>Descripcion</th>
+                                    <th>Estado</th>
+                                    <th>Accion</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {%for categoria in categorias%}
+                                <tr>
+                                    <td>{{loop.index}}</td>
+                                    <td>
+                                        {{categoria.nombre}}
+                                    </td>
+                                    <td>{{categoria.descripcion}}</td>
+                                    <td>
+                                        {%if categoria.estado == 1%}
+                                        <span class="badge badge-pill badge-success">Activo</span>
+                                        {%else%}
+                                        <span class="badge badge-pill badge-danger">Inactivo</span>
+                                        {%endif%}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <div class="dropdown-menu">
+                                                <a class="dropdown-item" data-toggle="modal" data-target="#modal-default{{categoria.id}}" href="#">
+                                                    <i class="fas fa-pencil-alt"></i> Editar
+                                                </a>
+                                        
+                                                {% if categoria.estado == 1 %}
+                                                    <a class="dropdown-item" data-toggle="modal" data-target="#modal-danger{{categoria.id}}" href="#">
+                                                        <i class="fas fa-trash-alt"></i> Eliminar
+                                                    </a>
+                                                {% else %}
+                                                    <a class="dropdown-item" data-toggle="modal" data-target="#modal-success{{categoria.id}}" href="#">
+                                                        <i class="fas fa-toggle-on"></i> Activar
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                    </td>
+                                </tr>
+                                {%endfor%}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="modal-default">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="/crear_categoria" method="post">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Crear Categoria</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Nombre</label>
+                            <input type="text" name="nombre" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Descripcion</label>
+                            <textarea name="descripcion" class="form-control" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Estado</label>
+                            <select name="estado" id class="form-control">
+                                <option value="1">Activo</option>
+                                <option value="2">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-between">
+                        <button type="button" class="btn btn-danger" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">Guardar</button>
+                    </div>
+                </form>
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
+    {% for categoria in categorias %}
+    <div class="modal fade" id="modal-default{{categoria.id}}">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="/editar_categoria/{{categoria.id}}" method="post">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Actualizar Categoria</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <input type="hidden" name="_method" value="PUT">
+                            <label>Nombre</label>
+                            <input type="text" name="nombre" id="nombre" value="{{categoria.nombre}}"
+                                class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Descripcion</label>
+                            <textarea id="descripcion" name="descripcion" class="form-control"
+                                required>{{categoria.descripcion}}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Estado</label>
+                            <select name="estado" id="estado" class="form-control">
+                                <option value="1" {% if categoria.estado==1 %}selected{% endif %}>Activo</option>
+                                <option value="2" {% if categoria.estado==2 %}selected{% endif %}>Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-between">
+                        <button type="button" class="btn btn-danger" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">Guardar</button>
+                    </div>
+                </form>
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
+    {% endfor %}
+    {% for categoria in categorias %}
+    <div class="modal fade" id="modal-{{ 'danger' if categoria.estado == 1 else 'success' }}{{ categoria.id }}">
+        <div class="modal-dialog">
+            <div class="modal-content bg-{{ 'danger' if categoria.estado == 1 else 'success' }}">
+                <form action="/CambiarEstadoCategoria" method="post">
+                    <div class="modal-header">
+                        <h4 class="modal-title">
+                            {% if categoria.estado == 1 %}
+                            Eliminar
+                            {% else %}
+                            Activar
+                            {% endif %}
+                            categoría
+                        </h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="text" name="id" value="{{ categoria.id }}" hidden>
+                        <p>
+                            {% if categoria.estado == 1 %}
+                            ¿Estás seguro de que quieres eliminar la categoría?
+                            <input type="text" name="estado" value="2" hidden>
+                            {% else %}
+                            ¿Estás seguro de que quieres activar la categoría?
+                            <input type="text" name="estado" value="1" hidden>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="modal-footer justify-content-between">
+                        <button type="button" class="btn btn-outline-light" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-outline-light">
+                            {% if categoria.estado == 1 %}
+                            Eliminar
+                            {% else %}
+                            Activar
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
+    {% endfor %}
+
+</section>
+{% endblock %}
