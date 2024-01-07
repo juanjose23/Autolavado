@@ -16,9 +16,25 @@
     <link rel="stylesheet" href="/static/plugins/icheck-bootstrap/icheck-bootstrap.min.css">
     <!-- Theme style -->
     <link rel="stylesheet" href="/static/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.12/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.12/dist/sweetalert2.all.min.js"></script>
 </head>
 
 <body class="hold-transition login-page">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <script>
+        Swal.fire(
+            '{{ category }}!',
+            '{{ message }}',
+            '{{ category.lower() }}'
+        );
+    </script>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
     <div class="login-box">
         <!-- /.login-logo -->
         <div class="card card-outline card-primary">
@@ -30,7 +46,7 @@
 
                 <form action="/validar" method="post">
                     <div class="input-group mb-3">
-                        <input type="text" class="form-control" placeholder="Usuario" required>
+                        <input type="text" name="usuario"class="form-control" placeholder="Usuario" required>
                         <div class="input-group-append">
                             <div class="input-group-text">
                                 <span class="fas fa-envelope"></span>
@@ -38,7 +54,7 @@
                         </div>
                     </div>
                     <div class="input-group mb-3">
-                        <input type="password" class="form-control" placeholder="Contraseña" required>
+                        <input type="password" name="contraseña" class="form-control" placeholder="Contraseña" required>
                         <div class="input-group-append">
                             <div class="input-group-text">
                                 <span class="fas fa-lock"></span>

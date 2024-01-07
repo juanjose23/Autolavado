@@ -19,7 +19,7 @@
     <div class="container-fluid">
     
     
-        <h5 class="mb-2">Buenas {{momento}}, {{session['trabajador_nombre']}}</h5>
+        <h5 class="mb-2">Buenas {{momento}}, {{session['nombre']}}</h5>
         <div class="row">
 
             <!-- /.col -->
@@ -33,7 +33,7 @@
                     </div>
                     <div class="widget-user-image">
                         <img class="img-circle elevation-2"
-                            src="{{session['trabajador_foto']}}"
+                            src="{{session['foto']}}"
                             alt="User Avatar" width="40" height="50">
                     </div>
                     <div class="card-footer">
@@ -84,7 +84,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <form action="/cambiar_contraseña" method="post"
-                    enctype="multipart/form-data">
+                    enctype="multipart/form-data" onsubmit="return validarFormulario()">
                     <div class="modal-header">
                         <h4 class="modal-title">Cambiar Contraseña</h4>
                         <button type="button" class="close"
@@ -92,7 +92,7 @@
                             aria-hidden="true">&times;</button>
                     </div>
                     <div class="modal-body">
-                        <input type="text" value="{{session['id_usuario']}}"
+                        <input type="text" value="{{session['usuario_id']}}"
                             name="id" hidden>
                         <div class="form-group">
                             <label>Contraseña actual: </label>
@@ -106,13 +106,7 @@
                                 class="form-control"
                                 required>
                         </div>
-                        <div class="form-group">
-                            <label>Confirmar contraseña nueva: </label>
-                            <input type="text" name="confirmacion"
-                                class="form-control"
-                                required>
-                        </div>
-
+                      
                     </div>
                     <div class="modal-footer">
                         <input type="button" class="btn
@@ -126,6 +120,6 @@
             </div>
         </div>
     </div>
-
+   
 </section>
 {% endblock %}

@@ -59,7 +59,7 @@ CREATE TABLE movimiento_inventario
 (
     id SERIAL PRIMARY KEY,
     id_lote INTEGER REFERENCES lote_producto(id),
-    tipo_movimiento VARCHAR(20) NOT NULL,
+    tipo_movimiento VARCHAR(250) NOT NULL,
     cantidad INTEGER NOT NULL,
     fecha_movimiento TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -71,13 +71,16 @@ CREATE TABLE precio(
     estado INTEGER
 );
 
-CREATE TABLE horarios (
+CREATE TABLE horarios(
     id SERIAL PRIMARY KEY,
     dia VARCHAR(255) NOT NULL,
     hora_apertura TIME,
     hora_cierre TIME ,
     estado INTEGER NOT NULL
 );
+
+
+
 CREATE TABLE servicios(
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(80) NOT NULL,

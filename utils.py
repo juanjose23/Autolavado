@@ -2,6 +2,9 @@
 from werkzeug.security import *
 from werkzeug.utils import secure_filename
 from datetime import datetime
+
+from flask import redirect,session
+from functools import wraps
 import uuid
 import os
 import string
@@ -64,3 +67,28 @@ def generar_nombre_usuario(nombre, apellido, id_persona):
     nombre_usuario = f"{primeras_letras_nombre}{primeras_letras_apellido}{id_persona}"
 
     return nombre_usuario
+
+def generar_numero_lote():
+    # Genera un UUID (por ejemplo, 'c5a0f3c8-03d8-4f9b-8c25-2a5117d7d1e6')
+    uuid_str = str(uuid.uuid4())
+
+    # Elimina guiones y toma los primeros 10 caracteres del UUID
+    numero_lote = uuid_str.replace('-', '')[:10]
+
+    return numero_lote
+
+# Ejemplo de uso
+nuevo_numero_lote = generar_numero_lote()
+
+def login_required(f):
+    """
+    Decorate routes to require login.
+
+    http://flask.pocoo.org/docs/0.12/patterns/viewdecorators/
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if session.get("usuario_id") is None:
+            return redirect("/login")
+        return f(*args, **kwargs)
+    return decorated_function
