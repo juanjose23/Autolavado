@@ -49,8 +49,9 @@
                                     <th>#</th>
                                     <th>Nombre</th>
                                     <th>Descripcion</th>
-                                    <th>Logo</th>
+                                    <th>Tiempo</th>
                                     <th>Estado</th>
+                                    <th>Logo</th>
                                     <th>Accion</th>
                                 </tr>
                             </thead>
@@ -62,6 +63,7 @@
                                         {{categoria.nombre}}
                                     </td>
                                     <td>{{categoria.descripcion}}</td>
+                                    <td>{{categoria.realizacion}}</td>
                                     <td>
                                         <img
                                             src="{{categoria.foto}}"
@@ -122,6 +124,12 @@
                                 required>
                         </div>
                         <div class="form-group">
+                            <label>Tiempo de elaboracion</label>
+                            <input type="time" name="realizacion"
+                                class="form-control"
+                                required>
+                        </div>
+                        <div class="form-group">
                             <label>Estado</label>
                             <select name="estado" id
                                 class="form-control select2bs4">
@@ -166,6 +174,12 @@
                                 class="form-control" required>{{categoria.descripcion}}</textarea>
                         </div>
                         <div class="form-group">
+                            <label>Tiempo de elaboracion</label>
+                            <input type="time" name="realizacion"
+                                class="form-control " value="{{categoria.realizacion}}"
+                                required>
+                        </div>
+                        <div class="form-group">
 
                             {% if categoria.foto %}
                             <label>Foto anterior</label>
@@ -178,6 +192,7 @@
                                 class="form-control"
                                 value="">
                         </div>
+
                         <div class="form-group">
                             <label>Estado</label>
                             <select name="estado" id="estado"

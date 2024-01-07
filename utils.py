@@ -4,6 +4,9 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 import uuid
 import os
+import string
+import random
+
 def generar_codigo_cliente(nombre, id_persona, telefono):
     nombre_normalizado = nombre.lower()
     nombre_sin_espacios = nombre_normalizado.replace(' ', '_') # o '-' si prefieres guiones
@@ -40,3 +43,24 @@ def guardar_imagen(archivo, carpeta_destino):
         return ruta_destino
 
     return None
+
+def generar_contraseña():
+    # Letras mayúsculas, minúsculas y dígitos
+    caracteres = string.ascii_letters + string.digits
+    longitud = 8
+    contraseña = ''.join(random.choice(caracteres) for _ in range(longitud))
+    return contraseña
+
+def generar_nombre_usuario(nombre, apellido, id_persona):
+    # Eliminar espacios del nombre y apellido
+    nombre_sin_espacios = nombre.replace(" ", "")
+    apellido_sin_espacios = apellido.replace(" ", "")
+
+    # Tomar las primeras tres letras del nombre y apellido (si no están vacíos)
+    primeras_letras_nombre = nombre_sin_espacios[:3].lower() if nombre_sin_espacios else ""
+    primeras_letras_apellido = apellido_sin_espacios[:3].lower() if apellido_sin_espacios else ""
+
+    # Concatenar las primeras letras del nombre y apellido con el ID de la persona
+    nombre_usuario = f"{primeras_letras_nombre}{primeras_letras_apellido}{id_persona}"
+
+    return nombre_usuario

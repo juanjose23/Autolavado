@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %} || Usuarios{% endblock %}
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='plugins/select2/css/select2.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
+{% endblock %}
+{% block main %}
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Usuarios</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="#">Gestion de Usuarios</a></li>
+                    <li class="breadcrumb-item active">Usuarios</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Lista de usuarios</h3>
+                        <div class="align-content-end text-right">
+                            <button type="button" class="btn btn-secondary"
+                                data-toggle="modal" data-target="#modal-default">Agregar
+                                usuarios</button>
+                        </div>
+
+                    </div>
+                    <!-- /.card-header -->
+                    <div class="card-body">
+                        <table id="example1"
+                            class="table table-bordered table-striped">
+
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Nombre</th>
+                                    <th>Apellido</th>
+                                    <th>Usuario</th>
+                                    <th>Estado</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for trabajadores in usuarios %}
+                                <tr>
+                                    <th>{{loop.index}}</th>
+                                    <th>{{trabajadores.nombre}}</th>
+                                    <th>{{trabajadores.apellido}}</th>
+                                    <td>{{ trabajadores.usuario }}</td>
+                                    <td>
+                                        {% if trabajadores.estado == 1 %}
+                                        <span class="badge bg-success">Verficado</span>
+                                        {% elif trabajadores.estado == 2 %}
+                                        <span class="badge bg-danger">Inactivo</span>
+                                        {% elif trabajadores.estado == 0 %}
+                                        <span class="badge bg-primary">Verificar</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                       
+                                        {% if trabajadores.estado == 1 %}
+                                        <a
+                                            href="#modal-danger{{trabajadores.id}}"
+                                            class="fas fa-trash-alt" data-toggle="modal">
+
+                                        </a>
+                                        {% else %}
+                                        <a href="#modal-default{{trabajadores.id}}" data-toggle="modal" class="fas fa-pencil-alt"></a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+
+                            </tbody>
+                        </table>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Edit Modal HTML -->
+    <div id="modal-default" class="modal fade">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form action="/crearusuarios" method="post"
+                    enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Crear usuarios</h4>
+                        <button type="button" class="close"
+                            data-dismiss="modal"
+                            aria-hidden="true">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Colaborador:</label>
+                            <select name="idpersona"
+                                id="id_persona"
+                                class="form-control select2bs4" required>
+                                {% for trabajador in
+                                    trabajador %}
+                                <option
+                                    value="{{ trabajador.persona_id }}">Colaborador:{{
+                                    trabajador.nombre }} Correo:{{trabajador.correo}}</option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+                        <div class="form-group">
+                            <label>Correo: </label>
+                            <input type="text" name="usuario"
+                                class="form-control" value="El sistema le genera usuario y contraseña" disabled>
+                        </div>
+                       
+
+                    </div>
+                    <div class="modal-footer">
+                        <input type="button" class="btn
+                                btn-default"
+                            data-dismiss="modal"
+                            value="Cancel">
+                        <input type="submit" class="btn
+                                btn-success" value="Add">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% for productos in usuarios %}
+    <!-- Edit Modal HTML -->
+    <div id="modal-default{{productos.id}}"
+        class="modal fade">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form
+                    action="/verificar_usuarios"
+                    method="post" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Activar usuarios</h4>
+                        <button type="button" class="close"
+                            data-dismiss="modal"
+                            aria-hidden="true">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="number" name="id"
+                            value="{{ productos.id }}" hidden>
+
+                        <p>Estas seguros que quieres dar de alta al usuario?</p>
+
+                       
+                      
+                    
+                      
+                    </div>
+                    <div class="modal-footer">
+                        <input type="button" class="btn
+                                btn-default"
+                            data-dismiss="modal"
+                            value="Cancel">
+                        <input type="submit" class="btn
+                                btn-info" value="Save">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% for trabajadores in usuarios %}
+    <!-- Delete Modal HTML -->
+    <div id="modal-danger{{trabajadores.id}}"
+        class="modal fade">
+        <div class="modal-dialog">
+            <div class="modal-content bg-danger">
+                <form action="/eliminar_usuario" method="post">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Eliminar usuario</h4>
+
+                        <button type="button" class="close"
+                            data-dismiss="modal"
+                            aria-hidden="true">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="number" name="id"
+                            value="{{ trabajadores.id }}" hidden>
+
+                        <p>Estas seguros que quieres eliminarlo?</p>
+                        
+                    </div>
+                    <div class="modal-footer">
+                        <input type="button" class="btn
+                                btn-default"
+                            data-dismiss="modal"
+                            value="Cancel">
+                        <input type="submit" class="btn
+                                btn-danger"
+                            value="Delete">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    <!---footer---->
+
+</section>
+{% endblock %}

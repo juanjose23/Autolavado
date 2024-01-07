@@ -31,14 +31,14 @@ mail = Mail(app)
 engine = create_engine(os.getenv("DATABASE_URL"))
 db_session = scoped_session(sessionmaker(bind=engine))
 
-def insertar_persona(db_session: Session, nombre, correo, celular):
+def insertar_persona(db_session: Session, nombre, correo,direccion, celular):
     query = text("INSERT INTO persona (nombre, correo, direccion, celular) VALUES (:nombre, :correo, :direccion, :celular) RETURNING id")
-    id_persona = db_session.execute(query, {"nombre": nombre, "correo": correo, "direccion": 'No hay', "celular": celular}).fetchone()
+    id_persona = db_session.execute(query, {"nombre": nombre, "correo": correo, "direccion":direccion, "celular": celular}).fetchone()
     return id_persona[0]
 
-def insertar_persona_natural(db_session: Session, id_persona, apellidos, tipo):
-    query = text("INSERT INTO persona_natural (id_persona, apellido, tipo_persona) VALUES (:id_persona, :apellido, :tipo_persona)")
-    db_session.execute(query, {"id_persona": id_persona, "apellido": apellidos, "tipo_persona": tipo})
+def insertar_persona_natural(db_session: Session, id_persona, apellidos,cedula,fecha_nacimiento,genero, tipo):
+    query = text("INSERT INTO persona_natural (id_persona, apellido,cedula,fecha_nacimiento,genero, tipo_persona) VALUES (:id_persona, :apellido,:cedula,:fecha_nacimiento,:genero, :tipo_persona)")
+    db_session.execute(query, {"id_persona": id_persona, "apellido": apellidos,"cedula":cedula,"fecha_nacimiento":fecha_nacimiento,"genero":genero, "tipo_persona": tipo})
 
 def insertar_cliente(db_session: Session, id_persona,codigo_cliente, tipo):
  
@@ -101,14 +101,14 @@ def insertar_trabajador(db_session, id_persona, codigo, foto, estado):
     db_session.execute(query, {"id_persona": id_persona, "codigo": codigo, "foto": foto, "estado": estado})
     db_session.commit()
 
-def actualizar_trabajador(db_session, id_trabajador, id_persona, codigo, foto, estado):
+def actualizar_trabajador(db_session, id_trabajador, foto, estado):
     query = text("""
         UPDATE trabajador
-        SET id_persona = :id_persona, codigo = :codigo, foto = :foto, estado = :estado
+        SET  foto = :foto, estado = :estado
         WHERE id = :id_trabajador
     """)
 
-    db_session.execute(query, {"id_trabajador": id_trabajador, "id_persona": id_persona, "codigo": codigo, "foto": foto, "estado": estado})
+    db_session.execute(query, {"id_trabajador": id_trabajador, "foto": foto, "estado": estado})
     db_session.commit()
 
 def cambiar_estado_trabajador(db_session, id_trabajador, nuevo_estado):
@@ -121,25 +121,7 @@ def cambiar_estado_trabajador(db_session, id_trabajador, nuevo_estado):
     db_session.execute(query, {"id_trabajador": id_trabajador, "nuevo_estado": nuevo_estado})
     db_session.commit()
 
-def insertar_salario(db_session, id_trabajador, salario, estado):
-    query = text("""
-        INSERT INTO salario (id_trabajador, salario, estado)
-        VALUES (:id_trabajador, :salario, :estado)
-    """)
 
-    db_session.execute(query, {"id_trabajador": id_trabajador, "salario": salario, "estado": estado})
-    db_session.commit()
-
-
-def cambiar_estado_salario(db_session, id_salario, nuevo_estado):
-    query = text("""
-        UPDATE salario
-        SET estado = :nuevo_estado
-        WHERE id = :id_salario
-    """)
-
-    db_session.execute(query, {"id_salario": id_salario, "nuevo_estado": nuevo_estado})
-    db_session.commit()
 
 
 
@@ -234,23 +216,23 @@ def cambiar_estado_horario(db_session: Session, id_horario, nuevo_estado):
     db_session.execute(query, {"id_horario": id_horario, "nuevo_estado": nuevo_estado})
     db_session.commit()
 
-def insertar_servicio(db_session: Session, nombre, descripcion, foto, estado):
+def insertar_servicio(db_session: Session, nombre, descripcion, foto,realizacion, estado):
     query = text("""
-        INSERT INTO servicios (nombre, descripcion, foto, estado)
-        VALUES (:nombre, :descripcion, :foto, :estado)
+        INSERT INTO servicios (nombre, descripcion, foto,realizacion, estado)
+        VALUES (:nombre, :descripcion, :foto,:realizacion, :estado)
     """)
 
-    db_session.execute(query, {"nombre": nombre, "descripcion": descripcion, "foto": foto, "estado": estado})
+    db_session.execute(query, {"nombre": nombre, "descripcion": descripcion, "foto": foto,"realizacion":realizacion, "estado": estado})
     db_session.commit()
 
-def update_servicio(db_session: Session, id_servicio, nombre, descripcion, foto, estado):
+def update_servicio(db_session: Session, id_servicio, nombre, descripcion, foto,realizacion, estado):
     query = text("""
         UPDATE servicios
-        SET nombre = :nombre, descripcion = :descripcion, foto = :foto, estado = :estado
+        SET nombre = :nombre, descripcion = :descripcion, foto = :foto,realizacion =:realizacion, estado = :estado
         WHERE id = :id_servicio
     """)
 
-    db_session.execute(query, {"id_servicio": id_servicio, "nombre": nombre, "descripcion": descripcion, "foto": foto, "estado": estado})
+    db_session.execute(query, {"id_servicio": id_servicio, "nombre": nombre, "descripcion": descripcion, "foto": foto,"realizacion":realizacion, "estado": estado})
     db_session.commit()
 
 def cambiar_estado_servicio(db_session: Session, id_servicio, nuevo_estado):
@@ -414,24 +396,13 @@ def cambiar_estado_grupo_usuarios(db_session: Session, id_grupo_usuarios, nuevo_
     db_session.execute(query, {"id_grupo_usuarios": id_grupo_usuarios, "nuevo_estado": nuevo_estado})
     db_session.commit()
 
-def insertar_usuario(db_session: Session, id_grupo, id_persona, usuario, contraseña, estado):
+def insertar_usuario(db_session: Session, id_persona, usuario, contraseña, estado):
     query = text("""
-        INSERT INTO usuario (id_grupo, id_persona, usuario, contraseña, estado)
-        VALUES (:id_grupo, :id_persona, :usuario, :contraseña, :estado)
+        INSERT INTO usuario ( id_persona, usuario, contraseña, estado)
+        VALUES (:id_persona, :usuario, :contraseña, :estado)
     """)
 
-    db_session.execute(query, {"id_grupo": id_grupo, "id_persona": id_persona, "usuario": usuario, "contraseña": contraseña, "estado": estado})
-    db_session.commit()
-
-def update_usuario(db_session: Session, id_usuario, id_grupo, id_persona, usuario, contraseña, estado):
-    query = text("""
-        UPDATE usuario
-        SET id_grupo = :id_grupo, id_persona = :id_persona, usuario = :usuario, contraseña = :contraseña, estado = :estado
-        WHERE id = :id_usuario
-    """)
-
-    db_session.execute(query, {"id_usuario": id_usuario, "id_grupo": id_grupo, "id_persona": id_persona,
-                               "usuario": usuario, "contraseña": contraseña, "estado": estado})
+    db_session.execute(query, { "id_persona": id_persona, "usuario": usuario, "contraseña": contraseña, "estado": estado})
     db_session.commit()
 
 def cambiar_estado_usuario(db_session: Session, id_usuario, nuevo_estado):
@@ -505,57 +476,53 @@ def obtener_serviciossistema(db_session: Session):
     result = db_session.execute(query).fetchall()
     return result
 
+def obtener_servicios_sin_precio(db_session):
+    query = text("""
+        SELECT s.*
+        FROM servicios s
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM precio_servicios pp
+            WHERE pp.id_servicios = s.id
+        )
+    """)
+    productos_sin_precio = db_session.execute(query).fetchall()
+    return productos_sin_precio
 
-    # 1. Obtén el nombre del día de hoy y la fecha de hoy
-    dia_hoy = datetime.now().strftime('%A')
-    fecha_hoy = datetime.now().date()
+def obtener_precios_servicios(db_session):
+    query=text("SELECT pp.*,p.id AS producto, p.nombre FROM precio_servicios pp INNER JOIN servicios p ON p.id = pp.id_servicios ")
+    precios=db_session.execute(query).fetchall()
+    return precios
 
-    # 2. Calcula la fecha de 7 días en el futuro
-    fecha_futura = fecha_hoy + timedelta(days=7)
-
-    # 3. Obtiene todos los días de la semana a partir de la fecha de hoy
-    dias_semana = [(fecha_hoy + timedelta(days=i)).strftime('%A') for i in range(7)]
-
-    # 4. Obtener horarios y cupos disponibles para cada día de la semana
-    for dia in dias_semana:
-        query_horarios = text("""
-            SELECT * FROM horarios
-            WHERE dia = :dia AND estado != 2
+def ObtenerTrabajadores(db_session:session):
+    query=text("""
+            SELECT 
+                t.id AS trabajador_id, t.codigo, t.foto, t.estado,
+                p.id AS persona_id, p.nombre, p.correo, p.direccion, p.celular,
+                pn.id AS persona_natural_id, pn.apellido, pn.cedula, pn.fecha_nacimiento, pn.genero, pn.tipo_persona
+            FROM trabajador t
+            JOIN persona p ON t.id_persona = p.id
+            JOIN persona_natural pn ON pn.id_persona = p.id
         """)
-        horarios_dia = db_session.execute(query_horarios, {"dia": dia}).fetchall()
+    result = db_session.execute(query).fetchall()
+    return result
+def ObtenerEmpleadoSinUsuario(db_session:session):
+    consulta = text("""
+           SELECT p.id AS persona_id, p.nombre, p.correo
+            FROM persona p
+            LEFT JOIN trabajador t ON p.id = t.id_persona
+            LEFT JOIN usuario u ON p.id = u.id_persona
+            WHERE t.id IS NOT NULL AND u.id IS NULL AND t.estado = 1
+        """)
+    result=db_session.execute(consulta).fetchall()
+    return result
 
-        # Filtrar horarios según las reservaciones y duración del servicio
-        horarios_dia = [
-            {
-                "id": horario['id'],
-                "dia": horario['dia'],
-                "hora_apertura": horario['hora_apertura'],
-                "hora_cierre": horario['hora_cierre'],
-                "estado": horario['estado']
-            }
-            for horario in horarios_dia
-        ]
-
-        # Imprimir el horario para el día
-        print(f'\nHorario para el día {dia}:')
-        for horario in horarios_dia:
-            print(f'  - Hora de Apertura: {horario["hora_apertura"]}, Hora de Cierre: {horario["hora_cierre"]}')
-
-        # Calcular y mostrar los cupos disponibles para cada hora del día
-        for horario in horarios_dia:
-            hora_actual = datetime.combine(fecha_hoy, horario["hora_apertura"])
-            hora_cierre = datetime.combine(fecha_hoy, horario["hora_cierre"])
-
-            print(f'\nCupos disponibles para el día {dia}, {horario["hora_apertura"]} - {horario["hora_cierre"]}:')
-            while hora_actual < hora_cierre:
-                # Aquí puedes realizar consultas adicionales para contar las reservaciones existentes en cada hora
-                # y calcular los cupos disponibles
-                cupos_disponibles = contar_reservaciones(horario["id"], hora_actual, duracion_servicio=2)
-
-                print(f'  - {hora_actual.strftime("%H:%M")}: {cupos_disponibles} cupos disponibles')
-                
-                # Incrementa la hora actual
-                hora_actual += timedelta(hours=1)
+def obtenerusuarios(db_session:session):
+    query=text(""" SELECT s.*, p.nombre,pn.apellido FROM usuario s
+INNER JOIN persona p ON p.id = s.id_persona
+INNER JOIN persona_natural pn ON pn.id =s.id_persona """)
+    result=db_session.execute(query).fetchall()
+    return result
 
 '''def obtener_cupos_disponibles():
     dias_semana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
@@ -741,7 +708,44 @@ def ajustar_cupos_con_reserva(horario, hora_reserva):
     
     # Ajusta los cupos disponibles restando 1
     horario["cupos_disponibles"] -= 1
+from flask_mail import Message
 
+def enviar_correo_con_contraseña(nombre,nombre_usuario, correo_destino, contraseña):
+    cuerpo = f'''
+    Estimado(a) {nombre},
+
+    Aquí tienes las credenciales para acceder a tu cuenta:
+    Usuarios:{nombre_usuario}
+    Contraseña: {contraseña}
+
+    Por favor, asegúrate de cambiar tu contraseña una vez que hayas iniciado sesión en tu cuenta.
+
+    Si tienes alguna pregunta o necesitas asistencia adicional, no dudes en contactarnos.
+
+    ¡Gracias y ten un excelente día!
+
+    Atentamente,
+    Lavacar ASOCATIE
+    '''
+
+    asunto = 'Asignación de credenciales - Acceso a cuenta'
+    remitente = 'ingsoftwar123@gmail.com'
+    destinatario = [correo_destino]
+
+    msg = Message(asunto, sender=remitente, recipients=destinatario)
+    msg.body = cuerpo
+    mail.send(msg)
+
+def BuscarPorIdPersona(db_session: Session, id):
+    query = text("""
+            SELECT p.nombre, pn.apellido,p.correo
+            FROM persona p
+            JOIN persona_natural pn ON p.id = pn.id_persona
+            WHERE pn.id = :id
+        """)
+
+    resultado = db_session.execute(query, {"id": id}).fetchone()
+    return resultado
 @cross_origin()
 @app.route('/api/InsertarCliente', methods=['POST'])
 def api_InsertarCliente():
@@ -754,8 +758,8 @@ def api_InsertarCliente():
             apellidos = data['apellidos']
             tipo = data['tipo']
 
-            id_persona = insertar_persona(db_session, nombre, correo, celular)
-            insertar_persona_natural(db_session, id_persona, apellidos, tipo)
+            id_persona = insertar_persona(db_session, nombre, correo,"En direccion", celular)
+            insertar_persona_natural(db_session, id_persona, apellidos,null,null,null, tipo)
             codigo = generar_codigo_cliente(nombre,id_persona,celular)
             codigo_cliente=insertar_cliente(db_session, id_persona,codigo, tipo)
 
@@ -783,7 +787,7 @@ def insertar_usuarios():
         request_data = request.get_json()
         nombre = request_data['nombre']
         celular = request_data['celular']
-        id_persona = insertar_persona(db_session, nombre,"No hay", celular)
+        id_persona = insertar_persona(db_session, nombre,"No hay","En direccion", celular)
         codigo = generar_codigo_cliente(nombre,id_persona,celular)
         codigo_cliente=insertar_cliente(db_session, id_persona,codigo,"Cliente no registrado")
 
@@ -1030,9 +1034,8 @@ def cambiaprecioproducto(id):
     return redirect('/precioproducto')
 
 @app.route('/CambiarPrecioestado/<int:id>',methods=['GET','POST'])
-def cambiaprecioproductoestado():
-    id=request.form.get('id')
-    estado=request.form.get('estado')
+def cambiaprecioproductoestado(id):
+   
     cambiar_estado_precio(db_session,id,2)
     flash("Se ha desactivado  correctamente el precio","success")
     return redirect('/precioproducto')
@@ -1047,10 +1050,11 @@ def crearservicios():
     nombre = request.form.get('nombre')
     descripcion = request.form.get('descripcion')
     estado = request.form.get('estado')
+    realizacion=request.form.get('realizacion')
     archivo = request.files['foto']
     carpeta_destino = 'static/img/servicios'
     logo = guardar_imagen(archivo, carpeta_destino)
-    insertar_servicio(db_session,nombre,descripcion,logo,estado)
+    insertar_servicio(db_session,nombre,descripcion,logo,realizacion,estado)
     flash("Se ha registrado correctamente el servicios", "success")
     return redirect('/servicios')
 
@@ -1060,6 +1064,7 @@ def actualizar_servicio(servicio_id):
     nombre = request.form.get('nombre')
     descripcion = request.form.get('descripcion')
     estado = request.form.get('estado')
+    realizacion=request.form.get('realizacion')
     archivo = request.files['foto']
     logos = request.form.get('logos')
 
@@ -1073,16 +1078,13 @@ def actualizar_servicio(servicio_id):
         except Exception as e:
             print(f"No se pudo eliminar la imagen anterior: {e}")
 
-        update_servicio(db_session, servicio_id, nombre, descripcion, logo, estado)
+        update_servicio(db_session, servicio_id, nombre, descripcion, logo,realizacion, estado)
         flash("Se ha actualizado correctamente el servicio", "success")
         return redirect(url_for('servicios'))
 
-    update_servicio(db_session, servicio_id, nombre, descripcion, logos, estado)
+    update_servicio(db_session, servicio_id, nombre, descripcion, logos,realizacion, estado)
     flash("Se ha actualizado correctamente el servicio", "success")
     return redirect(url_for('servicios'))
-
-    
-
 
 @app.route('/eliminar_servicio/<int:servicio_id>', methods=['POST', 'GET'])
 def eliminar_servicio(servicio_id):
@@ -1090,5 +1092,153 @@ def eliminar_servicio(servicio_id):
     flash("se ha desactivado el servicio", "success")
     return redirect("/servicios")
 
+@app.route("/precio_servicios",methods=['GET','POST'])
+def preciosservicios():
+    servicios=obtener_servicios_sin_precio(db_session)
+    Preciosservicios=obtener_precios_servicios(db_session)
+    return render_template("preciosservicios.html", servicios= servicios, Preciosservicios= Preciosservicios)
+@app.route('/CrearServiciosPrecios',methods=['GET','POST'])
+def crearprecioservicios():
+    idproducto=request.form.get('idproducto')
+    precio=request.form.get('precio')
+    estado=request.form.get('estado')
+    insertar_precio_servicio(db_session,idproducto,precio,estado)
+    flash("Se ha registrado correctamente el precio","success")
+    return redirect('/precio_servicios')
+
+@app.route('/CambiarServicios/<int:id>',methods=['GET','POST'])
+def cambiaprecioservicios(id):
+    idproducto=request.form.get('idproducto')
+    precio=request.form.get('precio')
+    estado=request.form.get('estado')
+    print("Precio que pasa hacer inactivo:",id)
+
+    insertar_precio_servicio(db_session,idproducto,precio,estado)
+
+    cambiar_estado_precio_servicio(db_session,id,2)
+    flash("Se ha registrado correctamente el precio","success")
+    return redirect('/precio_servicios')
+
+@app.route('/CambiarServiciosestado/<int:id>',methods=['GET','POST'])
+def cambiaprecioproductoestadoservcios(id):
+   
+    cambiar_estado_precio_servicio(db_session,id,2)
+    flash("Se ha desactivado  correctamente el precio","success")
+    return redirect('/precio_servicios')
+
+@app.route('/trabajador',methods=['GET','POST'])
+def trabajador():
+    trabajadores = ObtenerTrabajadores(db_session)
+    return render_template("trabajador.html",trabajadores=trabajadores)
+
+@app.route('/crear_trabajador',methods=['POST'])
+def crear_trabajador():
+    nombre = request.form.get('nombre')
+    apellido = request.form.get('apellido')
+    cedula = request.form.get('cedula')
+    fecha = request.form.get('fecha_nacimiento')
+    correo = request.form.get('correo')
+    direccion = request.form.get('direccion')
+    genero = request.form.get('genero')
+    celular = request.form.get('celular')
+    estado = request.form.get('estado')
+    codigo= generar_codigo_trabajador(db_session)
+    archivo = request.files['foto']
+    carpeta_destino = 'static/img/trabajadores'
+    logo = guardar_imagen(archivo, carpeta_destino)
+    IdPersona=insertar_persona(db_session,nombre,correo,direccion,celular)
+    insertar_persona_natural(db_session,IdPersona,apellido,cedula,fecha,genero,"Persona Natural")
+    insertar_trabajador(db_session,IdPersona,codigo,logo,estado)
+    flash("Se ha registrado con exito","success")
+    return redirect('/trabajador')
+
+@app.route('/actualizar_trabajador/<int:id>',methods=['POST'])
+def actualizar_trabajadors(id):
+    persona=request.form.get('persona')
+    nombre = request.form.get('nombre')
+    apellido = request.form.get('apellido')
+    correo = request.form.get('correo')
+    direccion = request.form.get('direccion')
+    celular = request.form.get('celular')
+    estado = request.form.get('estado')
+    archivo = request.files['foto']
+    logos=request.form.get('logos')
+    if archivo:
+        carpeta_destino = 'static/img/trabajadores'
+        logo = guardar_imagen(archivo, carpeta_destino)
+        try:
+            os.remove(logos)
+        except Exception as e:
+            print(f"No se pudo eliminar la imagen anterior: {e}")
+
+        update_persona(db_session,persona,nombre,correo,celular,direccion)
+        update_persona_natural(db_session,persona,apellido,"Persona Natural")
+        print(id)
+        actualizar_trabajador(db_session,id,logo,estado)
+        flash("Se ha actualizado con exito ","success")
+        return redirect('/trabajador')
+    else:
+        update_persona(db_session,persona,nombre,correo,celular,direccion)
+        update_persona_natural(db_session,persona,apellido,"Persona Natural")
+        actualizar_trabajador(db_session,id,logos,estado)
+        flash("Se ha actualizado con exito ","success")
+        return redirect('/trabajador')
+    
+@app.route('/eliminar_trabajador/<int:id>',methods=['POST'])
+def eliminar_trabajadors(id):
+    cambiar_estado_trabajador(db_session,id,2)
+    flash("Se ha desactivado correctamente el trabajador","success")
+    return redirect('/trabajador')
+
+@app.errorhandler(404)
+def page_not_found(e):
+    # note that we set the 404 status explicitly
+    return render_template('404.html'), 404  
+
+@app.route("/usuarios",methods=['GET','POST'])
+def usuarios():
+    trabajador=ObtenerEmpleadoSinUsuario(db_session)
+    usuarios=obtenerusuarios(db_session)
+    return render_template("usuarios.html",trabajador=trabajador,usuarios=usuarios)
+
+@app.route("/crearusuarios", methods=['GET', 'POST'])
+def crear_usuario():
+    id = request.form.get('idpersona')
+    contraseña = generar_contraseña()
+    hashed_password = generate_password_hash(contraseña)
+    persona = BuscarPorIdPersona(db_session, id)
+    
+   
+    if persona:
+        nombre, apellido, correo = persona
+        nombres = nombre + ' ' + apellido
+        usuario = generar_nombre_usuario(nombre, apellido, id)
+        enviar_correo_con_contraseña(nombres, usuario, correo, contraseña)
+        insertar_usuario(db_session, id, usuario, hashed_password, 0)
+
+   
+        flash("Se ha agregado correctamente el usuario!", "success")
+        flash("Se ha enviado un correo correctamente con la contraseña para su acceso a la plataforma", "info")
+        return redirect('/usuarios')
+    else:
+        return redirect('/usuarios')
+    
+@app.route("/verificar_usuarios",methods=['GET','POST'])
+def verificar_usuarios():
+    id = request.form.get('id')
+    cambiar_estado_usuario(db_session,id,1)
+    flash("Se ha activado correctamente!", "success")
+    return redirect('/usuarios')
+
+@app.route("/eliminar_usuario",methods=['GET','POST'])
+def eliminar_usuarios():
+    id = request.form.get('id')
+    cambiar_estado_usuario(db_session,id,2)
+    flash("Se ha desactivado correctamente!", "success")
+    return redirect('/usuarios')
+
+@app.route("/login",methods=['GET','POST'])
+def login():
+    return render_template("login.html") 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8000, debug=True)

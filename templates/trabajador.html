@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+{% block title %} || Trabajador{% endblock %}
+{% block css %}
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/select2/css/select2.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
+{% endblock %}
+{% block main %}
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Trabajadores</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="#">Gestion de
+                            colaborador</a></li>
+                    <li class="breadcrumb-item active">Colaboradores</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Lista de colaboradres</h3>
+                        <div class="align-content-end text-right">
+                            <button type="button" class="btn btn-secondary"
+                                data-toggle="modal" data-target="#modal-default">Agregar
+                                Trabajador</button>
+                        </div>
+
+                    </div>
+                    <!-- /.card-header -->
+                    <div class="card-body">
+                        <table id="example1"
+                            class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Apellido</th>
+                                    <th>Cedula</th>
+                                    <th>Direccion</th>
+                                    <th>Celular</th>
+                                    <th>Genero</th>
+                                    <th>Estado</th>
+                                    <th>Foto</th>
+                                   
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for trabajadores in trabajadores %}
+                                <tr>
+                                    <td>{{ trabajadores.nombre }}</td>
+                                    <td>{{
+                                        trabajadores.apellido
+                                        }}</td>
+                                    <td>{{
+                                        trabajadores.cedula
+                                        }}</td>
+                                    <td>{{ trabajadores.direccion }}</td>
+                                    <td>{{ trabajadores.celular }}</td>
+                                    <td>{{ trabajadores.genero }}</td>
+                                    <th> <img
+                                            src="{{trabajadores.foto}}"
+                                            alt width="50"></th>
+                                    <td>
+                                        {% if trabajadores.estado == 1 %}
+                                         <span class="badge bg-success">Activo</span>
+                                        {% elif trabajadores.estado == 2 %}
+                                         <span class="badge bg-danger">Inactivo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a  href="#modal-defaultw{{trabajadores.trabajador_id}}" data-toggle="modal" class="fas fa-pencil-alt"></a>
+                                        <a
+                                            href="#modal-danger{{trabajadores.trabajador_id}}"
+                                            class="fas fa-trash-alt" data-toggle="modal">
+                                         
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="modal-default" class="modal fade">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form action="/crear_trabajador" method="post"
+                    enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Crear
+                            Colaborador</h4>
+                        <button type="button" class="close"
+                            data-dismiss="modal"
+                            aria-hidden="true">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Nombre: </label>
+                                    <input type="text"
+                                        name="nombre"
+                                        class="form-control"
+                                        required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+
+                                <div class="form-group">
+                                    <label>Apellido: </label>
+                                    <input type="text"
+                                        name="apellido"
+                                        class="form-control"
+                                        required>
+
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Cedula: </label>
+                                    <input type="text"
+                                        name="cedula"
+                                        class="form-control"
+                                        required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Fecha de nacimiento:
+                                    </label>
+                                    <input type="date"
+                                        name="fecha_nacimiento"
+                                        class="form-control"
+                                        required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Correo: </label>
+                                    <input type="email"
+                                        name="correo"
+                                        class="form-control"
+                                        required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Celular:</label>
+                                    <input type="text"
+                                        name="celular"
+                                        class="form-control"
+                                        required>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label>Direccion: </label>
+                                    <textarea name="direccion"
+                                        class="form-control"
+                                        required></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Foto</label>
+                                    <input type="file"
+                                        name="foto"
+                                        class="form-control"
+                                        required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Genero</label>
+                                    <select name="genero" id
+                                        class="form-control">
+                                        <option value="F">Femenino</option>
+                                        <option value="M">Masculino</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Estado</label>
+                                    <select name="estado"
+                                        class="form-control">
+                                        <option value="1">Activo</option>
+                                        <option value="2">Inactivo</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer">
+                        <input type="button" class="btn
+                btn-default"
+                            data-dismiss="modal"
+                            value="Cancel">
+                        <input type="submit" class="btn
+                btn-success" value="Add">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% for productos in trabajadores %}
+    <!-- Edit Modal HTML -->
+    <div id="modal-defaultw{{productos.trabajador_id}}"
+        class="modal fade">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form  action="/actualizar_trabajador/{{productos.trabajador_id}}" method="post" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Editar colaborador</h4>
+                        <button type="button" class="close"
+                            data-dismiss="modal"
+                            aria-hidden="true">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <input type="text" name="persona" value="{{productos.persona_id}}" hidden >
+                                    <div class="form-group">
+                                        <label>Nombre</label>
+                                        <input type="text" name="nombre"
+                                            class="form-control"
+                                            required
+                                            value="{{productos.nombre}}">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+    
+                                    <div class="form-group">
+                                        <label>Apellido: </label>
+                                        <input type="text"
+                                            name="apellido"
+                                            class="form-control" value="{{productos.apellido}}"
+                                            required>
+    
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Cedula: </label>
+                                        <input type="text"
+                                            name="cedula"
+                                            class="form-control" value="{{productos.cedula}}"
+                                            required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Fecha de nacimiento:
+                                        </label>
+                                        <input type="date"
+                                            name="fecha_nacimiento"
+                                            class="form-control"
+                                            required value="{{productos.fecha_nacimiento}}">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Correo: </label>
+                                        <input type="email"
+                                            name="correo"
+                                            class="form-control"
+                                            required value="{{productos.correo}}">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Celular:</label>
+                                        <input type="text"
+                                            name="celular"
+                                            class="form-control"
+                                            required value="{{productos.celular}}">
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label>Direccion: </label>
+                                        <textarea name="direccion"
+                                            class="form-control"
+                                            required>{{productos.direccion}}</textarea>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    {% if productos.foto %}
+                                    <label>Foto anterior</label>
+                                    <img src="{{ productos.foto
+                                            }}" alt="Foto actual" width="20">
+                                    {% endif %}
+                                    <input type="text" name="logos" value="{{productos.foto}}" hidden>
+                                    <label>Foto nueva</label>
+                                    <input type="file" name="foto"
+                                        class="form-control"
+                                        value="">
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Genero</label>
+                                        <select name="genero" id
+                                            class="form-control">
+                                            <option value="F" {% if
+                                                productos.genero ==
+                                                "F" %}selected{% endif %}>Femenino</option>
+                                            <option value="M" {% if
+                                                productos.genero ==
+                                                "M" %}selected{% endif %}>Masculino</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="">Estado</label>
+                                        <select name="estado" id
+                                            class="form-control">
+                                            <option value="1" {% if
+                                                productos.estado ==
+                                                1 %}selected{% endif %}>Activo</option>
+                                            <option value="2" {% if
+                                                productos.estado ==
+                                                2 %}selected{% endif %}>Inactivo</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>    
+                        
+                    </div>
+                    <div class="modal-footer">
+                        <input type="button" class="btn
+                btn-default"
+                            data-dismiss="modal"
+                            value="Cancel">
+                        <input type="submit" class="btn
+                btn-info" value="Save">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% for productos in trabajadores %}
+    <!-- Delete Modal HTML -->
+    <div id="modal-danger{{productos.trabajador_id}}"
+        class="modal fade">
+        <div class="modal-dialog">
+            <div class="modal-content bg-danger">
+                <form action="/eliminar_trabajador/{{productos.trabajador_id}}" method="post">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Eliminar
+                            Trabajador</h4>
+
+                        <button type="button" class="close"
+                            data-dismiss="modal"
+                            aria-hidden="true">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="number" name="id"
+                            value="{{ productos.trabajador_id}}" hidden>
+
+                        <p>estas seguro de eliminar este trabajador?</p>
+                        
+                    </div>
+                    <div class="modal-footer">
+                        <input type="button" class="btn
+                btn-default"
+                            data-dismiss="modal"
+                            value="Cancel">
+                        <input type="submit" class="btn
+                btn-danger"
+                            value="Delete">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endfor %}
+</section>
+{% endblock %}

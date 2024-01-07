@@ -35,14 +35,6 @@ CREATE TABLE trabajador
 );
 
 
-CREATE TABLE salario
-( 
-    id SERIAL PRIMARY KEY,
-    id_trabajador INTEGER REFERENCES trabajador(id),
-    salario NUMERIC(10,2),
-    estado INTEGER
-);
-
 
 CREATE TABLE producto
 (
@@ -91,6 +83,7 @@ CREATE TABLE servicios(
     nombre VARCHAR(80) NOT NULL,
     descripcion VARCHAR(250),
     foto VARCHAR(250),
+    realizacion TIME NOT NUll,
     estado INTEGER
 );
 
@@ -111,7 +104,6 @@ CREATE TABLE reservacion(
     fecha DATE NOT NULL,
     hora TIME NOT NULL,
     subtotal DECIMAL(10,2),
-    observacion VARCHAR(250),
     estado INTEGER 
 );
 
@@ -153,20 +145,18 @@ CREATE TABLE venta_servicios(
     subtotal numeric NOT NUll 
 );
 
-
-CREATE TABLE grupo_usuarios
-(
+CREATE TABLE venta_productos(
     id SERIAL PRIMARY KEY,
-    nombre VARCHAR(120) NOT NULL,
-    descripcion VARCHAR(250) NOT NULL,
-    estado INTEGER 
+    id_venta INTEGER REFERENCES venta(id),
+    id_producto INTEGER REFERENCES producto(id),
+    subtotal numeric NOT NUll 
 );
+
 
 
 CREATE TABLE usuario
 (
     id SERIAL PRIMARY KEY,
-    id_grupo INTEGER REFERENCES grupo_usuarios(id),
     id_persona INTEGER REFERENCES persona(id),
     usuario VARCHAR(200) NOT NULL,
     contraseña VARCHAR(250) NOT NULL,
