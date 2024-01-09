@@ -13,11 +13,13 @@ VALUES
     ('Domingo', '10:00', '16:00', 2);
 
 ---Insert de servicios de pruebas	
-INSERT INTO servicios (nombre, descripcion, foto, estado)
+-- Suponiendo que la tabla servicios ya está creada
+INSERT INTO servicios (nombre, descripcion, foto, realizacion, estado)
 VALUES
-  ('Lavado Básico', 'Lavado exterior del automóvil', 'lavado_basico.jpg', 1),
-  ('Lavado Premium', 'Lavado exterior e interior del automóvil', 'lavado_premium.jpg', 1),
-  ('Lavado de Motor', 'Limpieza del motor del automóvil', 'lavado_motor.jpg', 1);
+  ('Lavado Básico', 'Lavado exterior del automóvil', 'lavado_basico.jpg', '1:00:00', 1),
+  ('Lavado Premium', 'Lavado exterior e interior del automóvil', 'lavado_premium.jpg', '1:30:00', 1),
+  ('Lavado de Motor', 'Limpieza del motor del automóvil', 'lavado_motor.jpg', '1:45:00', 1);
+
 
 ----- INSERT de precios de servicios
 INSERT INTO precio_servicios (id_servicios, precio, estado)
