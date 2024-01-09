@@ -32,13 +32,13 @@
         <div class="row">
             <div class="col-md-12">
                 <div class="card card-tabs">
-                    <div class="card-header p-0 pt-1">
-                        <h4>Registro de ventas</h4>
+                    <div class="card-header  p-0 text-center">
+                        <h4 class="mb-0 font-weight-bold text-primary">¡Bienvenido al Registro de Ventas!</h4>
                     </div>
-                    <div class="row">
 
-                        <div class="col-md-4 col-sm-3">
-                            <div class="nav flex-column nav-tabs h-100" id="vert-tabs-tab" role="tablist"
+                    <div class="row">
+                        <div class="col-md-4 col-sm-12">
+                            <div class="nav flex-column nav-tabs" id="vert-tabs-tab" role="tablist"
                                 aria-orientation="vertical">
                                 <a class="nav-link active" id="vert-tabs-home-tab" data-toggle="pill"
                                     href="#vert-tabs-home" role="tab" aria-controls="vert-tabs-home"
@@ -54,7 +54,7 @@
                                     aria-selected="false">Generar venta por servicios</a>
                             </div>
                         </div>
-                        <div class="col-md-8 col-sm-9">
+                        <div class="col-md-8 col-sm-12">
                             <div class="tab-content" id="vert-tabs-tabContent">
                                 <div class="tab-pane text-left fade show active" id="vert-tabs-home" role="tabpanel"
                                     aria-labelledby="vert-tabs-home-tab">
@@ -90,10 +90,12 @@
                                                 <select class="form-control select2bs4" id="producto">
                                                     {% for producto_id, producto_info in productos %}
                                                     {% for info in producto_info %}
-                                                        <option value="{{ producto_id }}" data-cantidad-maxima="{{ info.cantidad_total }}">{{ info.nombre }} - C$ {{ info.precio }}</option>
+                                                    <option value="{{ producto_id }}"
+                                                        data-cantidad-maxima="{{ info.cantidad_total }}">{{ info.nombre
+                                                        }} - C$ {{ info.precio }}</option>
                                                     {% endfor %}
-                                                {% endfor %}
-                                                
+                                                    {% endfor %}
+
                                                 </select>
                                             </div>
 
@@ -177,23 +179,26 @@
 
                                             <div class="form-group">
                                                 <label for="producto">Servicios:</label>
-                                                <select class="form-control select2bs4" id="producto">
-                                                  
+                                                <select class="form-control select2bs4" id="servicios">
+
                                                     {% for info in servicios %}
-                                                        <option value="{{info.producto}}">{{ info.nombre }} - C$ {{ info.precio }}</option>
+                                                    <option value="{{info.producto}}">{{ info.nombre }} - C$ {{
+                                                        info.precio }}</option>
                                                     {% endfor %}
-                                                
-                                                
+
+
                                                 </select>
                                             </div>
 
                                             <div class="form-group">
                                                 <label for="cantidad">Cantidad:</label>
-                                                <input type="number" class="form-control" id="cantidades" name="cantidad">
+                                                <input type="number" class="form-control" id="cantidadservicios"
+                                                    name="cantidad">
                                             </div>
 
                                             <div class="form-group">
-                                                <button type="button" class="btn btn-success btn-block" id="agregarServicios">Agregar Servicios</button>
+                                                <button type="button" class="btn btn-success btn-block"
+                                                    id="agregarServicios">Agregar Servicios</button>
 
                                             </div>
 
@@ -215,9 +220,9 @@
                                             </div>
 
                                             <div class="form-group">
-                                                <label for="tipo_venta">Tipo de Venta:</label>
-                                                <select class="form-control select2bs4" id="tipo_ventad"
-                                                    name="tipo_ventad" required>
+                                                <label for="tipo_ventas">Tipo de Venta:</label>
+                                                <select class="form-control select2bs4" id="tipo_ventas"
+                                                    name="tipo_ventas" required>
                                                     {% for tipo in tipos %}
                                                     <option value="{{ tipo.id }}">{{ tipo.nombre }}</option>
                                                     {% endfor %}
@@ -231,20 +236,24 @@
                                             </div>
 
                                             <button type="submit" class="btn btn-primary btn-block"
-                                                id="generarVenta">Generar Venta</button>
+                                                id="generarVentaservicios">Generar Venta</button>
                                         </form>
                                     </div>
 
 
                                 </div>
                             </div>
+
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    
+      
 </section>
+
 <script>
     var productos = [];
 
@@ -280,82 +289,82 @@
     }
 
     function agregarProducto() {
-    var productoSelect = document.getElementById('producto');
-    var cantidadInput = document.getElementById('cantidad');
+        var productoSelect = document.getElementById('producto');
+        var cantidadInput = document.getElementById('cantidad');
 
-    // Validar que la cantidad sea mayor que cero
-    var cantidad = parseInt(cantidadInput.value);
-    if (cantidad > 0) {
-        // Obtener la opción seleccionada
-        var selectedOption = productoSelect.options[productoSelect.selectedIndex];
+        // Validar que la cantidad sea mayor que cero
+        var cantidad = parseInt(cantidadInput.value);
+        if (cantidad > 0) {
+            // Obtener la opción seleccionada
+            var selectedOption = productoSelect.options[productoSelect.selectedIndex];
 
-        // Obtener el atributo de cantidad máxima permitida
-        var cantidadMaxima = parseInt(selectedOption.getAttribute('data-cantidad-maxima'));
+            // Obtener el atributo de cantidad máxima permitida
+            var cantidadMaxima = parseInt(selectedOption.getAttribute('data-cantidad-maxima'));
 
-        // Verificar si la cantidad es menor o igual a la cantidad máxima
-        if (cantidad <= cantidadMaxima) {
-            var producto = {
-                id: parseInt(selectedOption.value),
-                nombre: selectedOption.text.split(' - C$ ')[0],
-                precio: parseFloat(selectedOption.text.split(' - C$ ')[1]),
-                cantidad: cantidad
-            };
+            // Verificar si la cantidad es menor o igual a la cantidad máxima
+            if (cantidad <= cantidadMaxima) {
+                var producto = {
+                    id: parseInt(selectedOption.value),
+                    nombre: selectedOption.text.split(' - C$ ')[0],
+                    precio: parseFloat(selectedOption.text.split(' - C$ ')[1]),
+                    cantidad: cantidad
+                };
 
-            productos.push(producto);
-            actualizarTabla();
+                productos.push(producto);
+                actualizarTabla();
 
-            // Limpiar campos
-            productoSelect.value = '';
-            cantidadInput.value = '';
+                // Limpiar campos
+                productoSelect.value = '';
+                cantidadInput.value = '';
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'La cantidad debe ser menor o igual a ' + cantidadMaxima + '.',
+                });
+            }
         } else {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: 'La cantidad debe ser menor o igual a ' + cantidadMaxima + '.',
+                text: 'La cantidad debe ser mayor que cero.',
             });
         }
-    } else {
+    }
+
+    function eliminarProducto(id) {
+        productos = productos.filter(function (producto) {
+            return producto.id !== id;
+        });
+
+        actualizarTabla();
+    }
+
+    function editarCantidad(id) {
         Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'La cantidad debe ser mayor que cero.',
+            title: 'Editar Cantidad',
+            input: 'number',
+            inputValue: productos.find(p => p.id === id).cantidad,
+            showCancelButton: true,
+            confirmButtonText: 'Guardar',
+            cancelButtonText: 'Cancelar',
+            inputValidator: (value) => {
+                if (!value || value <= 0) {
+                    return 'Por favor, ingresa una cantidad válida';
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                var nuevaCantidad = parseInt(result.value);
+                productos.forEach(function (producto) {
+                    if (producto.id === id) {
+                        producto.cantidad = nuevaCantidad;
+                    }
+                });
+                actualizarTabla();
+            }
         });
     }
-}
-
-function eliminarProducto(id) {
-    productos = productos.filter(function (producto) {
-        return producto.id !== id;
-    });
-
-    actualizarTabla();
-}
-
-function editarCantidad(id) {
-    Swal.fire({
-        title: 'Editar Cantidad',
-        input: 'number',
-        inputValue: productos.find(p => p.id === id).cantidad,
-        showCancelButton: true,
-        confirmButtonText: 'Guardar',
-        cancelButtonText: 'Cancelar',
-        inputValidator: (value) => {
-            if (!value || value <= 0) {
-                return 'Por favor, ingresa una cantidad válida';
-            }
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            var nuevaCantidad = parseInt(result.value);
-            productos.forEach(function (producto) {
-                if (producto.id === id) {
-                    producto.cantidad = nuevaCantidad;
-                }
-            });
-            actualizarTabla();
-        }
-    });
-}
 
 
     function actualizarSubtotal(id, input, precio) {
@@ -373,40 +382,112 @@ function editarCantidad(id) {
     document.getElementById('agregarProducto').addEventListener('click', agregarProducto);
 </script>
 <script>
-  function agregarServicios() {
-    var servicioSelect = document.getElementById('producto');
-    var cantidadInput = document.getElementById('cantidades');
+    var servicios = [];
 
-    // Validar que la cantidad sea mayor que cero
-    var cantidad = parseInt(cantidadInput.value);
-    if (cantidad > 0) {
-        // Obtener la opción seleccionada
-        var selectedOption = servicioSelect.options[servicioSelect.selectedIndex];
+    function actualizarTablaservicio() {
+        var tableBody = document.getElementById('serviciosTable').getElementsByTagName('tbody')[0];
+        tableBody.innerHTML = '';
 
-        var servicio = {
-            id: parseInt(selectedOption.value),
-            nombre: selectedOption.text.split(' - C$ ')[0],
-            precio: parseFloat(selectedOption.text.split(' - C$ ')[1]),
-            cantidad: cantidad
-        };
+        var total = 0;
 
-        productos.push(servicio);
-        actualizarTabla();
+        servicios.forEach(function (servicio) {
+            var row = tableBody.insertRow();
+            var cellservicio = row.insertCell(0);
+            var cellCantidad = row.insertCell(1);
+            var cellPrecio = row.insertCell(2);
+            var cellSubtotal = row.insertCell(3);
+            var cellAcciones = row.insertCell(4);
 
-        // Limpiar campos
-        servicioSelect.value = '';
-        cantidadInput.value = '';
-    } else {
+            cellservicio.innerHTML = servicio.nombre;
+            cellCantidad.innerHTML = '<input type="number" class="form-control" value="' + servicio.cantidad + '" onchange="actualizarSubtotales(' + servicio.id + ', this, ' + servicio.precio + ')">';
+            cellPrecio.innerHTML = servicio.precio.toFixed(2);
+            var subtotal = servicio.cantidad * servicio.precio;
+            cellSubtotal.innerHTML = subtotal.toFixed(2);
+            total += subtotal;
+
+            cellAcciones.innerHTML = '<div class="btn-group">' +
+                '<button type="button" class="btn btn-danger btn-sm" onclick="eliminarservicios(' + servicio.id + ')">Eliminar</button>' +
+                '<button type="button" class="btn btn-primary btn-sm" onclick="editarCantidades(' + servicio.id + ')">Editar Cantidad</button>' +
+                '</div>';
+        });
+
+        document.getElementById('totales').value = total.toFixed(2);
+    }
+
+    function agregarServicios() {
+        var servicioSelect = document.getElementById('servicios');
+        var cantidadInput = document.getElementById('cantidadservicios');
+
+        // Validar que la cantidad sea mayor que cero
+        var cantidad = parseInt(cantidadInput.value);
+        if (cantidad > 0) {
+            // Obtener la opción seleccionada
+            var selectedOption = servicioSelect.options[servicioSelect.selectedIndex];
+
+            var servicio = {
+                id: parseInt(selectedOption.value),
+                nombre: selectedOption.text.split(' - C$ ')[0],
+                precio: parseFloat(selectedOption.text.split(' - C$ ')[1]),
+                cantidad: cantidad
+            };
+
+            servicios.push(servicio);
+            actualizarTablaservicio();
+
+            // Limpiar campos
+            servicioSelect.value = '';
+            cantidadInput.value = '';
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'La cantidad debe ser mayor que cero.',
+            });
+        }
+    }
+    function eliminarservicios(id) {
+        servicios = servicios.filter(function (servicio) {
+            return servicio.id !== id;
+        });
+
+        actualizarTablaservicio();
+    }
+    function editarCantidades(id) {
         Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'La cantidad debe ser mayor que cero.',
+            title: 'Editar Cantidad del servicios',
+            input: 'number',
+            inputValue: servicios.find(p => p.id === id).cantidad,
+            showCancelButton: true,
+            confirmButtonText: 'Guardar',
+            cancelButtonText: 'Cancelar',
+            inputValidator: (value) => {
+                if (!value || value <= 0) {
+                    return 'Por favor, ingresa una cantidad válida';
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                var nuevaCantidad = parseInt(result.value);
+                servicios.forEach(function (servicio) {
+                    if (servicio.id === id) {
+                        servicio.cantidad = nuevaCantidad;
+                    }
+                });
+                actualizarTablaservicio();
+            }
         });
     }
-}
-
-
-   
+    function actualizarSubtotales(id, input, precio) {
+        var nuevaCantidad = parseInt(input.value);
+        productos.forEach(function (servicio) {
+            if (servicio.id === id) {
+                servicio.cantidad = nuevaCantidad;
+                servicio.subtotal = nuevaCantidad * precio;
+                input.parentElement.nextElementSibling.innerHTML = servicio.subtotal.toFixed(2);
+            }
+        });
+        actualizarTabla();
+    }
     document.getElementById('agregarServicios').addEventListener('click', agregarServicios);
 
 </script>
@@ -415,7 +496,7 @@ function editarCantidad(id) {
 <script>
     function enviarVenta() {
         var tipoVenta = document.getElementById('tipo_venta').value;
-        var total = document.getElementById('total').value;
+        var total = document.getElementById('totales').value;
         var cliente = document.getElementById('cliente').value;
 
         // Objeto con los datos a enviar al servidor
@@ -429,9 +510,9 @@ function editarCantidad(id) {
         // Realizar la solicitud POST al servidor Flask
         axios.post('/venta_productos', data)
             .then(function (response) {
-                // Aquí puedes manejar la respuesta del servidor si es necesario
+
                 console.log(response.data);
-                // Por ejemplo, puedes redirigir o mostrar un mensaje de éxito
+
                 Swal.fire('Venta Generada', 'La venta se ha generado exitosamente.', 'success');
             })
             .catch(function (error) {
@@ -443,5 +524,42 @@ function editarCantidad(id) {
     // Asignar la función enviarVenta al evento click del botón Generar Venta
     document.getElementById('generarVenta').addEventListener('click', enviarVenta);
 </script>
+<script>
+    function enviarVentaservicios() {
+        var tipoVenta = document.getElementById('tipo_ventas').value;
+        var total = document.getElementById('totales').value;
+        var cliente = document.getElementById('clientes').value;
 
+        // Objeto con los datos a enviar al servidor
+        var data = {
+            cliente: cliente,
+            tipo_venta: tipoVenta,
+            total: total,
+            servicios: servicios
+        };
+
+        // Realizar la solicitud POST al servidor Flask
+        axios.post('/venta_servicios', data)
+            .then(function (response) {
+                console.log(response.data);
+              
+                // Mostrar la alerta de éxito en un modal de Bootstrap
+                $('#successModal').modal('show');
+
+                // Redirigir a la ruta /ventas después de un breve retraso
+                setTimeout(function () {
+                    window.location.href = '/ventas';
+                }, 3000);
+            })
+
+            .catch(function (error) {
+                // Aquí puedes manejar errores, por ejemplo, mostrar un mensaje de error
+                Swal.fire('Error', 'Ha ocurrido un error al procesar la venta.', 'error');
+            });
+    }
+
+    // Asignar la función enviarVenta al evento click del botón Generar Venta
+    document.getElementById('generarVentaservicios').addEventListener('click', enviarVentaservicios);
+
+</script>
 {% endblock %}

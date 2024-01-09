@@ -1916,7 +1916,7 @@ def cambiarestadocliente(cliente_id):
 
     return redirect(url_for('clientes'))
 
-@app.route("/ventas",methods=['GET','POST'])
+@app.route("/ventas",methods=['GET'])
 def venta():
     productos= obtener_productos_ventas(db_session)
     clientes=mostra_clientes(db_session)
@@ -1977,7 +1977,12 @@ def procesar_venta():
 
     return jsonify({'mensaje': 'Venta procesada exitosamente'}), 200
 
-
+@app.route("/venta_servicios",methods=["POST"])
+def ventas_servicios():
+    data = request.json
+    print(data)
+    flash("La venta se ha realizado correctamente","success")
+    return jsonify({'mensaje': 'Venta procesada exitosamente'}), 200
 
 if __name__ == '__main__':
    
