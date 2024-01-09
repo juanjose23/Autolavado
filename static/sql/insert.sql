@@ -28,7 +28,7 @@ VALUES
   (2, 40.00,NOW(), 1), -- Precio del Lavado Premium: $40.00
   (3, 30.00,NOW(), 1); -- Precio del Lavado de Motor: $30.00
 
-NSERT INTO tipo_venta (nombre, descripcion, estado) VALUES
+INSERT INTO tipo_venta (nombre, descripcion, estado) VALUES
     ('sinpe', 'Pago mediante SINPE', 1),
     ('planilla', 'Pago mediante planilla', 1),
     ('efectivo', 'Pago en efectivo', 1),
@@ -54,5 +54,7 @@ VALUES (1, 'juanperez', 'scrypt:32768:8:1$CmhEfUqnWfYuB28Q$c0a8a7840b1d97d63c380
 -----Contraseña: 12345678
 
 -- Insertar datos en la tabla sucursal
-INSERT INTO sucursal (nombre, razon_social, ubicacion, telfono, logo) 
-VALUES ('AUTOCAR ASOCATIE', ' S.A.', 'Calle Principal 123, Ciudad', 123456789, 'logo.jpg');
+INSERT INTO sucursal (nombre, razon_social, ubicacion_escrita, ubicacion_googleMaps,telefono, estado,  logo) 
+VALUES ('AUTOCAR ASOCATIE', ' S.A.', 'Del chilamate 3 cuadras al este', 'https://maps.app.goo.gl/rWHyYHcpwVUeAdbQ7', '123456789', '1', 'logo.jpg');
+
+    

@@ -1622,6 +1622,133 @@ def lotes():
    
     return render_template("lote.html",productos=productos,lotes=lotes)
 
+@app.route("/sucursales",methods=['GET','POST'])
+@login_required
+def sucursales():
+
+    surcursales = obtener_sucursales(db_session)
+
+    if request.method == 'POST':
+        nombre_sucursal = request.form['nombre_sucursal']
+        razon_social = request.form['razon_social']
+        direccion_escrita = request.form['direccion_escrita']
+        ubicacion_googleMaps = request.form['enlace_googleMaps']
+        telefono = request.form['telefono']
+        estado = request.form['estado']
+
+        print(nombre_sucursal, razon_social, direccion_escrita, ubicacion_googleMaps, telefono, estado)
+
+        insertar_sucursal(db_session,nombre_sucursal,razon_social,direccion_escrita,ubicacion_googleMaps,telefono,estado)
+
+        flash('Se ha creado la sucursal', 'success')
+        return redirect(url_for('sucursales'))
+
+   
+    return render_template("sucursales.html", surcursales=surcursales)
+
+def  insertar_sucursal(db_session,nombre_sucursal,razon_social,direccion_escrita,ubicacion_googleMaps,telefono,estado):
+    query = text("""
+    INSERT INTO sucursal (nombre, razon_social, ubicacion_escrita, ubicacion_googleMaps, telefono, estado)
+    VALUES (:nombre_sucursal, :razon_social, :direccion_escrita, :ubicacion_googleMaps, :telefono, :estado)
+    RETURNING id
+""")
+
+    db_session.execute(query, {
+        'nombre_sucursal': nombre_sucursal,
+        'razon_social': razon_social,
+        'direccion_escrita': direccion_escrita,
+        'ubicacion_googleMaps': ubicacion_googleMaps,
+        'telefono': telefono,
+        'estado': estado
+    })
+
+    db_session.commit()
+
+    return true
+
+def obtener_sucursales(db_session):
+    query = text("""
+        SELECT id, nombre, razon_social, ubicacion_escrita, ubicacion_googleMaps, telefono, estado
+        FROM sucursal
+    """)
+
+    sucursales = db_session.execute(query).fetchall()
+    print(sucursales)
+
+    return sucursales
+
+
+
+@app.route('/eliminar_sucursal/<int:id>', methods=['POST'])
+def eliminar_sucursal(id):
+    if request.method == 'POST':
+        eliminar_sucursal(id)
+        flash('Se ha eliminado la sucursal', 'success')
+        return redirect(url_for('sucursales'))
+
+@app.route('/editar_sucursal/<int:id>', methods=['POST'])
+def editar_sucursal(id):
+    if request.method == 'POST':
+
+        print(id)
+        
+        id_sucursal = id
+        nombre_sucursal = request.form['nombre_sucursal']
+        razon_social = request.form['razon_social']
+        direccion_escrita = request.form['direccion_escrita']
+        ubicacion_googleMaps = request.form['enlace_googleMaps']
+        telefono = request.form['telefono']
+        estado = request.form['estado']
+
+        print(nombre_sucursal, razon_social, direccion_escrita, ubicacion_googleMaps, telefono, estado)
+
+        actualizar_sucursal(db_session, id_sucursal, nombre_sucursal, razon_social, direccion_escrita, ubicacion_googleMaps, telefono, estado)
+    
+    flash('Se ha actualizado la sucursal', 'success')
+    return redirect(url_for('sucursales'))
+
+
+       
+def actualizar_sucursal(db_session, id_sucursal, nombre_sucursal, razon_social, direccion_escrita, ubicacion_googleMaps, telefono, estado):
+    query = text("""
+    UPDATE sucursal 
+    SET nombre = :nombre_sucursal, 
+        razon_social = :razon_social, 
+        ubicacion_escrita = :direccion_escrita, 
+        ubicacion_googleMaps = :ubicacion_googleMaps, 
+        telefono = :telefono, 
+        estado = :estado
+    WHERE id = :id_sucursal
+""")
+
+    db_session.execute(query, {
+        'id_sucursal': id_sucursal,
+        'nombre_sucursal': nombre_sucursal,
+        'razon_social': razon_social,
+        'direccion_escrita': direccion_escrita,
+        'ubicacion_googleMaps': ubicacion_googleMaps,
+        'telefono': telefono,
+        'estado': estado
+    })
+
+    db_session.commit()
+
+    return true
+
+def eliminar_sucursal(id):
+    query = text("""
+    DELETE FROM sucursal 
+    WHERE id = :id_sucursal
+""")
+
+    db_session.execute(query, {
+        'id_sucursal': id
+    })
+
+    db_session.commit()
+
+    return true       
+
 @app.route('/insertar_lote', methods=['POST'])
 def insertar_lote():
     if request.method == 'POST':

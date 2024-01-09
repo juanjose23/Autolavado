@@ -2,8 +2,10 @@ CREATE TABLE sucursal(
     id SERIAL PRIMARY KEY,
     nombre VARCHAR (250) NOT NULL,
     razon_social VARCHAR(250),
-    ubicacion VARCHAR(250),
-    telfono INTEGER,
+    ubicacion_escrita VARCHAR(250),
+    ubicacion_googleMaps VARCHAR(500),
+    telefono INTEGER,
+    estado INTEGER,
     logo VARCHAR(250)
     
 );
