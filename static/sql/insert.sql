@@ -22,11 +22,11 @@ VALUES
 
 
 ----- INSERT de precios de servicios
-INSERT INTO precio_servicios (id_servicios, precio, estado)
+INSERT INTO precio_servicios (id_servicios, precio,fecha_registro, estado)
 VALUES
-  (1, 20.00, 1), -- Precio del Lavado Básico: $20.00
-  (2, 40.00, 1), -- Precio del Lavado Premium: $40.00
-  (3, 30.00, 1); -- Precio del Lavado de Motor: $30.00
+  (1, 20.00,NOW(), 1), -- Precio del Lavado Básico: $20.00
+  (2, 40.00,NOW(), 1), -- Precio del Lavado Premium: $40.00
+  (3, 30.00,NOW(), 1); -- Precio del Lavado de Motor: $30.00
 
 NSERT INTO tipo_venta (nombre, descripcion, estado) VALUES
     ('sinpe', 'Pago mediante SINPE', 1),
