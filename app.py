@@ -10,6 +10,7 @@ from sqlalchemy import *
 from sqlalchemy.orm import *
 from utils import *
 from flask import session
+from collections import defaultdict
 import requests
 import json
 import pdfkit
@@ -32,19 +33,30 @@ locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
 engine = create_engine(os.getenv("DATABASE_URL"))
 db_session = scoped_session(sessionmaker(bind=engine))
 
-def insertar_persona(db_session: Session, nombre, correo,direccion, celular):
+def insertar_persona(db_session: Session, nombre, correo, direccion, celular):
+    # Preparar y ejecutar una consulta SQL
     query = text("INSERT INTO persona (nombre, correo, direccion, celular) VALUES (:nombre, :correo, :direccion, :celular) RETURNING id")
-    id_persona = db_session.execute(query, {"nombre": nombre, "correo": correo, "direccion":direccion, "celular": celular}).fetchone()
-    return id_persona[0]
+    result = db_session.execute(query, {"nombre": nombre, "correo": correo, "direccion":direccion, "celular": celular})
+    
+    # Obtener el ID de la nueva persona
+    id_persona = result.fetchone()[0]
+    
+    # Hacer commit para persistir la nueva persona en la base de datos
+    db_session.commit()
+    
+    # Retornar el ID de la nueva persona
+    return id_persona
 
 def insertar_persona_natural(db_session: Session, id_persona, apellidos,cedula,fecha_nacimiento,genero, tipo):
     query = text("INSERT INTO persona_natural (id_persona, apellido,cedula,fecha_nacimiento,genero, tipo_persona) VALUES (:id_persona, :apellido,:cedula,:fecha_nacimiento,:genero, :tipo_persona)")
     db_session.execute(query, {"id_persona": id_persona, "apellido": apellidos,"cedula":cedula,"fecha_nacimiento":fecha_nacimiento,"genero":genero, "tipo_persona": tipo})
+    db_session.commit()
 
-def insertar_cliente(db_session: Session, id_persona,codigo_cliente, tipo):
+def insertar_cliente(db_session: Session, id_persona,codigo_cliente, tipo,foto):
  
     query = text("INSERT INTO clientes (id_persona, codigo, tipo_cliente, foto, estado) VALUES (:id_persona, :codigo, :tipo_cliente, :foto, :estado)")
-    db_session.execute(query, {"id_persona": id_persona, "codigo": codigo_cliente, "tipo_cliente": tipo, "foto": 'No hay', "estado": '1'})
+    db_session.execute(query, {"id_persona": id_persona, "codigo": codigo_cliente, "tipo_cliente": tipo, "foto":foto, "estado": '1'})
+    db_session.commit()
     return codigo_cliente
 
 def update_persona(db_session: Session, id_persona, nombre, correo, celular, direccion):
@@ -58,12 +70,12 @@ def update_persona_natural(db_session: Session, id_persona, apellidos, tipo):
     db_session.commit()
 
 def update_cliente(db_session: Session, id_persona, tipo, foto, estado):
-    query = text("UPDATE clientes SET tipo_cliente = :tipo, foto = :foto, estado = :estado WHERE id_persona = :id_persona")
+    query = text("UPDATE clientes SET tipo_cliente = :tipo, foto = :foto, estado = :estado WHERE id = :id_persona")
     db_session.execute(query, {"id_persona": id_persona, "tipo": tipo, "foto": foto, "estado": estado})
     db_session.commit()
 
 def cambiar_estado_cliente(db_session: Session, id_persona, nuevo_estado):
-    query = text("UPDATE clientes SET estado = :nuevo_estado WHERE id_persona = :id_persona")
+    query = text("UPDATE clientes SET estado = :nuevo_estado WHERE id = :id_persona")
     db_session.execute(query, {"id_persona": id_persona, "nuevo_estado": nuevo_estado})
     db_session.commit()
 
@@ -169,12 +181,13 @@ def cambiar_estado_productos(db_session, id_producto, nuevo_estado):
     return "Estado del producto cambiado exitosamente"
 
 def insertar_precio(db_session: Session, id_producto, precio, estado):
+    fecha_actual = datetime.now().date()
     query = text("""
-        INSERT INTO precio (id_producto, precio, estado)
-        VALUES (:id_producto, :precio, :estado)
+        INSERT INTO precio (id_producto, precio, fecha_registro, estado)
+        VALUES (:id_producto, :precio,:fecha_registro, :estado)
     """)
 
-    db_session.execute(query, {"id_producto": id_producto, "precio": precio, "estado": estado})
+    db_session.execute(query, {"id_producto": id_producto, "precio": precio,"fecha_registro":fecha_actual, "estado": estado})
     db_session.commit()
 
 
@@ -247,12 +260,13 @@ def cambiar_estado_servicio(db_session: Session, id_servicio, nuevo_estado):
     db_session.commit()
 
 def insertar_precio_servicio(db_session: Session, id_servicio, precio, estado):
+    fecha_actual = datetime.now().date()
     query = text("""
-        INSERT INTO precio_servicios (id_servicios, precio, estado)
-        VALUES (:id_servicio, :precio, :estado)
+        INSERT INTO precio_servicios (id_servicios, precio, fecha_registro, estado)
+        VALUES (:id_servicio, :precio,:fecha_registro, :estado)
     """)
 
-    db_session.execute(query, {"id_servicio": id_servicio, "precio": precio, "estado": estado})
+    db_session.execute(query, {"id_servicio": id_servicio, "precio": precio,"fecha_registro":fecha_actual, "estado": estado})
     db_session.commit()
 
 def update_precio_servicio(db_session: Session, id_precio_servicio, id_servicio, precio, estado):
@@ -360,19 +374,60 @@ def actualizar_estado_lotes(db_session: Session):
     estadisticas['sin_cantidad'] = result_sin_cantidad.rowcount
 
     return estadisticas
+def generar_codigo_venta(db_session: Session):
+    # Obtener el último ID de venta desde la base de datos
+    query = text("SELECT MAX(id) FROM venta")
+    resultado = db_session.execute(query).scalar()
+    
+    # Generar el código de venta basado en el último ID
+    nuevo_id_venta = resultado + 1 if resultado else 1
+    codigo_venta = f'V-{nuevo_id_venta}'
+    
+    return codigo_venta
 
-
-def insertar_venta(db_session: Session, id_tipo, id_cliente, codigo, tipo_pago, fecha, descuento, total, estado):
+def insertar_venta(db_session, id_tipo, id_cliente, codigo, descuento, total, estado):
+    fecha_actual = datetime.now().date()
     query = text("""
-        INSERT INTO venta (id_tipo, id_cliente, codigo, tipo_pago, fecha, descuento, total, estado)
-        VALUES (:id_tipo, :id_cliente, :codigo, :tipo_pago, :fecha, :descuento, :total, :estado)
+        INSERT INTO venta (id_tipo, id_cliente, codigo, fecha, descuento, total, estado)
+        VALUES (:id_tipo, :id_cliente, :codigo, :fecha, :descuento, :total, :estado)
+        RETURNING id
     """)
 
-    db_session.execute(query, {"id_tipo": id_tipo, "id_cliente": id_cliente, "codigo": codigo, "tipo_pago": tipo_pago,
-                               "fecha": fecha, "descuento": descuento, "total": total, "estado": estado})
+    result = db_session.execute(query, {
+        'id_tipo': id_tipo,
+        'id_cliente': id_cliente,
+        'codigo': codigo,
+        'fecha': fecha_actual,
+        'descuento': descuento,
+        'total': total,
+        'estado': estado
+    })
+
+    # Recuperar el ID de la venta recién insertada
+    id_venta = result.fetchone()[0]
+    print(id_venta)
     db_session.commit()
 
+    return id_venta
 
+
+def insertar_venta_producto(db_session: Session, id_venta, id_producto, cantidad, subtotal):
+    query = text("""
+        INSERT INTO venta_productos (id_venta, id_producto, cantidad, subtotal)
+        VALUES (:id_venta, :id_producto, :cantidad, :subtotal)
+    """)
+
+    db_session.execute(query, {"id_venta": id_venta, "id_producto": id_producto, "cantidad": cantidad, "subtotal": subtotal})
+    db_session.commit()
+
+def insertar_detalle_venta(db_session: Session, id_venta, id_servicio, precio_unitario, subtotal):
+    query = text("""
+        INSERT INTO detalle_venta (id_venta, id_servicio, precio_unitario, subtotal)
+        VALUES (:id_venta, :id_servicio, :precio_unitario, :subtotal)
+    """)
+
+    db_session.execute(query, {"id_venta": id_venta, "id_servicio": id_servicio, "precio_unitario": precio_unitario, "subtotal": subtotal})
+    db_session.commit()
 def cambiar_estado_venta(db_session: Session, id_venta, nuevo_estado):
     query = text("""
         UPDATE venta
@@ -383,50 +438,34 @@ def cambiar_estado_venta(db_session: Session, id_venta, nuevo_estado):
     db_session.execute(query, {"id_venta": id_venta, "nuevo_estado": nuevo_estado})
     db_session.commit()
 
-
-def insertar_detalle_venta(db_session: Session, id_venta, id_servicio, precio_unitario, cantidad, subtotal):
+def obtener_info_lote_mas_antiguo(db_session: Session, id_producto):
     query = text("""
-        INSERT INTO detalle_venta (id_venta, id_servicio, precio_unitario, cantidad, subtotal)
-        VALUES (:id_venta, :id_servicio, :precio_unitario, :cantidad, :subtotal)
+    SELECT id, cantidad
+    FROM lote_producto
+    WHERE id_producto = :id_producto AND cantidad > 0 AND (estado = 1 OR estado = 3)
+    ORDER BY fecha_registro ASC
+    LIMIT 1
+""")
+
+
+    result = db_session.execute(query, {"id_producto": id_producto}).fetchone()
+
+    if result:
+        id_lote, cantidad = result
+        return {"id_lote": id_lote, "cantidad": int(cantidad)}
+    else:
+        return None
+
+
+def restar_cantidad_lote(db_session: Session, id_lote, cantidad_restar):
+    query = text("""
+        UPDATE lote_producto
+        SET cantidad = cantidad - :cantidad_restar
+        WHERE id = :id_lote 
     """)
 
-    db_session.execute(query, {"id_venta": id_venta, "id_servicio": id_servicio, "precio_unitario": precio_unitario, "cantidad": cantidad, "subtotal": subtotal})
+    db_session.execute(query, {"id_lote": id_lote, "cantidad_restar": cantidad_restar})
     db_session.commit()
-
-def update_detalle_venta(db_session: Session, id_detalle_venta, id_venta, id_servicio, precio_unitario, cantidad, subtotal):
-    query = text("""
-        UPDATE detalle_venta
-        SET id_venta = :id_venta, id_servicio = :id_servicio, precio_unitario = :precio_unitario,
-        cantidad = :cantidad, subtotal = :subtotal
-        WHERE id = :id_detalle_venta
-    """)
-
-    db_session.execute(query, {"id_detalle_venta": id_detalle_venta, "id_venta": id_venta, "id_servicio": id_servicio,
-                               "precio_unitario": precio_unitario, "cantidad": cantidad, "subtotal": subtotal})
-    db_session.commit()
-
-
-def insertar_venta_servicios(db_session: Session, id_venta, id_reservacion, subtotal):
-    query = text("""
-        INSERT INTO venta_servicios (id_venta, id_reservacion, subtotal)
-        VALUES (:id_venta, :id_reservacion, :subtotal)
-    """)
-
-    db_session.execute(query, {"id_venta": id_venta, "id_reservacion": id_reservacion, "subtotal": subtotal})
-    db_session.commit()
-
-def update_venta_servicios(db_session: Session, id_venta_servicios, id_venta, id_reservacion, subtotal):
-    query = text("""
-        UPDATE venta_servicios
-        SET id_venta = :id_venta, id_reservacion = :id_reservacion, subtotal = :subtotal
-        WHERE id = :id_venta_servicios
-    """)
-
-    db_session.execute(query, {"id_venta_servicios": id_venta_servicios, "id_venta": id_venta,
-                               "id_reservacion": id_reservacion, "subtotal": subtotal})
-    db_session.commit()
-
-
 
 def insertar_usuario(db_session: Session, id_persona, usuario, contraseña, estado):
     query = text("""
@@ -496,6 +535,41 @@ def obtener_precioproductos(db_session):
     query=text("SELECT pp.*,p.id AS producto, p.nombre FROM precio pp INNER JOIN producto p ON p.id = pp.id_producto ")
     precios=db_session.execute(query).fetchall()
     return precios
+
+def obtener_productos_ventas(db_session):
+    query = text("""
+        SELECT p.id AS producto_id, p.nombre AS producto_nombre, pp.precio, SUM(l.cantidad) AS cantidad_total
+        FROM producto p
+        INNER JOIN precio pp ON p.id = pp.id_producto
+        INNER JOIN lote_producto l ON p.id = l.id_producto
+        WHERE l.cantidad > 0 AND  (l.estado = 1 OR l.estado = 3)
+        GROUP BY p.id, p.nombre, pp.precio
+    """)
+
+    productos = db_session.execute(query).fetchall()
+
+    # Utilizamos un diccionario para almacenar la información de cada producto
+    productos_agrupados = defaultdict(list)
+
+    for producto in productos:
+        productos_agrupados[producto.producto_id].append({
+            'nombre': producto.producto_nombre,
+            'precio': producto.precio,
+            'cantidad_total': producto.cantidad_total
+        })
+        
+
+    # Convertimos la estructura en una lista de tuplas para mantener la estructura original
+    productos_resultado = [
+        (producto_id, producto_info)
+        for producto_id, producto_info in productos_agrupados.items()
+    ]
+
+    return productos_resultado
+def obtener_tipo_venta(db_session):
+    query=text("""SELECT * FROM tipo_venta WHERE estado = 1""")
+    ventas=db_session.execute(query).fetchall()
+    return ventas
 def obtener_productos_sin_precio(db_session):
     query = text("""
 SELECT p.*
@@ -572,6 +646,37 @@ def obtener_info_persona(id_persona):
 
     return datos
 
+def mostra_clientes(db_session:session):
+    query=text(  """
+         SELECT
+            c.id,
+            p.id AS id_persona,
+            p.nombre,
+            p.correo,
+            p.direccion,
+            p.celular,
+            pn.id AS id_persona_natural,
+            pn.apellido,
+            pn.cedula,
+            pn.fecha_nacimiento,
+            pn.genero,
+            pn.tipo_persona,
+            c.id AS id_cliente,
+            c.codigo,
+            c.tipo_cliente,
+            c.foto,
+            c.estado
+        FROM
+            clientes c
+		LEFT JOIN
+            persona p ON c.id_persona = p.id
+        LEFT JOIN
+            persona_natural pn ON p.id = pn.id_persona
+     
+    """)
+    result=db_session.execute(query).fetchall()
+
+    return result
 
 
 
@@ -754,39 +859,37 @@ def obtener_cupos_disponibles():
 
 
 def obtener_cupos_hoy(horario, fecha_hoy):
-    # Supongamos que tienes una tabla 'reservas' con un campo 'fecha_reserva' y 'id_horario'
-    # que almacena las reservas realizadas por día.
-    # Esta función debería contar cuántas reservas hay para el día actual y el horario dado.
+   
 
-    id_horario = horario[0]  # Supongamos que el ID del horario está en la posición 0 del resultado de la consulta
+    id_horario = horario[0] 
     fecha_actual_str = fecha_hoy.strftime('%Y-%m-%d')
 
-    # Consulta para obtener la cantidad de reservas para el día actual y el horario actual
+  
     query_reservas_hoy = text("""
         SELECT COUNT(*) FROM reservacion
         WHERE fecha = :fecha_actual
         AND idhorario = :id_horario
     """)
 
-    # Ejecutar la consulta con los parámetros necesarios
+   
     cupos_hoy = db_session.execute(query_reservas_hoy, {"fecha_actual": fecha_actual_str, "id_horario": id_horario}).scalar()
 
     return cupos_hoy
 def mostrar_fechas_y_horas_reservas():
-    # Obtener la fecha de hoy
+   
     fecha_hoy = datetime.now().date()
 
-    # Calcular la fecha hasta la cual deseas mostrar las reservas (7 días en el futuro)
+    
     fecha_fin = fecha_hoy + timedelta(days=7)
 
-    # Consultar las reservas dentro del rango de fechas
+    
     query_reservas = text("""
         SELECT fecha, hora
         FROM reservacion
         WHERE fecha BETWEEN :fecha_hoy AND :fecha_fin
     """)
 
-    # Ejecutar la consulta con los parámetros necesarios
+    
     result = db_session.execute(query_reservas, {"fecha_hoy": fecha_hoy, "fecha_fin": fecha_fin}).fetchall()
 
     # Mostrar las fechas y horas de las reservas
@@ -869,7 +972,7 @@ def obtener_info_lotes_valor():
         FROM producto p
         JOIN lote_producto lp ON p.id = lp.id_producto
         JOIN precio pr ON p.id = pr.id_producto 
-                 WHERE pr.estado = 1
+                 WHERE pr.estado = 1 
     """)
 
     results = db_session.execute(query).fetchall()
@@ -910,7 +1013,7 @@ def api_InsertarCliente():
             id_persona = insertar_persona(db_session, nombre, correo,"En direccion", celular)
             insertar_persona_natural(db_session, id_persona, apellidos,null,null,null, tipo)
             codigo = generar_codigo_cliente(nombre,id_persona,celular)
-            codigo_cliente=insertar_cliente(db_session, id_persona,codigo, tipo)
+            codigo_cliente=insertar_cliente(db_session, id_persona,codigo,"Normal","No hay")
 
             db_session.commit()
             return jsonify({"codigo_cliente": codigo_cliente}), 200
@@ -938,7 +1041,7 @@ def insertar_usuarios():
         celular = request_data['celular']
         id_persona = insertar_persona(db_session, nombre,"No hay","En direccion", celular)
         codigo = generar_codigo_cliente(nombre,id_persona,celular)
-        codigo_cliente=insertar_cliente(db_session, id_persona,codigo,"Cliente no registrado")
+        codigo_cliente=insertar_cliente(db_session, id_persona,codigo,"Cliente no registrado","No hay")
 
         db_session.commit()
 
@@ -949,6 +1052,7 @@ def insertar_usuarios():
 
 
 @app.route('/')
+@login_required
 def index():
     cupos_disponibles = obtener_cupos_disponibles()
 
@@ -1209,14 +1313,7 @@ def cambiaprecioproducto(id):
     idproducto=request.form.get('idproducto')
     precio=request.form.get('precio')
     estado=request.form.get('estado')
-    print("Id producto",idproducto)
-    print("Precio nuevo",precio)
-    print("estado:",estado)
-
-    print("Precio que pasa hacer inactivo:",id)
-
     insertar_precio(db_session,idproducto,precio,estado)
-
     cambiar_estado_precio(db_session,id,2)
     flash("Se ha registrado correctamente el precio","success")
     return redirect('/precioproducto')
@@ -1430,8 +1527,9 @@ def eliminar_usuarios():
 
 @app.route("/login",methods=['GET','POST'])
 def login():
-   
-   
+    contraseña="12345678"
+    hashed_password = generate_password_hash(contraseña)
+    print(hashed_password)
     return render_template("login.html") 
 
 @app.route("/validar",methods=['GET','POST'])
@@ -1541,8 +1639,8 @@ def insertar_lote():
 
      
         query = text("""
-    INSERT INTO lote_producto (id_producto, numero_lote, fecha_vencimiento, cantidad, estado)
-    VALUES (:id_producto, :numero_lote, :fecha_vencimiento, :cantidad, :estado)
+    INSERT INTO lote_producto (id_producto, numero_lote, fecha_vencimiento,fecha_registro, cantidad, estado)
+    VALUES (:id_producto, :numero_lote, :fecha_vencimiento,:fecha_registro, :cantidad, :estado)
     RETURNING id
 """)
 
@@ -1550,6 +1648,7 @@ def insertar_lote():
             'id_producto': id_producto,
             'numero_lote': numero_lote,
             'fecha_vencimiento': fecha_vencimiento,
+            'fecha_registro' : datetime.now(),
             'cantidad': cantidad,
             'estado': estado
         }).scalar()
@@ -1565,13 +1664,11 @@ def editar_lote(lote_id):
     if request.method == 'POST':
         fecha_vencimiento = request.form['fecha_vencimiento']
         nueva_cantidad = int(request.form['cantidad'])  # Convertir a entero
-        print("--------------------------------")
-        print(fecha_vencimiento)
-        # Obtener la cantidad actual del lote
+      
+      
         query_cantidad_actual = text("SELECT cantidad FROM lote_producto WHERE id = :lote_id")
         cantidad_actual = db_session.execute(query_cantidad_actual, {'lote_id': lote_id}).scalar()
-        print(lote_id)
-        # Verificar si la cantidad ha cambiado
+       
         if nueva_cantidad != cantidad_actual:
             # Realiza la actualización en la base de datos
             query_actualizacion = text("""
@@ -1623,13 +1720,142 @@ def movimientos():
     movimientos=obtener_movimientos_por_lote(db_session)
     return render_template("movimientos.html",movimientos=movimientos)
 
-@app.route("/ventas",methods=['GET','POST'])
-def venta():
-    return "ventas"
+
 
 @app.route("/clientes",methods=['GET','POST'])
 def clientes():
-    return "clientes"
+    clientes=mostra_clientes(db_session)
+    return render_template("clientes.html",clientes=clientes)
+
+@app.route('/crear_cliente', methods=['POST'])
+def procesar_formulario():
+    # Obtener datos del formulario
+    nombre = request.form['nombre']
+    apellido = request.form['apellido']
+    cedula = request.form['cedula']
+    fecha_nacimiento = request.form['fecha_nacimiento']
+    correo = request.form['email']
+    celular = request.form['celular']
+    direccion = request.form['direccion']
+    genero = request.form['genero']
+    tipo_cliente = request.form['tipo']
+    archivo = request.files['foto']
+    carpeta_destino = 'static/img/trabajadores'
+    logo = guardar_imagen(archivo, carpeta_destino)
+    idpersona=insertar_persona(db_session,nombre,correo,direccion,celular)
+    insertar_persona_natural(db_session,idpersona,apellido,cedula,fecha_nacimiento,genero,"Persona natural")
+    codigo=generar_codigo_cliente(nombre,idpersona,celular)
+    insertar_cliente(db_session,idpersona,codigo,tipo_cliente,logo)
+    return redirect('/clientes')
+
+@app.route('/actualizar_cliente/<int:cliente_id>', methods=['POST'])
+def procesar_formulario_actualizacion(cliente_id):
+    persona = request.form['id_persona']
+    nombre = request.form['nombre']
+    apellido = request.form['apellido']
+    correo = request.form['correo']
+    celular = request.form['celular']
+    direccion = request.form['direccion']
+    tipo_cliente = request.form['tipo']
+    estado = request.form['estado']
+    archivo = request.files['foto']
+    logos = request.form.get('logos')
+    if archivo:
+        carpeta_destino = 'static/img/clientes/'
+        logo = guardar_imagen(archivo, carpeta_destino)
+
+        update_persona(db_session, persona, nombre, correo, celular, direccion)
+        update_persona_natural(db_session, persona, apellido, "Persona natural")
+        update_cliente(db_session, cliente_id, tipo_cliente, logo, estado)
+        print(logo)
+        print("Estoy antes del try")
+        try:
+            os.remove(logos)  # Elimina la imagen anterior
+        except Exception as e:
+            print(f"No se pudo eliminar la imagen anterior: {e}")
+
+        flash("Se ha actualizado el cliente con una nueva imagen.", "success")
+
+    else:
+        # En caso de que no se haya proporcionado un nuevo archivo, simplemente actualiza la información sin cambiar la imagen
+        update_persona(db_session, persona, nombre, correo, celular, direccion)
+        update_persona_natural(db_session, persona, apellido, "Persona natural")
+        update_cliente(db_session, cliente_id, tipo_cliente, logos, estado)
+
+        flash("Se ha actualizado el cliente sin cambiar la imagen.", "success")
+
+   
+
+    return redirect(url_for('clientes'))
+
+@app.route('/eliminar_cliente/<int:cliente_id>', methods=['POST'])
+def cambiarestadocliente(cliente_id):
+    cambiar_estado_cliente(db_session,cliente_id,2)   
+
+    return redirect(url_for('clientes'))
+
+@app.route("/ventas",methods=['GET','POST'])
+def venta():
+    productos= obtener_productos_ventas(db_session)
+    clientes=mostra_clientes(db_session)
+    tipos=obtener_tipo_venta(db_session)
+    servicios=obtener_precios_servicios(db_session)
+   
+    return render_template("venta.html",productos=productos,clientes=clientes,tipos=tipos,servicios=servicios)
+
+@app.route("/venta_productos", methods=['POST'])
+def procesar_venta():
+    data = request.json
+    productos = data.get('productos', [])
+    persona_id = data.get('cliente')
+    tipo_venta = data.get('tipo_venta')
+    total = data.get('total')
+    codigo = generar_codigo_venta(db_session)
+
+    id_venta = insertar_venta(db_session, tipo_venta, persona_id, codigo, 0, total, 1)
+
+    for producto_info in productos:
+        producto_id = producto_info.get('id')
+        precio = producto_info.get('precio', Decimal('0.00'))
+        cantidad_venta = producto_info.get('cantidad', 0)
+        subtotal = cantidad_venta * precio
+        result = obtener_info_lote_mas_antiguo(db_session, producto_id)
+
+        if result and result["cantidad"] > 0:
+            id_lote = int(result["id_lote"])
+            cantidad_lote = int(result["cantidad"])
+
+            while cantidad_venta > 0:
+                # Determinar la cantidad a restar en este lote
+                cantidad_a_restar_lote = min(cantidad_venta, cantidad_lote)
+
+                # Restar la cantidad del lote
+                restar_cantidad_lote(db_session, id_lote, cantidad_a_restar_lote)
+
+                # Restar la cantidad vendida del inventario
+                insertar_movimiento_inventario(db_session, id_lote, "Por venta", cantidad_a_restar_lote)
+
+                # Restar la cantidad restante
+                cantidad_venta -= cantidad_a_restar_lote
+
+                # Insertar detalles de venta
+                insertar_venta_producto(db_session, id_venta, producto_id, cantidad_a_restar_lote, subtotal)
+
+                # Obtener la información del lote más antiguo para la siguiente iteración
+                result = obtener_info_lote_mas_antiguo(db_session, producto_id)
+
+                if result and result["cantidad"] > 0:
+                    id_lote = int(result["id_lote"])
+                    cantidad_lote = int(result["cantidad"])
+                else:
+                    print("No hay más lotes disponibles para restar la cantidad vendida.")
+                    break
+
+    db_session.commit()
+
+    return jsonify({'mensaje': 'Venta procesada exitosamente'}), 200
+
+
 
 if __name__ == '__main__':
    

@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+{% block title %} || Ventas{% endblock %}
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='plugins/select2/css/select2.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
+{% endblock %}
+{% block main %}
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Ventas</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="#">Gestion de Ventas</a></li>
+                    <li class="breadcrumb-item active">Ventas</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card card-tabs">
+                    <div class="card-header p-0 pt-1">
+                        <h4>Registro de ventas</h4>
+                    </div>
+                    <div class="row">
+
+                        <div class="col-md-4 col-sm-3">
+                            <div class="nav flex-column nav-tabs h-100" id="vert-tabs-tab" role="tablist"
+                                aria-orientation="vertical">
+                                <a class="nav-link active" id="vert-tabs-home-tab" data-toggle="pill"
+                                    href="#vert-tabs-home" role="tab" aria-controls="vert-tabs-home"
+                                    aria-selected="true">Ventas generales</a>
+                                <a class="nav-link" id="vert-tabs-profile-tab" data-toggle="pill"
+                                    href="#vert-tabs-profile" role="tab" aria-controls="vert-tabs-profile"
+                                    aria-selected="false">Generar venta por producto</a>
+                                <a class="nav-link" id="vert-tabs-messages-tab" data-toggle="pill"
+                                    href="#vert-tabs-messages" role="tab" aria-controls="vert-tabs-messages"
+                                    aria-selected="false">Ventas por citas</a>
+                                <a class="nav-link" id="vert-tabs-settings-tab" data-toggle="pill"
+                                    href="#vert-tabs-settings" role="tab" aria-controls="vert-tabs-settings"
+                                    aria-selected="false">Generar venta por servicios</a>
+                            </div>
+                        </div>
+                        <div class="col-md-8 col-sm-9">
+                            <div class="tab-content" id="vert-tabs-tabContent">
+                                <div class="tab-pane text-left fade show active" id="vert-tabs-home" role="tabpanel"
+                                    aria-labelledby="vert-tabs-home-tab">
+                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin malesuada lacus
+                                    ullamcorper dui molestie, sit amet congue quam finibus. Etiam ultricies nunc non
+                                    magna feugiat commodo. Etiam odio magna, mollis auctor felis vitae, ullamcorper
+                                    ornare ligula. Proin pellentesque tincidunt nisi, vitae ullamcorper felis aliquam
+                                    id. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac
+                                    turpis egestas. Proin id orci eu lectus blandit suscipit. Phasellus porta, ante et
+                                    varius ornare, sem enim sollicitudin eros, at commodo leo est vitae lacus. Etiam ut
+                                    porta sem. Proin porttitor porta nisl, id tempor risus rhoncus quis. In in quam a
+                                    nibh cursus pulvinar non consequat neque. Mauris lacus elit, condimentum ac
+                                    condimentum at, semper vitae lectus. Cras lacinia erat eget sapien porta
+                                    consectetur.
+                                </div>
+                                <div class="tab-pane fade" id="vert-tabs-profile" role="tabpanel"
+                                    aria-labelledby="vert-tabs-profile-tab">
+
+                                    <div class="container">
+                                        <form>
+                                            <div class="form-group">
+                                                <label for="cliente">Cliente:</label>
+                                                <select class="form-control select2bs4" id="cliente" name="cliente"
+                                                    required>
+                                                    {% for cliente in clientes %}
+                                                    <option value="{{ cliente.id }}">{{ cliente.nombre }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="producto">Producto:</label>
+                                                <select class="form-control select2bs4" id="producto">
+                                                    {% for producto_id, producto_info in productos %}
+                                                    {% for info in producto_info %}
+                                                        <option value="{{ producto_id }}" data-cantidad-maxima="{{ info.cantidad_total }}">{{ info.nombre }} - C$ {{ info.precio }}</option>
+                                                    {% endfor %}
+                                                {% endfor %}
+                                                
+                                                </select>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="cantidad">Cantidad:</label>
+                                                <input type="number" class="form-control" id="cantidad" name="cantidad">
+                                            </div>
+
+                                            <div class="form-group">
+                                                <button type="button" class="btn btn-success btn-block"
+                                                    id="agregarProducto">Agregar Producto</button>
+                                            </div>
+
+                                            <div class="table-responsive">
+                                                <table class="table" id="productosTable">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Producto</th>
+                                                            <th>Cantidad</th>
+                                                            <th>Precio Unitario</th>
+                                                            <th>Subtotal</th>
+                                                            <th>Acciones</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <!-- Contenido de la tabla -->
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="tipo_venta">Tipo de Venta:</label>
+                                                <select class="form-control select2bs4" id="tipo_venta"
+                                                    name="tipo_venta" required>
+                                                    {% for tipo in tipos %}
+                                                    <option value="{{ tipo.id }}">{{ tipo.nombre }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="total">Total:</label>
+                                                <input type="text" class="form-control" id="total" name="total"
+                                                    readonly>
+                                            </div>
+
+                                            <button type="submit" class="btn btn-primary btn-block"
+                                                id="generarVenta">Generar Venta</button>
+                                        </form>
+                                    </div>
+
+
+
+
+                                </div>
+                                <div class="tab-pane fade" id="vert-tabs-messages" role="tabpanel"
+                                    aria-labelledby="vert-tabs-messages-tab">
+                                    Morbi turpis dolor, vulputate vitae felis non, tincidunt congue mauris. Phasellus
+                                    volutpat augue id mi placerat mollis. Vivamus faucibus eu massa eget condimentum.
+                                    Fusce nec hendrerit sem, ac tristique nulla. Integer vestibulum orci odio. Cras nec
+                                    augue ipsum. Suspendisse ut velit condimentum, mattis urna a, malesuada nunc.
+                                    Curabitur eleifend facilisis velit finibus tristique. Nam vulputate, eros non luctus
+                                    efficitur, ipsum odio volutpat massa, sit amet sollicitudin est libero sed ipsum.
+                                    Nulla lacinia, ex vitae gravida fermentum, lectus ipsum gravida arcu, id fermentum
+                                    metus arcu vel metus. Curabitur eget sem eu risus tincidunt eleifend ac ornare
+                                    magna.
+                                </div>
+                                <div class="tab-pane fade" id="vert-tabs-settings" role="tabpanel"
+                                    aria-labelledby="vert-tabs-settings-tab">
+                                    <div class="container">
+                                        <form>
+                                            <div class="form-group">
+                                                <label for="cliente">Cliente:</label>
+                                                <select class="form-control select2bs4" id="clientes" name="clientes"
+                                                    required>
+                                                    {% for cliente in clientes %}
+                                                    <option value="{{ cliente.id }}">{{ cliente.nombre }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="producto">Servicios:</label>
+                                                <select class="form-control select2bs4" id="producto">
+                                                  
+                                                    {% for info in servicios %}
+                                                        <option value="{{info.producto}}">{{ info.nombre }} - C$ {{ info.precio }}</option>
+                                                    {% endfor %}
+                                                
+                                                
+                                                </select>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="cantidad">Cantidad:</label>
+                                                <input type="number" class="form-control" id="cantidades" name="cantidad">
+                                            </div>
+
+                                            <div class="form-group">
+                                                <button type="button" class="btn btn-success btn-block" id="agregarServicios">Agregar Servicios</button>
+
+                                            </div>
+
+                                            <div class="table-responsive">
+                                                <table class="table" id="serviciosTable">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Servicios</th>
+                                                            <th>Cantidad</th>
+                                                            <th>Precio Unitario</th>
+                                                            <th>Subtotal</th>
+                                                            <th>Acciones</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <!-- Contenido de la tabla -->
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="tipo_venta">Tipo de Venta:</label>
+                                                <select class="form-control select2bs4" id="tipo_ventad"
+                                                    name="tipo_ventad" required>
+                                                    {% for tipo in tipos %}
+                                                    <option value="{{ tipo.id }}">{{ tipo.nombre }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="total">Total:</label>
+                                                <input type="text" class="form-control" id="totales" name="totales"
+                                                    readonly>
+                                            </div>
+
+                                            <button type="submit" class="btn btn-primary btn-block"
+                                                id="generarVenta">Generar Venta</button>
+                                        </form>
+                                    </div>
+
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<script>
+    var productos = [];
+
+    function actualizarTabla() {
+        var tableBody = document.getElementById('productosTable').getElementsByTagName('tbody')[0];
+        tableBody.innerHTML = '';
+
+        var total = 0;
+
+        productos.forEach(function (producto) {
+            var row = tableBody.insertRow();
+            var cellProducto = row.insertCell(0);
+            var cellCantidad = row.insertCell(1);
+            var cellPrecio = row.insertCell(2);
+            var cellSubtotal = row.insertCell(3);
+            var cellAcciones = row.insertCell(4);
+
+            cellProducto.innerHTML = producto.nombre;
+            cellCantidad.innerHTML = '<input type="number" class="form-control" value="' + producto.cantidad + '" onchange="actualizarSubtotal(' + producto.id + ', this, ' + producto.precio + ')">';
+            cellPrecio.innerHTML = producto.precio.toFixed(2);
+            var subtotal = producto.cantidad * producto.precio;
+            cellSubtotal.innerHTML = subtotal.toFixed(2);
+            total += subtotal;
+
+            cellAcciones.innerHTML = '<div class="btn-group">' +
+                '<button type="button" class="btn btn-danger btn-sm" onclick="eliminarProducto(' + producto.id + ')">Eliminar</button>' +
+                '<button type="button" class="btn btn-primary btn-sm" onclick="editarCantidad(' + producto.id + ')">Editar Cantidad</button>' +
+                '</div>';
+
+        });
+
+        document.getElementById('total').value = total.toFixed(2);
+    }
+
+    function agregarProducto() {
+    var productoSelect = document.getElementById('producto');
+    var cantidadInput = document.getElementById('cantidad');
+
+    // Validar que la cantidad sea mayor que cero
+    var cantidad = parseInt(cantidadInput.value);
+    if (cantidad > 0) {
+        // Obtener la opción seleccionada
+        var selectedOption = productoSelect.options[productoSelect.selectedIndex];
+
+        // Obtener el atributo de cantidad máxima permitida
+        var cantidadMaxima = parseInt(selectedOption.getAttribute('data-cantidad-maxima'));
+
+        // Verificar si la cantidad es menor o igual a la cantidad máxima
+        if (cantidad <= cantidadMaxima) {
+            var producto = {
+                id: parseInt(selectedOption.value),
+                nombre: selectedOption.text.split(' - C$ ')[0],
+                precio: parseFloat(selectedOption.text.split(' - C$ ')[1]),
+                cantidad: cantidad
+            };
+
+            productos.push(producto);
+            actualizarTabla();
+
+            // Limpiar campos
+            productoSelect.value = '';
+            cantidadInput.value = '';
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'La cantidad debe ser menor o igual a ' + cantidadMaxima + '.',
+            });
+        }
+    } else {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'La cantidad debe ser mayor que cero.',
+        });
+    }
+}
+
+function eliminarProducto(id) {
+    productos = productos.filter(function (producto) {
+        return producto.id !== id;
+    });
+
+    actualizarTabla();
+}
+
+function editarCantidad(id) {
+    Swal.fire({
+        title: 'Editar Cantidad',
+        input: 'number',
+        inputValue: productos.find(p => p.id === id).cantidad,
+        showCancelButton: true,
+        confirmButtonText: 'Guardar',
+        cancelButtonText: 'Cancelar',
+        inputValidator: (value) => {
+            if (!value || value <= 0) {
+                return 'Por favor, ingresa una cantidad válida';
+            }
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            var nuevaCantidad = parseInt(result.value);
+            productos.forEach(function (producto) {
+                if (producto.id === id) {
+                    producto.cantidad = nuevaCantidad;
+                }
+            });
+            actualizarTabla();
+        }
+    });
+}
+
+
+    function actualizarSubtotal(id, input, precio) {
+        var nuevaCantidad = parseInt(input.value);
+        productos.forEach(function (producto) {
+            if (producto.id === id) {
+                producto.cantidad = nuevaCantidad;
+                producto.subtotal = nuevaCantidad * precio;
+                input.parentElement.nextElementSibling.innerHTML = producto.subtotal.toFixed(2);
+            }
+        });
+        actualizarTabla();
+    }
+
+    document.getElementById('agregarProducto').addEventListener('click', agregarProducto);
+</script>
+<script>
+  function agregarServicios() {
+    var servicioSelect = document.getElementById('producto');
+    var cantidadInput = document.getElementById('cantidades');
+
+    // Validar que la cantidad sea mayor que cero
+    var cantidad = parseInt(cantidadInput.value);
+    if (cantidad > 0) {
+        // Obtener la opción seleccionada
+        var selectedOption = servicioSelect.options[servicioSelect.selectedIndex];
+
+        var servicio = {
+            id: parseInt(selectedOption.value),
+            nombre: selectedOption.text.split(' - C$ ')[0],
+            precio: parseFloat(selectedOption.text.split(' - C$ ')[1]),
+            cantidad: cantidad
+        };
+
+        productos.push(servicio);
+        actualizarTabla();
+
+        // Limpiar campos
+        servicioSelect.value = '';
+        cantidadInput.value = '';
+    } else {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'La cantidad debe ser mayor que cero.',
+        });
+    }
+}
+
+
+   
+    document.getElementById('agregarServicios').addEventListener('click', agregarServicios);
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+<script>
+    function enviarVenta() {
+        var tipoVenta = document.getElementById('tipo_venta').value;
+        var total = document.getElementById('total').value;
+        var cliente = document.getElementById('cliente').value;
+
+        // Objeto con los datos a enviar al servidor
+        var data = {
+            cliente: cliente,
+            tipo_venta: tipoVenta,
+            total: total,
+            productos: productos
+        };
+
+        // Realizar la solicitud POST al servidor Flask
+        axios.post('/venta_productos', data)
+            .then(function (response) {
+                // Aquí puedes manejar la respuesta del servidor si es necesario
+                console.log(response.data);
+                // Por ejemplo, puedes redirigir o mostrar un mensaje de éxito
+                Swal.fire('Venta Generada', 'La venta se ha generado exitosamente.', 'success');
+            })
+            .catch(function (error) {
+                // Aquí puedes manejar errores, por ejemplo, mostrar un mensaje de error
+                Swal.fire('Error', 'Ha ocurrido un error al procesar la venta.', 'error');
+            });
+    }
+
+    // Asignar la función enviarVenta al evento click del botón Generar Venta
+    document.getElementById('generarVenta').addEventListener('click', enviarVenta);
+</script>
+
+{% endblock %}

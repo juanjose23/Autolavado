@@ -49,7 +49,7 @@
                                 <tr>
                                     <th>Servicios</th>
                                     <th>Precio </th>
-                                  
+                                    <th>Fecha de registro</th>
                                     <th>Estado</th>
                                     <th>Action</th>
                                 </tr>
@@ -59,7 +59,7 @@
                                 <tr>
                                     <td>{{ productos.nombre }}</td>
                                     <td>{{ productos.precio }}</td>
-                                
+                                    <td>{{ productos.fecha_registro }}</td>
                                     <td>
                                         {% if productos.estado == 1 %}
                                         <span class="badge bg-success">Activo</span>
@@ -72,9 +72,7 @@
                                             <i class="fas fa-pencil-alt"></i>
                                         </a>
 
-                                        <a data-toggle="modal" href="#modal-danger{{productos.id}}"
-                                            class="fas fa-trash-alt">
-                                        </a>
+                                        
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -101,7 +99,7 @@
                         <div class="form-group">
                             <label>Producto: </label>
                             <select name="idproducto" id="producto" class="form-control select2bs4">
-                                {% for productos in servicios  %}
+                                {% for productos in servicios %}
                                 <option value="{{productos.id}}"> {{productos.nombre}}</option>
                                 {% endfor %}
                             </select>
@@ -148,7 +146,7 @@
                         <div class="form-group">
                             <label>Nuevo precio</label>
                             <input type="number" name="precio" class="form-control">
-                         
+
                         </div>
 
                         <div class="form-group">
@@ -175,7 +173,7 @@
             <div class="modal-content bg-danger">
                 <form action="/CambiarServiciosestado/{{productos.id}}" method="post">
                     <div class="modal-header">
-                        <h4 class="modal-title">Eliminar  precio producto</h4>
+                        <h4 class="modal-title">Eliminar precio producto</h4>
 
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                     </div>

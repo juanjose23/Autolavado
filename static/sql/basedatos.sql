@@ -44,6 +44,14 @@ CREATE TABLE producto
     logo VARCHAR(250),
     estado INTEGER
 );
+CREATE TABLE precio(
+    id SERIAL PRIMARY KEY,
+    id_producto INTEGER REFERENCES producto(id),
+    precio NUMERIC(10,2) NOT NULL,
+    fecha_registro DATE NOT NUll,
+    estado INTEGER
+);
+
 
 CREATE TABLE lote_producto
 (
@@ -51,6 +59,7 @@ CREATE TABLE lote_producto
     id_producto INTEGER REFERENCES producto(id),
     numero_lote VARCHAR(50) NOT NULL,
     fecha_vencimiento DATE,
+    fecha_registro DATE NOT NUll,
     cantidad INTEGER NOT NULL,
     estado INTEGER
 );
@@ -64,12 +73,6 @@ CREATE TABLE movimiento_inventario
     fecha_movimiento TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE precio(
-    id SERIAL PRIMARY KEY,
-    id_producto INTEGER REFERENCES producto(id),
-    precio NUMERIC(10,2) NOT NULL,
-    estado INTEGER
-);
 
 CREATE TABLE horarios(
     id SERIAL PRIMARY KEY,
@@ -94,6 +97,7 @@ CREATE TABLE precio_servicios(
     id SERIAL PRIMARY KEY,
     id_servicios INTEGER REFERENCES servicios(id),
     precio NUMERIC(10,2) NOT NULL,
+    fecha_registro DATE NOT NUll,
     estado INTEGER
 );
 
@@ -122,7 +126,6 @@ CREATE TABLE venta(
     id_tipo INTEGER REFERENCES tipo_venta(id),
     id_cliente INTEGER REFERENCES clientes(id),
     codigo VARCHAR(255),
-    tipo_pago VARCHAR(5000),
     fecha DATE,
     descuento NUMERIC NOT NULL,
     total NUMERIC NOT NULL,
@@ -136,22 +139,17 @@ CREATE TABLE detalle_venta
     id_venta INTEGER REFERENCES venta(id),
     id_servicio INTEGER REFERENCES servicios(id),
     precio_unitario NUMERIC NOT NULL,
-    cantidad INTEGER NOT NULL,
     subtotal numeric NOT NULL
 );
 
 
-CREATE TABLE venta_servicios(
-    id SERIAL PRIMARY KEY,
-    id_venta INTEGER REFERENCES venta(id),
-    id_reservacion INTEGER REFERENCES reservacion(id),
-    subtotal numeric NOT NUll 
-);
+
 
 CREATE TABLE venta_productos(
     id SERIAL PRIMARY KEY,
     id_venta INTEGER REFERENCES venta(id),
     id_producto INTEGER REFERENCES producto(id),
+    cantidad INTEGER,
     subtotal numeric NOT NUll 
 );
 

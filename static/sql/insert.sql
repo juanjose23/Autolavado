@@ -25,3 +25,28 @@ VALUES
   (1, 20.00, 1), -- Precio del Lavado Básico: $20.00
   (2, 40.00, 1), -- Precio del Lavado Premium: $40.00
   (3, 30.00, 1); -- Precio del Lavado de Motor: $30.00
+
+NSERT INTO tipo_venta (nombre, descripcion, estado) VALUES
+    ('sinpe', 'Pago mediante SINPE', 1),
+    ('planilla', 'Pago mediante planilla', 1),
+    ('efectivo', 'Pago en efectivo', 1),
+    ('tarjeta', 'Pago con tarjeta', 1);
+
+
+-- Insertar datos en la tabla persona
+INSERT INTO persona (nombre, correo, direccion, celular) 
+VALUES ('Juan Perez', 'juan@admin.com', 'Calle 123, Ciudad', 123456789);
+
+-- Insertar datos en la tabla persona_natural
+INSERT INTO persona_natural (id_persona, apellido, cedula, fecha_nacimiento, genero, tipo_persona) 
+VALUES (1, 'Perez', '123456789', '1990-01-01', 'M', 'Natural');
+
+-- Insertar datos en la tabla trabajador
+INSERT INTO trabajador (id_persona, codigo, foto, estado) 
+VALUES (1, 'T123', 'url_foto.jpg', 1);
+
+
+-- Insertar datos en la tabla usuario
+INSERT INTO usuario (id_persona, usuario, contraseña, estado) 
+VALUES (1, 'juanperez', 'scrypt:32768:8:1$CmhEfUqnWfYuB28Q$c0a8a7840b1d97d63c380647f27d8963be262ed25e080edc1343403488cea251cbce57aebbe7591da559616f4ad41f7b5b0ea14db61c377e3f6a5fc974126d9b', 1);
+-----Contraseña: 12345678
