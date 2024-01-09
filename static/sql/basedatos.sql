@@ -1,3 +1,12 @@
+CREATE TABLE sucursal(
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR (250) NOT NULL,
+    razon_social VARCHAR(250),
+    ubicacion VARCHAR(250),
+    telfono INTEGER,
+    logo VARCHAR(250)
+    
+);
 CREATE TABLE persona (
  id SERIAL PRIMARY KEY,
  nombre VARCHAR(150) NOT NULL,

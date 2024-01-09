@@ -1225,7 +1225,6 @@ def generar_bloques_disponibles_para_semana():
 def inicio():
    
     bloques_disponibles = generar_bloques_disponibles_para_semana()
-    print(bloques_disponibles)
 # Imprimir los bloques disponibles generados
     if bloques_disponibles:
         for bloque in bloques_disponibles:
@@ -1397,7 +1396,7 @@ def cambiaprecioservicios(id):
     idproducto=request.form.get('idproducto')
     precio=request.form.get('precio')
     estado=request.form.get('estado')
-    print("Precio que pasa hacer inactivo:",id)
+
 
     insertar_precio_servicio(db_session,idproducto,precio,estado)
 
@@ -1460,7 +1459,7 @@ def actualizar_trabajadors(id):
 
         update_persona(db_session,persona,nombre,correo,celular,direccion)
         update_persona_natural(db_session,persona,apellido,"Persona Natural")
-        print(id)
+ 
         actualizar_trabajador(db_session,id,logo,estado)
         flash("Se ha actualizado con exito ","success")
         return redirect('/trabajador')
@@ -1527,9 +1526,6 @@ def eliminar_usuarios():
 
 @app.route("/login",methods=['GET','POST'])
 def login():
-    contraseña="12345678"
-    hashed_password = generate_password_hash(contraseña)
-    print(hashed_password)
     return render_template("login.html") 
 
 @app.route("/validar",methods=['GET','POST'])
@@ -1767,8 +1763,7 @@ def procesar_formulario_actualizacion(cliente_id):
         update_persona(db_session, persona, nombre, correo, celular, direccion)
         update_persona_natural(db_session, persona, apellido, "Persona natural")
         update_cliente(db_session, cliente_id, tipo_cliente, logo, estado)
-        print(logo)
-        print("Estoy antes del try")
+       
         try:
             os.remove(logos)  # Elimina la imagen anterior
         except Exception as e:
