@@ -1,16 +1,40 @@
-INSERT INTO horarios (dia, hora_apertura, hora_cierre, estado)
+-- Insertar datos en la tabla sucursal
+INSERT INTO sucursal (nombre, razon_social, ubicacion_escrita, ubicacion_googleMaps,telefono, estado,  logo) 
+VALUES ('AUTOCAR ASOCATIE', ' S.A.', 'Del chilamate 3 cuadras al este', 'https://maps.app.goo.gl/rWHyYHcpwVUeAdbQ7', '123456789', '1', 'logo.jpg');
+
+-- Insertar datos en la tabla sucursal
+INSERT INTO sucursal (nombre, razon_social, ubicacion_escrita, ubicacion_googleMaps,telefono, estado,  logo) 
+VALUES ('AUTOCAR ASOCATIE RIVAS', ' S.A.', 'Del chilamate 3 cuadras al oeste', 'https://maps.app.goo.gl/rWHyYHcpwVUeAdbQ7', '78964587', '1', 'logo.jpg');
+
+
+INSERT INTO horarios (id_sucursal, dia, hora_apertura, hora_cierre, estado)
 VALUES
-    ('Lunes', '09:00', '18:00', 1),
-    ('Martes', '09:00', '18:00', 1),
-    ('Miércoles', '09:00', '18:00', 1),
-    ('Jueves', '09:00', '18:00', 1),
-    ('Viernes', '09:00', '18:00', 1);
+    ('1','Lunes', '09:00', '18:00', 1),
+    ('1','Martes', '09:00', '18:00', 1),
+    ('1','Miércoles', '09:00', '18:00', 1),
+    ('1','Jueves', '09:00', '18:00', 1),
+    ('1','Viernes', '09:00', '18:00', 1);
 
 -- Insertar horarios para el fin de semana (sábado y domingo)
-INSERT INTO horarios (dia, hora_apertura, hora_cierre, estado)
+INSERT INTO horarios (id_sucursal, dia, hora_apertura, hora_cierre, estado)
 VALUES
-    ('Sábado', '10:00', '16:00', 1),
-    ('Domingo', '10:00', '16:00', 2);
+    ('1','Sábado', '10:00', '16:00', 1),
+    ('1','Domingo', '10:00', '16:00', 2);
+    
+INSERT INTO horarios (id_sucursal, dia, hora_apertura, hora_cierre, estado)
+VALUES
+    ('2','Lunes', '09:00', '18:00', 1),
+    ('2','Martes', '09:00', '18:00', 1),
+    ('2','Miércoles', '09:00', '18:00', 1),
+    ('2','Jueves', '09:00', '18:00', 1),
+    ('2','Viernes', '09:00', '18:00', 1);
+
+-- Insertar horarios para el fin de semana (sábado y domingo)
+INSERT INTO horarios (id_sucursal, dia, hora_apertura, hora_cierre, estado)
+VALUES
+    ('2','Sábado', '10:00', '16:00', 2),
+    ('2','Domingo', '10:00', '16:00', 2);
+
 
 ---Insert de servicios de pruebas	
 -- Suponiendo que la tabla servicios ya está creada
@@ -52,9 +76,5 @@ VALUES (1, 'T123', 'url_foto.jpg', 1);
 INSERT INTO usuario (id_persona, usuario, contraseña, estado) 
 VALUES (1, 'juanperez', 'scrypt:32768:8:1$CmhEfUqnWfYuB28Q$c0a8a7840b1d97d63c380647f27d8963be262ed25e080edc1343403488cea251cbce57aebbe7591da559616f4ad41f7b5b0ea14db61c377e3f6a5fc974126d9b', 1);
 -----Contraseña: 12345678
-
--- Insertar datos en la tabla sucursal
-INSERT INTO sucursal (nombre, razon_social, ubicacion_escrita, ubicacion_googleMaps,telefono, estado,  logo) 
-VALUES ('AUTOCAR ASOCATIE', ' S.A.', 'Del chilamate 3 cuadras al este', 'https://maps.app.goo.gl/rWHyYHcpwVUeAdbQ7', '123456789', '1', 'logo.jpg');
 
     

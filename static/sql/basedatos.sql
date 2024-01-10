@@ -87,12 +87,12 @@ CREATE TABLE movimiento_inventario
 
 CREATE TABLE horarios(
     id SERIAL PRIMARY KEY,
+  	id_sucursal INTEGER REFERENCES sucursal(id),
     dia VARCHAR(255) NOT NULL,
     hora_apertura TIME,
     hora_cierre TIME ,
     estado INTEGER NOT NULL
 );
-
 
 
 CREATE TABLE servicios(
