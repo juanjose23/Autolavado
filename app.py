@@ -1075,33 +1075,50 @@ def index():
     return render_template('index.html')
 
 
-    
-@cross_origin()
-@app.route('/api/gethorarios', methods=['GET'])
-def obtener_horarios():
+
+def obtener_horariosAtencion(db_session):
     try:
-        query = text('SELECT * FROM horarios')
-        result = db_session.execute(query).fetchall()
-        print(result)
+        query = text("SELECT dia, hora_apertura, hora_cierre, estado FROM horarios")
+        rows = db_session.execute(query).fetchall()
         # Devolver los resultados en formato JSON
-        result = db_session.execute(query).fetchall()
-        resenas = []
-        for resultado in result:
-            resena = {
-                "dia": resultado.dia,
-                "hora_apertura": resultado.hora_apertura.strftime('%H:%M:%S') if isinstance(resultado.hora_apertura, time) else resultado.hora_apertura,
-                "hora_cierre": resultado.hora_cierre.strftime('%H:%M:%S') if isinstance(resultado.hora_cierre, time) else resultado.hora_cierre,
-                "estado": resultado.estado
-            }
-            resenas.append(resena)
-        # Devolver los resultados en formato JSON
-        return jsonify(resenas)
+        # Ejecutar consulta SQL
+
+        # Procesar los resultados
+        for dia, hora_apertura, hora_cierre, estado in rows:
+            if estado == 1:
+                # Convertir las horas a formato de 12 horas y determinar AM o PM
+                apertura = datetime.strptime(hora_apertura.strftime('%H:%M:%S'), '%H:%M:%S').strftime('%I:%M %p')
+                cierre = datetime.strptime(hora_cierre.strftime('%H:%M:%S'), '%H:%M:%S').strftime('%I:%M %p')
+                print(f"{dia}: {apertura} a {cierre}")
+            elif estado == 2:
+                print(f"{dia}: *CERRADO*")
+
+        return jsonify(rows)
         
 
     except Exception as error:
         # Manejar errores y devolver una respuesta apropiada
         print('Error:', str(error))
         return jsonify({'error': 'Ocurrió un error al obtener los horarios'}), 500
+
+    
+@cross_origin()
+@app.route('/api/obtenerHorariosSucursalesUbicaciones', methods=['GET'])
+def obtenerHorariosSucursalesUbicaciones():
+
+
+    sucursales
+    horariosAtencion = obtener_horariosAtencion(db_session)
+
+
+
+
+
+    return true
+
+
+
+    
 
 @cross_origin()
 @app.route('/api/getservicios', methods=['GET'])
@@ -1748,6 +1765,75 @@ def eliminar_sucursal(id):
     db_session.commit()
 
     return true       
+
+@cross_origin()
+@app.route('/api/obtener_sucursales_horarios',methods=['GET'])
+def horarios():
+
+    sucursales_horarios = obtener_sucursales_horarios(db_session)
+
+    return jsonify(sucursales_horarios)
+
+def obtener_sucursales_horarios(db_session):
+    # Ejecuta la consulta SQL
+    query = text("""
+        
+SELECT 
+    s.id AS id_sucursal,
+    s.nombre AS nombre_sucursal,
+    s.razon_social,
+    s.ubicacion_escrita,
+    s.ubicacion_googleMaps,
+    s.telefono,
+    s.estado AS estado_sucursal,
+    s.logo,
+    h.id AS id_horario,
+    h.dia,
+    TO_CHAR(h.hora_apertura, 'HH:MI AM') AS hora_apertura_12h,
+    TO_CHAR(h.hora_cierre, 'HH:MI AM') AS hora_cierre_12h,
+    h.estado AS estado_horario
+FROM 
+    sucursal s
+JOIN 
+    horarios h ON s.id = h.id_sucursal
+WHERE
+    h.estado = '1'
+ORDER BY 
+    id_horario;
+
+    """)
+
+
+    # Obtiene los resultados
+    rows = db_session.execute(query).fetchall()
+
+    # Estructura de datos para almacenar las sucursales
+    sucursales = []
+    for row in rows:
+        sucursal = next((s for s in sucursales if s['id'] == row[0]), None)
+        if sucursal is None:
+            sucursal = {
+                'id': row[0],
+                'nombre': row[1],
+                'ubicacion_escrita': row[3],
+                'ubicacion_googlemaps': row[4],
+                'telefono': row[5],
+                'estado': row[6],
+                'horarios': []
+            }
+            sucursales.append(sucursal)
+
+        horario = {
+            'dia': row[9],
+            'hora_apertura': row[10],
+            'hora_cierre': row[11]
+        }
+        sucursal['horarios'].append(horario)
+
+    return sucursales
+
+
+
 
 @app.route('/insertar_lote', methods=['POST'])
 def insertar_lote():
