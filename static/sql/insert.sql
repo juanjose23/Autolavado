@@ -1,11 +1,8 @@
 -- Insertar datos en la tabla sucursal
 INSERT INTO sucursal (nombre, razon_social, ubicacion_escrita, ubicacion_googleMaps,telefono, estado,  logo) 
-VALUES ('AUTOCAR ASOCATIE', ' S.A.', 'Del chilamate 3 cuadras al este', 'https://maps.app.goo.gl/rWHyYHcpwVUeAdbQ7', '123456789', '1', 'logo.jpg');
+VALUES ('AUTOCAR ASOCATIE', ' S.A.', 'ACTUALIZAR INFORMACION DESDE EL SISTEMA', 'https://maps.app.goo.gl/rWHyYHcpwVUeAdbQ7', '123456789', '1', 'logo.jpg');
 
 -- Insertar datos en la tabla sucursal
-INSERT INTO sucursal (nombre, razon_social, ubicacion_escrita, ubicacion_googleMaps,telefono, estado,  logo) 
-VALUES ('AUTOCAR ASOCATIE RIVAS', ' S.A.', 'Del chilamate 3 cuadras al oeste', 'https://maps.app.goo.gl/rWHyYHcpwVUeAdbQ7', '78964587', '1', 'logo.jpg');
-
 
 INSERT INTO horarios (id_sucursal, dia, hora_apertura, hora_cierre, estado)
 VALUES
@@ -21,23 +18,8 @@ VALUES
     ('1','Sábado', '10:00', '16:00', 1),
     ('1','Domingo', '10:00', '16:00', 2);
     
-INSERT INTO horarios (id_sucursal, dia, hora_apertura, hora_cierre, estado)
-VALUES
-    ('2','Lunes', '09:00', '18:00', 1),
-    ('2','Martes', '09:00', '18:00', 1),
-    ('2','Miércoles', '09:00', '18:00', 1),
-    ('2','Jueves', '09:00', '18:00', 1),
-    ('2','Viernes', '09:00', '18:00', 1);
-
--- Insertar horarios para el fin de semana (sábado y domingo)
-INSERT INTO horarios (id_sucursal, dia, hora_apertura, hora_cierre, estado)
-VALUES
-    ('2','Sábado', '10:00', '16:00', 2),
-    ('2','Domingo', '10:00', '16:00', 2);
 
 
----Insert de servicios de pruebas	
--- Suponiendo que la tabla servicios ya está creada
 INSERT INTO servicios (nombre, descripcion, foto, realizacion, estado)
 VALUES
   ('Lavado Básico', 'Lavado exterior del automóvil', 'lavado_basico.jpg', '1:00:00', 1),
@@ -53,10 +35,10 @@ VALUES
   (3, 30.00,NOW(), 1); -- Precio del Lavado de Motor: $30.00
 
 INSERT INTO tipo_venta (nombre, descripcion, estado) VALUES
-    ('sinpe', 'Pago mediante SINPE', 1),
-    ('planilla', 'Pago mediante planilla', 1),
-    ('efectivo', 'Pago en efectivo', 1),
-    ('tarjeta', 'Pago con tarjeta', 1);
+    ('Sinpe', 'Pago mediante SINPE', 1),
+    ('Planilla', 'Pago mediante planilla', 1),
+    ('Efectivo', 'Pago en efectivo', 1),
+    ('Tarjeta', 'Pago con tarjeta', 1);
 
 
 -- Insertar datos en la tabla persona
