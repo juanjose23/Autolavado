@@ -509,7 +509,7 @@ def cambiar_estado_reservacion(db_session: Session, id_reservacion, nuevo_estado
     db_session.commit()
 
 def obtener_servicios_activos(db_session: Session):
-    query = text('SELECT s.id, s.descripcion, s.nombre, ps.precio FROM servicios s LEFT JOIN precio_servicios ps ON s.id = ps.id_servicios WHERE s.estado = 1 and ps.estado = 1')
+    query = text('SELECT s.id, s.descripcion, s.nombre, s.realizacion, ps.precio FROM servicios s LEFT JOIN precio_servicios ps ON s.id = ps.id_servicios WHERE s.estado = 1 and ps.estado = 1')
     result = db_session.execute(query).fetchall()
     return result
 
@@ -807,55 +807,7 @@ def obtener_cupos_disponibles():
     # Retorna la lista de horarios y cupos disponibles
     return horarios_resultado
 
-def obtener_cupos_disponibles():
-    dias_semana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
-    fecha_hoy = datetime.now().date()
 
-    # Obtiene todos los horarios disponibles para los próximos 7 días
-    query_horarios = text("""
-        SELECT * FROM horarios
-        WHERE estado = 1
-    """)
-    horarios_disponibles = db_session.execute(query_horarios).fetchall()
-
-    # Lista para almacenar la información de los horarios y cupos disponibles
-    horarios_resultado = []
-
-    for horario in horarios_disponibles:
-        dia_horario, hora_apertura, hora_cierre = horario[1], horario[2], horario[3]
-
-        # Si el estado es 2 (Domingo), omitir ese horario
-        if horario[4] == 2:
-            continue
-
-        # Calcula la fecha del horario sumando días
-        idx_dia_horario = dias_semana.index(dia_horario)
-        fecha_horario = fecha_hoy + timedelta(days=(idx_dia_horario - fecha_hoy.weekday() + 7) % 7)
-
-        # Calcula la cantidad de cupos disponibles
-        duracion_servicio = 1.40  # Duración del servicio en horas
-        total_minutos = (hora_cierre.hour - hora_apertura.hour) * 60 + (hora_cierre.minute - hora_apertura.minute)
-        cupos_disponibles = int(total_minutos / (duracion_servicio * 60))
-
-        # Almacena la información del horario y cupos disponibles en la lista
-        horario_info = {
-            "dia": dia_horario,
-            "fecha": fecha_horario,
-            "hora_apertura": hora_apertura,
-            "hora_cierre": hora_cierre,
-            "cupos_disponibles": cupos_disponibles
-        }
-
-        # Verifica si el horario es para el día actual
-        if fecha_horario == fecha_hoy:
-            # Añade información adicional para el día actual
-            horario_info["dia_actual"] = True
-            horario_info["cupos_hoy"] = obtener_cupos_hoy(horario, fecha_hoy)
-
-        horarios_resultado.append(horario_info)
-
-    # Retorna la lista de horarios y cupos disponibles
-    return horarios_resultado
 
 
 def obtener_cupos_hoy(horario, fecha_hoy):
@@ -1381,11 +1333,11 @@ def actualizar_servicio(servicio_id):
             print(f"No se pudo eliminar la imagen anterior: {e}")
 
         update_servicio(db_session, servicio_id, nombre, descripcion, logo,realizacion, estado)
-        flash("Se ha actualizado correctamente el servicio", "success")
+        flash("Se ha actualizado correctamente el servicio, recuerda de actualizar el PDF para los usuarios del BOT!", "success")
         return redirect(url_for('servicios'))
 
     update_servicio(db_session, servicio_id, nombre, descripcion, logos,realizacion, estado)
-    flash("Se ha actualizado correctamente el servicio", "success")
+    flash("Se ha actualizado correctamente el servicio, recuerda de actualizar el PDF para los usuarios del BOT!", "success")
     return redirect(url_for('servicios'))
 
 @app.route('/eliminar_servicio/<int:servicio_id>', methods=['POST', 'GET'])
@@ -2063,12 +2015,57 @@ def procesar_venta():
 
     return jsonify({'mensaje': 'Venta procesada exitosamente'}), 200
 
-@app.route("/venta_servicios",methods=["POST"])
+@app.route("/venta_servicios",methods=["GET", "POST"])
 def ventas_servicios():
     data = request.json
     print(data)
     flash("La venta se ha realizado correctamente","success")
     return jsonify({'mensaje': 'Venta procesada exitosamente'}), 200
+
+
+@app.route("/ver_servicios_clientes",methods=['GET', "POST"])
+def ver_servicios_clientes():
+
+    servicios = obtener_servicios_activos(db_session)
+    print(servicios)
+
+    flash("El PDF se ha generado correctamente, los usuarios ya podran visualizar los nuevos cambios!", "success")
+    return render_template("servicios_generador.html", servicios=servicios)
+
+def generar_pdf_servicios():
+    # Aquí es donde se renderiza tu plantilla HTML con Jinja
+    # Se obtiene la lista de productos
+    servicios = obtener_servicios_activos(db_session)
+
+    rendered = render_template('servicios_generador.html', servicios=servicios)
+    # Aquí es donde se convierte el HTML renderizado a PDF
+    options = {
+        'enable-local-file-access': '',
+        'quiet': '',
+        'no-outline': None,
+        'encoding': 'utf-8',
+        'custom-header': [
+        ('Accept-Encoding', 'gzip')
+    ],
+        'cookie': [
+            ('cookie-name1', 'cookie-value1'),
+            ('cookie-name2', 'cookie-value2'),
+        ],
+        'no-outline': None
+    }
+    css = ['static/css/boostrap4.css', 'static/css/style_servicios_generador.css']
+    pdf = pdfkit.from_string(rendered, 'static/pdf/servicios/Servicios.pdf', options=options, css=css)
+
+
+    return True
+
+
+@app.route('/generarPDFServicios', methods=['GET'])
+def pruebitaPDFServicios():
+
+    generar_pdf_servicios()
+    flash("Se ha actualizado correctamente el servicio, recuerda de actualizar el PDF para los usuarios del BOT!", "success")
+    return redirect('/ver_servicios_clientes')
 
 if __name__ == '__main__':
    
