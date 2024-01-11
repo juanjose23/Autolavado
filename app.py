@@ -2116,7 +2116,7 @@ SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 def obtener_servicio():
     creds = None
-    if os.path.exists('token.pickle') and os.path.getsize('token.pickle') > 0:
+    if os.path.exists('token.pickle'):
         with open('token.pickle', 'rb') as token:
             creds = pickle.load(token)
     if not creds or not creds.valid:
@@ -2150,22 +2150,135 @@ def calendario():
 
 
 
-    # Obtiene el servicio de Google Calendar
-    service = obtener_servicio()
+    # # Obtiene el servicio de Google Calendar
+    # service = obtener_servicio()
 
-    # Define las horas de inicio y fin del evento
-    inicio = datetime.now()
-    fin = inicio + timedelta(hours=1)
+    # # Define las horas de inicio y fin del evento
+    # inicio = datetime.now()
+    # fin = inicio + timedelta(hours=1)
 
-    # Crea el evento
-    crear_evento(service, inicio, fin)
+    # # Crea el evento
+    # crear_evento(service, inicio, fin)
+
+    rows = horariosistema(db_session)
+
+
+    # Crear el diccionario
+    tabla = {}
+    for row in rows:
+        tabla[row[2]] = {"estado": row[5], "apertura": row[3].strftime("%H:%M"), "cierre": row[4].strftime("%H:%M")}
+    
+    #ESTRUCTURA DE LA TABLA DEL SELECT
+        # Tu tabla en forma de diccionario con horarios de apertura y cierre
+    # tabla = {
+    #     "Lunes": {"estado": 1, "apertura": "08:00", "cierre": "17:00"},
+    #     "Martes": {"estado": 1, "apertura": "08:00", "cierre": "17:00"},
+    #     "Miércoles": {"estado": 1, "apertura": "08:00", "cierre": "17:00"},
+    #     "Jueves": {"estado": 1, "apertura": "08:00", "cierre": "17:00"},
+    #     "Viernes": {"estado": 1, "apertura": "08:00", "cierre": "17:00"},
+    #     "Sábado": {"estado": 1, "apertura": "08:00", "cierre": "17:00"},
+    #     "Domingo": {"estado": 2, "apertura": "00:00", "cierre": "00:00"}
+    # }
+
+    # Lista de los días de la semana en orden
+    dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+
+    # Obtén el día de la semana y la hora actual
+    hoy = datetime.now()
+    dia_actual = dias_semana[hoy.weekday()]
+    hora_actual = hoy.strftime("%H:%M")
+
+    # Encuentra el índice del día de la semana actual en la lista
+    indice_actual = dias_semana.index(dia_actual)
+
+    # Reordena la lista de días de la semana para que comience desde el día actual
+    dias_semana = dias_semana[indice_actual:] + dias_semana[:indice_actual]
+
+    # Crea una lista para almacenar los próximos 7 días
+    proximos_dias = []
+
+    # Recorre la lista de días de la semana
+    i = 0
+    dias_avanzados = 0
+    while len(proximos_dias) < 7:
+        # Calcula la fecha para el día de la semana actual
+        fecha = hoy + timedelta(days=dias_avanzados)
+        
+        # Obtiene el nombre del día de la semana
+        dia_semana = dias_semana[i % 7]
+        
+        # Verifica si el día está disponible y si la hora actual es antes de la hora de cierre
+        if tabla[dia_semana]["estado"] == 1 and hora_actual < tabla[dia_semana]["cierre"]:
+            # Si el día está disponible y no ha pasado la hora de cierre, añádelo a la lista de próximos días
+            proximos_dias.append(fecha.strftime("%A %d de %B de %Y"))
+        i += 1
+        dias_avanzados += 1
+
+    # Imprime los próximos 7 días
+    for dia in proximos_dias:
+        print(dia)
+
+
 
 
 
     
 
     
-    return render_template('calendario.html')
+    return 'se creo el evento'
+
+
+@app.route("/reservas",methods=['GET','POST'])
+def reservas():
+
+    # Tu diccionario
+    rows = horariosistema(db_session)
+
+
+    # Crear el diccionario
+    horario = {}
+    for row in rows:
+        horario[row[2]] = {"estado": row[5], "apertura": row[3].strftime("%H:%M"), "cierre": row[4].strftime("%H:%M")}
+
+    # Duración del evento en minutos
+    duracion_evento = 90
+
+    # Tiempo de margen en minutos
+    margen = 10
+
+    # Eventos existentes (hora inicio y fin en formato 'HH:MM')
+    eventos_existentes = [('09:30', '10:30'), ('12:00', '13:00'), ('15:00', '16:00')]
+
+    def obtener_horarios_disponibles(dia, duracion_evento, margen, eventos_existentes):
+        apertura = datetime.strptime(horario[dia]['apertura'], '%H:%M')
+        cierre = datetime.strptime(horario[dia]['cierre'], '%H:%M')
+        duracion_evento = timedelta(minutes=duracion_evento)
+        margen = timedelta(minutes=margen)
+
+        horarios_disponibles = []
+        hora_actual = apertura
+
+        for inicio, fin in eventos_existentes:
+            inicio = datetime.strptime(inicio, '%H:%M')
+            fin = datetime.strptime(fin, '%H:%M')
+
+            while hora_actual + duracion_evento <= inicio:
+                horarios_disponibles.append((hora_actual.time(), (hora_actual + duracion_evento).time()))
+                hora_actual += duracion_evento + margen
+
+            hora_actual = fin + margen
+
+        while hora_actual + duracion_evento <= cierre:
+            horarios_disponibles.append((hora_actual.time(), (hora_actual + duracion_evento).time()))
+            hora_actual += duracion_evento + margen
+
+        return horarios_disponibles
+
+    horarios_disponibles = obtener_horarios_disponibles('Lunes', duracion_evento, margen, eventos_existentes)
+    for inicio, fin in horarios_disponibles:
+        print(f'Disponible de {inicio} a {fin}')
+
+    return 'se consultó'
 
 
 
