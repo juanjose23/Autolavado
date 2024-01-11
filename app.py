@@ -1009,21 +1009,7 @@ def insertar_usuarios():
 @app.route('/')
 @login_required
 def index():
-    cupos_disponibles = obtener_cupos_disponibles()
-
-    for horario_info in cupos_disponibles:
-        dia = horario_info["dia"]
-        fecha = horario_info["fecha"]
-        hora_apertura = horario_info["hora_apertura"]
-        hora_cierre = horario_info["hora_cierre"]
-        cupos_disponibles_valor = horario_info["cupos_disponibles"]
-
-        print(f"Día: {dia}")
-        print(f"Fecha: {fecha}")
-        print(f"Hora de apertura: {hora_apertura}")
-        print(f"Hora de cierre: {hora_cierre}")
-        print(f"Cupos disponibles: {cupos_disponibles_valor}")
-        print("\n")
+    
     estadisticas_resultantes = actualizar_estado_lotes(db_session)
 
         
