@@ -17,9 +17,9 @@
 </section>
 <section class="content">
     <div class="container-fluid">
-    
-    
-        <h5 class="mb-2">Buenas {{momento}}, {{session['nombre']}}</h5>
+
+
+        <h5 class="mb-2"><a href=""id="saludo"></a> ,{{session['nombre']}}</h5>
         <div class="row">
 
             <!-- /.col -->
@@ -32,25 +32,24 @@
                         <h5 class="widget-user-desc"></h5>
                     </div>
                     <div class="widget-user-image">
-                        <img class="img-circle elevation-2"
-                            src="{{session['foto']}}"
-                            alt="User Avatar" width="40" height="50">
+                        <img class="img-circle elevation-2" src="{{session['foto']}}" alt="User Avatar" width="40"
+                            height="50">
                     </div>
                     <div class="card-footer">
                         <div class="row">
                             <div class="col-sm-4 border-right">
                                 <div class="description-block">
-                                    <h5 class="description-header">{{fecha_actual}}</h5>
+                                    <h5 class="description-header" id="fecha"></h5>
                                     <span class="description-text">Fecha del
                                         dia</span>
                                 </div>
                                 <!-- /.description-block -->
+
                             </div>
 
                             <div class="col-sm-4 border-right">
                                 <div class="description-block">
-                                    <h5 class="description-header">{{
-                                        hora_actual }}:{{minutos_actuales}}</h5>
+                                    <h5 class="description-header" id="hora"></h5>
                                     <span class="description-text">Hora</span>
                                 </div>
                                 <!-- /.description-block -->
@@ -59,9 +58,7 @@
                                 <div class="description-block">
                                     <h5 class="description-header">Cambiar
                                         contraseña</h5>
-                                    <span class="description-text"><a
-                                            href="#modal-default"
-                                            data-toggle="modal"
+                                    <span class="description-text"><a href="#modal-default" data-toggle="modal"
                                             class="fas fa-pencil-alt"></a></span>
                                 </div>
                                 <!-- /.description-block -->
@@ -83,36 +80,27 @@
     <div id="modal-default" class="modal fade">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <form action="/cambiar_contraseña" method="post"
-                    enctype="multipart/form-data" onsubmit="return validarFormulario()">
+                <form action="/cambiar_contraseña" method="post" enctype="multipart/form-data"
+                    onsubmit="return validarFormulario()">
                     <div class="modal-header">
                         <h4 class="modal-title">Cambiar Contraseña</h4>
-                        <button type="button" class="close"
-                            data-dismiss="modal"
-                            aria-hidden="true">&times;</button>
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                     </div>
                     <div class="modal-body">
-                        <input type="text" value="{{session['usuario_id']}}"
-                            name="id" hidden>
+                        <input type="text" value="{{session['usuario_id']}}" name="id" hidden>
                         <div class="form-group">
                             <label>Contraseña actual: </label>
-                            <input type="text" name="contraseña_actual"
-                                class="form-control"
-                                required>
+                            <input type="text" name="contraseña_actual" class="form-control" required>
                         </div>
                         <div class="form-group">
                             <label>Nueva contraseña: </label>
-                            <input type="text" name="contraseña_nueva"
-                                class="form-control"
-                                required>
+                            <input type="text" name="contraseña_nueva" class="form-control" required>
                         </div>
-                      
+
                     </div>
                     <div class="modal-footer">
                         <input type="button" class="btn
-                                btn-default"
-                            data-dismiss="modal"
-                            value="Cancel">
+                                btn-default" data-dismiss="modal" value="Cancel">
                         <input type="submit" class="btn
                                 btn-success" value="Add">
                     </div>
@@ -120,6 +108,52 @@
             </div>
         </div>
     </div>
-   
+
 </section>
+<script>
+
+
+    const fechaActual = new Date();
+    const fecha = fechaActual.toLocaleDateString("es-ES");
+
+    const elemento = document.getElementById("fecha");
+    elemento.textContent = fecha;
+
+    const fechaActuales = new Date();
+    const fechas = fechaActuales.toLocaleTimeString("es-ES");
+
+    const elementos = document.getElementById("hora");
+    elementos.textContent = fechas;
+    function actualizarFechaHora() {
+        const fecha = fechaActual.toLocaleDateString("es-ES");
+        const hora = fechaActual.toLocaleTimeString("es-ES");
+
+        elemento.textContent = fecha;
+        elementos.textContent = hora;
+    }
+
+    setInterval(actualizarFechaHora, 1000); // 1 segundo
+</script>
+<script>
+   const hora = new Date().getHours();
+
+let saludo = "";
+
+function saludar() {
+  if (hora >= 0 && hora < 12) {
+    saludo = "Buenos días";
+  } else if (hora >= 12 && hora < 18) {
+    saludo = "Buenas tardes";
+  } else {
+    saludo = "Buenas noches";
+  }
+
+  const elemento = document.getElementById("saludo");
+  elemento.textContent = saludo;
+}
+
+setInterval(saludar, 1000); // 1 segundo
+
+
+</script>
 {% endblock %}
