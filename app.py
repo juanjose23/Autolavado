@@ -1505,6 +1505,7 @@ def validar():
     if request.method == 'POST':
         usuario = request.form['usuario']
         contraseña = request.form['contraseña']
+        print("Cadena de conexion",os.getenv("DATABASE_URL"))
 
         # Consulta SQL para buscar al usuario en la base de datos
         result = db_session.execute(
@@ -2021,7 +2022,12 @@ def procesar_venta():
 @app.route("/venta_servicios",methods=["GET", "POST"])
 def ventas_servicios():
     data = request.json
-    print(data)
+    persona_id = data.get('cliente')
+    tipo_venta = data.get('tipo_venta')
+    total = data.get('total')
+    #id_venta = insertar_venta(db_session, tipo_venta, persona_id, codigo, 0, total, 1)
+
+
     flash("La venta se ha realizado correctamente","success")
     return jsonify({'mensaje': 'Venta procesada exitosamente'}), 200
 
