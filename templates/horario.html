@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %} || Precios productos{% endblock %}
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='plugins/select2/css/select2.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
+{% endblock %}
+{% block main %}
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Horarios de atencion</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="#">Gestion de inicio</a></li>
+                    <li class="breadcrumb-item active">Horarios</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Horarios</h3>
+                       
+
+                    </div>
+                    <!-- /.card-header -->
+                    <div class="card-body">
+                        <table id="example1" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Dia</th>
+                                    <th>Hora de apertura </th>
+                                    <th>Hora de cierre </th>
+                                    <th>Estado</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for productos in horario %}
+                                <tr>
+                                    <td>{{ productos.dia }}</td>
+                                    <td>{{ productos.hora_apertura }}</td>
+                                    <td>{{ productos.hora_cierre }}</td>
+                                    <td>
+                                        {% if productos.estado == 1 %}
+                                        <span class="badge bg-success">Activo</span>
+                                        {% elif productos.estado == 2 %}
+                                        <span class="badge bg-danger">Inactivo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="#modal-default{{productos.id}}" data-toggle="modal">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </a>
+
+                                        <a data-toggle="modal" href="#modal-danger{{productos.id}}"
+                                            class="fas fa-trash-alt">
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    </div>
+  
+    {% for productos in horario %}
+    <!-- Edit Modal HTML -->
+    <div id="modal-default{{productos.id}}" class="modal fade">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="/CambiarHorario/{{productos.id}}" method="post" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Editar precios</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Hora de apertura: </label>
+                            <input type="text" name="id" value="{{productos.id}}" hidden>
+                            <input type="time" name="horaapertura"class="form-control" value="{{productos.hora_apertura}}"¿>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Hora de cierre</label>
+                            <input type="time" name="horacierre" value="{{productos.hora_cierre}}"class="form-control">
+                         
+                        </div>
+
+                        <div class="form-group">
+                            <select name="estado" id class="form-control">
+                                <option value="1" {% if productos.estado==1 %}selected{% endif %}>Activo</option>
+                                <option value="2" {% if productos.estado==2 %}selected{% endif %}>Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <input type="button" class="btn
+                                btn-default" data-dismiss="modal" value="Cancel">
+                        <input type="submit" class="btn
+                                btn-info" value="Save">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% for productos in horario %}
+    <div id="modal-danger{{productos.id}}" class="modal fade">
+        <div class="modal-dialog">
+            <div class="modal-content bg-danger">
+                <form action="/Cambiarhorarioestado/{{productos.id}}" method="post">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Eliminar  precio producto</h4>
+
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="number" name="id" value="{{ productos.id }}" hidden>
+                        <input type="numbre" name="estado" value="2" hidden>
+                        <p>Estas seguro que quieres dar de baja a este dia</p>
+
+                    </div>
+                    <div class="modal-footer">
+                        <input type="button" class="btn
+                                btn-default" data-dismiss="modal" value="Cancel">
+                        <button type="submit" class="btn btn-outline-light">Aceptar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    <!---footer---->
+
+</section>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %} || Horarios {% endblock %}
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='plugins/select2/css/select2.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
+{% endblock %}
+{% block main %}
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Horarios</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="#">Gestión del negocio</a></li>
+                    <li class="breadcrumb-item active">Horarios</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Sucursal</h3>
+                        <div class="align-content-end text-right">
+                            <button type="button" class="btn btn-primary" data-toggle="modal"
+                                data-target="#modal-insertar">
+                                Insertar sucursal
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- /.card-header -->
+                    <div class="card-body">
+                        <table id="example1" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+
+                                    <th>Nombre de la sucursal</th>
+                                    <th>Ubicación escrita</th>
+                                    <th>Ubicación en Google Maps</th>
+                                    <th>Teléfono</th>
+                                    <th>Horario de atención</th>
+                                    <th>Estado</th>
+
+
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sucursal in surcursales %}
+                                <tr>
+
+                                    <td>{{ sucursal.nombre }}</td>
+                                    <td>{{ sucursal.razon_social }}</td>
+                                    <td>{{ sucursal.ubicacion_escrita }}</td>
+                                    <td><a href="{{ sucursal.ubicacion_googlemaps }}" target="_blank">{{
+                                            sucursal.ubicacion_googlemaps }}</a></td>
+                                    <td>{{ sucursal.telefono }}</td>
+                                    <td>
+                                        {% if sucursal.estado == 1 %}
+                                        <span class="badge bg-success">Activo</span>
+                                        {% elif sucursal.estado == 2 %}
+                                        <span class="badge bg-danger">Inactivo</span>
+                                        {% elif sucursal.estado == 3 %}
+                                        <span class="badge bg-gradient-indigo">Por vencerse</span>
+                                        {% elif sucursal.estado == 4 %}
+                                        <span class="badge bg-fuchsia">Sin stock</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="#modal-default{{ sucursal.id }}" data-toggle="modal">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </a>
+                                        <a href="#modal-delete{{ sucursal.id }}" data-toggle="modal">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </a>
+
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+  
+
+
+    
+
+    <!---footer---->
+
+</section>
+{% endblock %}

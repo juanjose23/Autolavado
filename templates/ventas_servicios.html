@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block title %} || Ventas{% endblock %}
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='plugins/select2/css/select2.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
+{% endblock %}
+{% block main %}
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Ventas</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="#">Gestion de Ventas</a></li>
+                    <li class="breadcrumb-item active">Ventas</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="content ">
+    <div class="card">
+        <div class="card-header card-default p-0 text-center">
+            <h4 class="mb-0 font-weight-bold text-black">Realizar venta por servicios</h4>
+            <div class="d-grid gap-1 col-6 mx-auto">
+                <a class="btn btn-danger" href="/ventas">Cancelar</a>
+             
+              </div>
+        </div>
+
+        <div class="container">
+            <form>
+                <div class="form-group">
+                    <label for="cliente">Cliente:</label>
+                    <select class="form-control select2bs4" id="clientes" name="clientes" required>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.id }}">{{ cliente.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="producto">Servicios:</label>
+                    <select class="form-control select2bs4" id="servicios">
+
+                        {% for info in servicios %}
+                        <option value="{{info.producto}}">{{ info.nombre }} - C$ {{
+                            info.precio }}</option>
+                        {% endfor %}
+
+
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="cantidad">Cantidad:</label>
+                    <input type="number" class="form-control" id="cantidadservicios" name="cantidad">
+                </div>
+
+                <div class="form-group">
+                    <button type="button" class="btn btn-success btn-block" id="agregarServicios">Agregar
+                        Servicios</button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table" id="serviciosTable">
+                        <thead>
+                            <tr>
+                                <th>Servicios</th>
+                                <th>Cantidad</th>
+                                <th>Precio Unitario</th>
+                                <th>Subtotal</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Contenido de la tabla -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="form-group">
+                    <label for="tipo_ventas">Tipo de Venta:</label>
+                    <select class="form-control select2bs4" id="tipo_ventas" name="tipo_ventas" required>
+                        {% for tipo in tipos %}
+                        <option value="{{ tipo.id }}">{{ tipo.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="total">Total:</label>
+                    <input type="text" class="form-control" id="totales" name="totales" readonly>
+                </div>
+                <div class="">
+                    <button type="submit" class="btn btn-primary btn-block" id="generarVentaservicios">Generar
+                        Venta</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</section>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    var servicios = [];
+
+    function actualizarTablaservicio() {
+        var tableBody = document.getElementById('serviciosTable').getElementsByTagName('tbody')[0];
+        tableBody.innerHTML = '';
+
+        var total = 0;
+
+        servicios.forEach(function (servicio) {
+            var row = tableBody.insertRow();
+            var cellservicio = row.insertCell(0);
+            var cellCantidad = row.insertCell(1);
+            var cellPrecio = row.insertCell(2);
+            var cellSubtotal = row.insertCell(3);
+            var cellAcciones = row.insertCell(4);
+
+            cellservicio.innerHTML = servicio.nombre;
+            cellCantidad.innerHTML = '<input type="number" class="form-control" value="' + servicio.cantidad + '" onchange="actualizarSubtotales(' + servicio.id + ', this, ' + servicio.precio + ')">';
+            cellPrecio.innerHTML = servicio.precio.toFixed(2);
+            var subtotal = servicio.cantidad * servicio.precio;
+            cellSubtotal.innerHTML = subtotal.toFixed(2);
+            total += subtotal;
+
+            cellAcciones.innerHTML = '<div class="btn-group">' +
+                '<button type="button" class="btn btn-danger btn-sm" onclick="eliminarservicios(' + servicio.id + ')">Eliminar</button>' +
+                '<button type="button" class="btn btn-primary btn-sm" onclick="editarCantidades(' + servicio.id + ')">Editar Cantidad</button>' +
+                '</div>';
+        });
+
+        document.getElementById('totales').value = total.toFixed(2);
+    }
+
+    function agregarServicios() {
+        var servicioSelect = document.getElementById('servicios');
+        var cantidadInput = document.getElementById('cantidadservicios');
+
+        // Validar que la cantidad sea mayor que cero
+        var cantidad = parseInt(cantidadInput.value);
+        if (cantidad > 0) {
+            // Obtener la opción seleccionada
+            var selectedOption = servicioSelect.options[servicioSelect.selectedIndex];
+
+            var servicio = {
+                id: parseInt(selectedOption.value),
+                nombre: selectedOption.text.split(' - C$ ')[0],
+                precio: parseFloat(selectedOption.text.split(' - C$ ')[1]),
+                cantidad: cantidad
+            };
+
+            servicios.push(servicio);
+            actualizarTablaservicio();
+
+            // Limpiar campos
+            servicioSelect.value = '';
+            cantidadInput.value = '';
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'La cantidad debe ser mayor que cero.',
+            });
+        }
+    }
+    function eliminarservicios(id) {
+        servicios = servicios.filter(function (servicio) {
+            return servicio.id !== id;
+        });
+
+        actualizarTablaservicio();
+    }
+    function editarCantidades(id) {
+        Swal.fire({
+            title: 'Editar Cantidad del servicios',
+            input: 'number',
+            inputValue: servicios.find(p => p.id === id).cantidad,
+            showCancelButton: true,
+            confirmButtonText: 'Guardar',
+            cancelButtonText: 'Cancelar',
+            inputValidator: (value) => {
+                if (!value || value <= 0) {
+                    return 'Por favor, ingresa una cantidad válida';
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                var nuevaCantidad = parseInt(result.value);
+                servicios.forEach(function (servicio) {
+                    if (servicio.id === id) {
+                        servicio.cantidad = nuevaCantidad;
+                    }
+                });
+                actualizarTablaservicio();
+            }
+        });
+    }
+    function actualizarSubtotales(id, input, precio) {
+        var nuevaCantidad = parseInt(input.value);
+        productos.forEach(function (servicio) {
+            if (servicio.id === id) {
+                servicio.cantidad = nuevaCantidad;
+                servicio.subtotal = nuevaCantidad * precio;
+                input.parentElement.nextElementSibling.innerHTML = servicio.subtotal.toFixed(2);
+            }
+        });
+        actualizarTabla();
+    }
+    document.getElementById('agregarServicios').addEventListener('click', agregarServicios);
+
+</script>
+<script>
+    function enviarVentaservicios() {
+        var tipoVenta = document.getElementById('tipo_ventas').value;
+        var total = document.getElementById('totales').value;
+        var cliente = document.getElementById('clientes').value;
+
+        // Objeto con los datos a enviar al servidor
+        var data = {
+            cliente: cliente,
+            tipo_venta: tipoVenta,
+            total: total,
+            servicios: servicios
+        };
+
+        // Realizar la solicitud POST al servidor Flask
+        axios.post('/venta_servicios', data)
+            .then(function (response) {
+                console.log(response.data);
+
+
+
+                // Redirigir a la ruta /ventas después de un breve retraso
+                setTimeout(function () {
+                    window.location.href = '/ventas';
+                }, 3000);
+            })
+
+            .catch(function (error) {
+                // Aquí puedes manejar errores, por ejemplo, mostrar un mensaje de error
+                Swal.fire('Error', 'Ha ocurrido un error al procesar la venta.', 'error');
+            });
+    }
+
+    // Asignar la función enviarVenta al evento click del botón Generar Venta
+    document.getElementById('generarVentaservicios').addEventListener('click', enviarVentaservicios);
+
+</script>
+{% endblock %}

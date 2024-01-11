@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %} || Sucursales {% endblock %}
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='plugins/select2/css/select2.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
+{% endblock %}
+{% block main %}
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Sucursales</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="#">Gestión del negocio</a></li>
+                    <li class="breadcrumb-item active">Sucursales</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Sucursal</h3>
+                        <div class="align-content-end text-right">
+                            <button type="button" class="btn btn-primary" data-toggle="modal"
+                                data-target="#modal-insertar">
+                                Insertar sucursal
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- /.card-header -->
+                    <div class="card-body">
+                        <table id="example1" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+
+                                    <th>Nombre de la sucursal</th>
+                                    <th>Razón social</th>
+                                    <th>Ubicación escrita</th>
+                                    <th>Ubicación en Google Maps</th>
+                                    <th>Teléfono</th>
+                                    <th>Estado</th>
+
+
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sucursal in surcursales %}
+                                <tr>
+
+                                    <td>{{ sucursal.nombre }}</td>
+                                    <td>{{ sucursal.razon_social }}</td>
+                                    <td>{{ sucursal.ubicacion_escrita }}</td>
+                                    <td><a href="{{ sucursal.ubicacion_googlemaps }}" target="_blank">{{
+                                            sucursal.ubicacion_googlemaps }}</a></td>
+                                    <td>{{ sucursal.telefono }}</td>
+                                    <td>
+                                        {% if sucursal.estado == 1 %}
+                                        <span class="badge bg-success">Activo</span>
+                                        {% elif sucursal.estado == 2 %}
+                                        <span class="badge bg-danger">Inactivo</span>
+                                        {% elif sucursal.estado == 3 %}
+                                        <span class="badge bg-gradient-indigo">Por vencerse</span>
+                                        {% elif sucursal.estado == 4 %}
+                                        <span class="badge bg-fuchsia">Sin stock</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="#modal-default{{ sucursal.id }}" data-toggle="modal">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </a>
+                                        <a href="#modal-delete{{ sucursal.id }}" data-toggle="modal">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </a>
+
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <!-- Insert Modal HTML -->
+    <div id="modal-insertar" class="modal fade">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <form action="/sucursales" method="post" enctype="multipart/form-data">
+                    <div class="modal-header bg-primary text-white">
+                        <h4 class="modal-title">Insertar sucursal</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="container">
+                            <!-- Container for the form -->
+                            <div class="form-group">
+                                <label>Nombre de la sucursal:</label>
+                                <input type="input" name="nombre_sucursal" class="form-control" maxlength="250" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Razón social:</label>
+                                <input type="input" name="razon_social" class="form-control" maxlength="250" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Dirección escrita</label>
+                                <textarea class="form-control" rows="3" name="direccion_escrita" maxlength="250" minlength="5"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Enlace de Google Maps: (opcional)</label>
+                                <input type="input" name="enlace_googleMaps" class="form-control" maxlength="250">
+                            </div>
+                            <div class="form-group">
+                                <label>Teléfono</label>
+                                <input type="tel" name="telefono" class="form-control" maxlength="8" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Estado:</label>
+                                <select name="estado" class="form-control">
+                                    <option value="1">Activo</option>
+                                    <option value="2">Desactivado</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+
+
+    <!-- MODAL PARA EDITAR SUCURSALES -->
+    {% for sucursal in surcursales %}
+    <div id="modal-default{{ sucursal.id }}" class="modal fade">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="/editar_sucursal/{{ sucursal.id }}" method="post">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Editar sucursal</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    </div>
+                    <div class="modal-body">
+
+                        <div class="form-group">
+                            <label>Nombre de la sucursal:</label>
+                            <input type="input" name="nombre_sucursal" class="form-control" maxlength="250" min="5"
+                                value="{{ sucursal.nombre }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Razón social:</label>
+                            <input type="input" name="razon_social" class="form-control" maxlength="250" min="5"
+                                value="{{ sucursal.razon_social }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Dirección escrita</label>
+                            <textarea class="form-control" rows="3" name="direccion_escrita" maxlength="250"
+                                minlength="5"
+                                aria-valuetext="{{ sucursal.ubicacion_escrita }}">{{ sucursal.ubicacion_escrita }}</textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Enlace de google maps: (opcional)</label>
+                            <input type="input" name="enlace_googleMaps" class="form-control" maxlength="250" min="5"
+                                value="{{ sucursal.ubicacion_googlemaps }}">
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono</label>
+                            <input type="tel" name="telefono" class="form-control" maxlength="8" min="8"
+                                value="{{ sucursal.telefono }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Estado:</label>
+                            <select name="estado" class="form-control">
+                                <option value="1">Activo</option>
+                                <option value="2">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+
+    <!-- MODAL PARA CONFIRMAR ACCIÓN DE ELIMINAR -->
+    {% for sucursal in surcursales %}
+    <div class="modal fade" id="modal-delete{{ sucursal.id }}" tabindex="-1" role="dialog"
+        aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Confirmar eliminación</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    ¿Estás seguro de que deseas eliminar la sucursal "{{ sucursal.nombre }}"?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <!-- Aquí se envía el formulario para eliminar el registro -->
+                    <form action="/eliminar_sucursal/{{ sucursal.id }}" method="post">
+                        <button type="submit" class="btn btn-danger">Eliminar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+
+
+    <!---footer---->
+
+</section>
+{% endblock %}
