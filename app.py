@@ -947,7 +947,31 @@ def enviar_correo_con_contraseña(nombre,nombre_usuario, correo_destino, contras
     msg = Message(asunto, sender=remitente, recipients=destinatario)
     msg.body = cuerpo
     mail.send(msg)
+def enviar_correo_con_codigo(nombre, correo_destino, contraseña):
+    cuerpo = f'''
+    Estimado(a) {nombre},
 
+Recientemente solicitaste recuperar tu contraseña para tu cuenta de Lavacar ASOCATIE.
+
+Tu nueva contraseña es: {contraseña}
+
+Por favor, inicia sesión en tu cuenta con esta contraseña y luego cámbiala a una que sea más fácil de recordar y segura.
+
+Si tienes alguna pregunta o necesitas ayuda, no dudes en contactarnos.
+
+¡Gracias y ten un excelente día!
+
+Atentamente,
+Lavacar ASOCATIE
+    '''
+
+    asunto = 'Asignación de credenciales - Acceso a cuenta'
+    remitente = 'ingsoftwar123@gmail.com'
+    destinatario = [correo_destino]
+
+    msg = Message(asunto, sender=remitente, recipients=destinatario)
+    msg.body = cuerpo
+    mail.send(msg)
 def BuscarPorIdPersona(db_session: Session, id):
     query = text("""
             SELECT p.nombre, pn.apellido,p.correo
@@ -994,7 +1018,42 @@ def obtener_info_lotes_valor():
         lotes.append(lote)
 
     return lotes
+def obtener_datos_sucursal():
+    query=text(""" SELECT * FROM sucursal """)
+    result=db_session.execute(query).first()
+    return result
+   
+@app.context_processor
+def agregar_datos_sucursal():
+    return dict(datos_sucursal=obtener_datos_sucursal())
+@app.route("/recuperar",methods=['GET','POST'])
+def recuperar_contraseña():
 
+    return render_template("recuperar.html")
+@app.route("/enviar_codigo",methods=['GET','POST'])
+def recuperar_contraseñas():
+    if request.method == "POST":
+        usuario=request.form['correo']
+        result = db_session.execute(
+            text("SELECT id,id_persona FROM usuario WHERE usuario = :usuario"),
+            {"usuario": usuario}
+        )
+        usuario_db = result.fetchone()
+        if usuario_db:
+          
+            persona= BuscarPorIdPersona(db_session,usuario_db[1])
+            nombre, apellido, correo = persona
+            nombres = nombre + ' ' + apellido
+            contraseña = generar_contraseña()
+            enviar_correo_con_codigo(nombres,correo,contraseña)
+            hashed_password = generate_password_hash(contraseña)
+            actualizar_contraseña(db_session,usuario_db[0],hashed_password)
+            flash("Se ha enviado tu nueva contraseña a tu correo electronico","success")
+            return redirect('/login')
+        else:
+            flash("No se ha encontrado el nombre del usuario","error")
+
+    return redirect('/recuperar')
 @cross_origin()
 @app.route('/api/InsertarCliente', methods=['POST'])
 def api_InsertarCliente():
@@ -1533,7 +1592,7 @@ def validar():
     if request.method == 'POST':
         usuario = request.form['usuario']
         contraseña = request.form['contraseña']
-        print("Cadena de conexion",os.getenv("DATABASE_URL"))
+        
 
         # Consulta SQL para buscar al usuario en la base de datos
         result = db_session.execute(
@@ -1635,11 +1694,14 @@ def sucursales():
         direccion_escrita = request.form['direccion_escrita']
         ubicacion_googleMaps = request.form['enlace_googleMaps']
         telefono = request.form['telefono']
-        estado = request.form['estado']
+        estado = 1
+        archivo = request.files['foto']
+        carpeta_destino = 'static/img/logos'
+        logo = guardar_imagen(archivo, carpeta_destino)
 
-        print(nombre_sucursal, razon_social, direccion_escrita, ubicacion_googleMaps, telefono, estado)
+      
 
-        insertar_sucursal(db_session,nombre_sucursal,razon_social,direccion_escrita,ubicacion_googleMaps,telefono,estado)
+        insertar_sucursal(db_session,nombre_sucursal,razon_social,direccion_escrita,ubicacion_googleMaps,telefono,logo,estado)
 
         flash('Se ha creado la sucursal', 'success')
         return redirect(url_for('sucursales'))
@@ -1647,10 +1709,10 @@ def sucursales():
    
     return render_template("sucursales.html", surcursales=surcursales)
 
-def  insertar_sucursal(db_session,nombre_sucursal,razon_social,direccion_escrita,ubicacion_googleMaps,telefono,estado):
+def  insertar_sucursal(db_session,nombre_sucursal,razon_social,direccion_escrita,ubicacion_googleMaps,telefono,logo,estado):
     query = text("""
-    INSERT INTO sucursal (nombre, razon_social, ubicacion_escrita, ubicacion_googleMaps, telefono, estado)
-    VALUES (:nombre_sucursal, :razon_social, :direccion_escrita, :ubicacion_googleMaps, :telefono, :estado)
+    INSERT INTO sucursal (nombre, razon_social, ubicacion_escrita, ubicacion_googleMaps, telefono,logo, estado)
+    VALUES (:nombre_sucursal, :razon_social, :direccion_escrita, :ubicacion_googleMaps, :telefono,:logo, :estado)
     RETURNING id
 """)
 
@@ -1660,6 +1722,7 @@ def  insertar_sucursal(db_session,nombre_sucursal,razon_social,direccion_escrita
         'direccion_escrita': direccion_escrita,
         'ubicacion_googleMaps': ubicacion_googleMaps,
         'telefono': telefono,
+        'logo':logo,
         'estado': estado
     })
 
@@ -1669,12 +1732,12 @@ def  insertar_sucursal(db_session,nombre_sucursal,razon_social,direccion_escrita
 
 def obtener_sucursales(db_session):
     query = text("""
-        SELECT id, nombre, razon_social, ubicacion_escrita, ubicacion_googleMaps, telefono, estado
+        SELECT id, nombre, razon_social, ubicacion_escrita, ubicacion_googleMaps, telefono, logo, estado
         FROM sucursal
     """)
 
     sucursales = db_session.execute(query).fetchall()
-    print(sucursales)
+    
 
     return sucursales
 
@@ -1690,27 +1753,36 @@ def eliminar_sucursal(id):
 @app.route('/editar_sucursal/<int:id>', methods=['POST'])
 def editar_sucursal(id):
     if request.method == 'POST':
-
         print(id)
-        
+
         id_sucursal = id
         nombre_sucursal = request.form['nombre_sucursal']
         razon_social = request.form['razon_social']
         direccion_escrita = request.form['direccion_escrita']
         ubicacion_googleMaps = request.form['enlace_googleMaps']
         telefono = request.form['telefono']
-        estado = request.form['estado']
+        estado = 1
+        archivo = request.files['foto']
+        logos = request.form['logos']
 
-        print(nombre_sucursal, razon_social, direccion_escrita, ubicacion_googleMaps, telefono, estado)
+        if archivo:
+            carpeta_destino = 'static/img/trabajadores'
+            logo = guardar_imagen(archivo, carpeta_destino)
+            actualizar_sucursal(db_session, id_sucursal, nombre_sucursal, razon_social, direccion_escrita, ubicacion_googleMaps, telefono, logo, estado)
 
-        actualizar_sucursal(db_session, id_sucursal, nombre_sucursal, razon_social, direccion_escrita, ubicacion_googleMaps, telefono, estado)
-    
+            try:
+                os.remove(logos)
+            except Exception as e:
+                print(f"No se pudo eliminar la imagen anterior: {e}")
+        else:
+            actualizar_sucursal(db_session, id_sucursal, nombre_sucursal, razon_social, direccion_escrita, ubicacion_googleMaps, telefono, logos, estado)
+
     flash('Se ha actualizado la sucursal', 'success')
     return redirect(url_for('sucursales'))
 
 
        
-def actualizar_sucursal(db_session, id_sucursal, nombre_sucursal, razon_social, direccion_escrita, ubicacion_googleMaps, telefono, estado):
+def actualizar_sucursal(db_session, id_sucursal, nombre_sucursal, razon_social, direccion_escrita, ubicacion_googleMaps, telefono,logo, estado):
     query = text("""
     UPDATE sucursal 
     SET nombre = :nombre_sucursal, 
@@ -1718,6 +1790,7 @@ def actualizar_sucursal(db_session, id_sucursal, nombre_sucursal, razon_social, 
         ubicacion_escrita = :direccion_escrita, 
         ubicacion_googleMaps = :ubicacion_googleMaps, 
         telefono = :telefono, 
+        logo=:logo,
         estado = :estado
     WHERE id = :id_sucursal
 """)
@@ -1729,6 +1802,7 @@ def actualizar_sucursal(db_session, id_sucursal, nombre_sucursal, razon_social, 
         'direccion_escrita': direccion_escrita,
         'ubicacion_googleMaps': ubicacion_googleMaps,
         'telefono': telefono,
+        'logo':logo,
         'estado': estado
     })
 

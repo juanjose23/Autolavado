@@ -21,7 +21,7 @@
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
                     <li class="breadcrumb-item"><a href="#">Gestión del negocio</a></li>
-                    <li class="breadcrumb-item active">Sucursales</li>
+                    <li class="breadcrumb-item active">Sucursal</li>
                 </ol>
             </div>
         </div>
@@ -35,10 +35,12 @@
                     <div class="card-header">
                         <h3 class="card-title">Sucursal</h3>
                         <div class="align-content-end text-right">
+                            {% if sucursales:%}
                             <button type="button" class="btn btn-primary" data-toggle="modal"
                                 data-target="#modal-insertar">
                                 Insertar sucursal
                             </button>
+                            {%endif%}
                         </div>
                     </div>
 
@@ -53,6 +55,7 @@
                                     <th>Ubicación escrita</th>
                                     <th>Ubicación en Google Maps</th>
                                     <th>Teléfono</th>
+                                    <th>logo</th>
                                     <th>Estado</th>
 
 
@@ -69,6 +72,7 @@
                                     <td><a href="{{ sucursal.ubicacion_googlemaps }}" target="_blank">{{
                                             sucursal.ubicacion_googlemaps }}</a></td>
                                     <td>{{ sucursal.telefono }}</td>
+                                    <td><img src="{{ sucursal.logo }}" alt="" class="img-fluid"></td>
                                     <td>
                                         {% if sucursal.estado == 1 %}
                                         <span class="badge bg-success">Activo</span>
@@ -84,9 +88,7 @@
                                         <a href="#modal-default{{ sucursal.id }}" data-toggle="modal">
                                             <i class="fas fa-pencil-alt"></i>
                                         </a>
-                                        <a href="#modal-delete{{ sucursal.id }}" data-toggle="modal">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </a>
+                                       
 
                                     </td>
                                 </tr>
@@ -133,12 +135,10 @@
                                 <input type="tel" name="telefono" class="form-control" maxlength="8" required>
                             </div>
                             <div class="form-group">
-                                <label>Estado:</label>
-                                <select name="estado" class="form-control">
-                                    <option value="1">Activo</option>
-                                    <option value="2">Desactivado</option>
-                                </select>
+                                <label for="Foto">Logo</label>
+                                <input type="file" name="foto" class="form-control-file">
                             </div>
+                         
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -157,7 +157,7 @@
     <div id="modal-default{{ sucursal.id }}" class="modal fade">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form action="/editar_sucursal/{{ sucursal.id }}" method="post">
+                <form action="/editar_sucursal/{{ sucursal.id }}" method="post"  enctype="multipart/form-data">
                     <div class="modal-header">
                         <h4 class="modal-title">Editar sucursal</h4>
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
@@ -191,13 +191,12 @@
                             <input type="tel" name="telefono" class="form-control" maxlength="8" min="8"
                                 value="{{ sucursal.telefono }}" required>
                         </div>
+                        <input type="text" value="{{sucursal.logo}}" name="logos" hidden>
                         <div class="form-group">
-                            <label>Estado:</label>
-                            <select name="estado" class="form-control">
-                                <option value="1">Activo</option>
-                                <option value="2">Inactivo</option>
-                            </select>
+                            <label for="Foto">Logo</label>
+                            <input type="file" name="foto" class="form-control-file">
                         </div>
+                       
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>

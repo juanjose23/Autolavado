@@ -4,8 +4,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" type="image/png" href="/static/img/Logo.png">
-    <title>Lavacar ASOCATIE{% block title %}/Inicio{% endblock %}</title>
+    <link rel="icon" type="image/png" href="/{{ datos_sucursal.logo }}">
+    <title>{{ datos_sucursal.nombre }}{% block title %}/Inicio{% endblock %}</title>
     <!-- Google Font: Source Sans Pro -->
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
@@ -63,11 +63,12 @@
         <!-- Main Sidebar Container -->
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
             <!-- Brand Logo -->
-            <a href="/" class="brand-link">
-                <img src="/static/img/Logo.png"
-                    alt="AdminLTE Logo" class="brand-image img-circle elevation-3">
-                <span class="brand-text font-weight-light">Lavacar ASOCATIE</span>
-            </a>
+            <a href="/" class="brand-link d-flex align-items-center">
+                <img src="{{ datos_sucursal.logo }}"
+                     alt="AdminLTE Logo" class="brand-image img-circle img-fluid" width="100" height="100">
+                <span class="brand-text font-weight-light ">{{ datos_sucursal.nombre }}</span>
+              </a>
+              
 
             <!-- Sidebar -->
             <div class="sidebar">
