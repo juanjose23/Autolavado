@@ -17,6 +17,8 @@ import pdfkit
 import random
 import string
 import locale
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 app.config["SESSION_PERMANENT"] = False
@@ -28,6 +30,7 @@ app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = os.getenv("correo")
 app.config['MAIL_PASSWORD'] = os.getenv("clave")
 app.secret_key = '123'
+
 mail = Mail(app)
 locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
 engine = create_engine(os.getenv("DATABASE_URL"))
@@ -532,7 +535,7 @@ def obtener_productos(db_session):
     return productos
 
 def obtener_precioproductos(db_session):
-    query=text("SELECT pp.*,p.id AS producto, p.nombre FROM precio pp INNER JOIN producto p ON p.id = pp.id_producto ")
+    query=text("SELECT pp.*,p.id AS producto, p.nombre, p.logo FROM precio pp INNER JOIN producto p ON p.id = pp.id_producto")
     precios=db_session.execute(query).fetchall()
     return precios
 
@@ -687,7 +690,7 @@ INNER JOIN persona_natural pn ON pn.id =s.id_persona """)
     result=db_session.execute(query).fetchall()
     return result
 def horariosistema(db_session:session):
-    query=text(""" SELECT * FROM horarios """)
+    query=text(""" SELECT * FROM horarios ORDER BY id ASC """)
     result=db_session.execute(query).fetchall()
     return result
 def actualizar_horario(db_session: Session, horario_id, hora_apertura, hora_cierre, estado):
@@ -2023,6 +2026,16 @@ def ventas_servicios():
     return jsonify({'mensaje': 'Venta procesada exitosamente'}), 200
 
 
+@app.route("/ver_productos_cliente",methods=['GET', 'POST'])
+def ver_productos_cliente():
+    productos = obtener_precioproductos(db_session)
+
+    return render_template("productos_generador.html",productos=productos)
+
+def obtener_productos_activos(db_session):
+
+    return productos
+
 @app.route("/ver_servicios_clientes",methods=['GET', "POST"])
 def ver_servicios_clientes():
 
@@ -2060,12 +2073,96 @@ def generar_pdf_servicios():
     return True
 
 
+def generar_pdf_productos():
+    # Aquí es donde se renderiza tu plantilla HTML con Jinja
+    # Se obtiene la lista de productos
+    productos = obtener_precioproductos(db_session)
+
+    rendered = render_template('servicios_generador.html', productos=productos)
+    # Aquí es donde se convierte el HTML renderizado a PDF
+    options = {
+        'enable-local-file-access': '',
+        'quiet': '',
+        'no-outline': None,
+        'encoding': 'utf-8',
+        'custom-header': [
+        ('Accept-Encoding', 'gzip')
+    ],
+        'cookie': [
+            ('cookie-name1', 'cookie-value1'),
+            ('cookie-name2', 'cookie-value2'),
+        ],
+        'no-outline': None
+    }
+    css = ['static/css/boostrap4.css', 'static/css/style_servicios_generador.css']
+    pdf = pdfkit.from_string(rendered, 'static/pdf/productos/Productos.pdf', options=options, css=css)
+
+
+    return True
+
+
 @app.route('/generarPDFServicios', methods=['GET'])
 def pruebitaPDFServicios():
 
     generar_pdf_servicios()
     flash("Se ha actualizado correctamente el servicio, recuerda de actualizar el PDF para los usuarios del BOT!", "success")
     return redirect('/ver_servicios_clientes')
+
+@app.route('/generarPDFProductos', methods=['GET'])
+def pruebitaPDFProductos():
+
+    generar_pdf_productos()
+    flash("Se ha actualizado correctamente el servicio, recuerda de actualizar el PDF para los usuarios del BOT!", "success")
+    return redirect('/ver_productos_cliente')
+
+
+# Define los alcances de la API de Google Calendar
+SCOPES = ['https://www.googleapis.com/auth/calendar']
+
+def obtener_servicio():
+    flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+    creds = flow.run_local_server(port=0)
+    service = build('calendar', 'v3', credentials=creds)
+    return service
+
+def crear_evento(service, inicio, fin):
+    evento = {
+        'summary': 'Reserva de autolavado',
+        'start': {
+            'dateTime': inicio.isoformat(),
+            'timeZone': 'America/Managua',
+        },
+        'end': {
+            'dateTime': fin.isoformat(),
+            'timeZone': 'America/Managua',
+        },
+    }
+    evento_creado = service.events().insert(calendarId='primary', body=evento).execute()
+    print(f"Evento creado: {evento_creado['htmlLink']}")
+
+@app.route('/calendario', methods=['GET', 'POST'])
+def calendario():
+
+
+
+    # Obtiene el servicio de Google Calendar
+    service = obtener_servicio()
+
+    # Define las horas de inicio y fin del evento
+    inicio = datetime.datetime.now()
+    fin = inicio + datetime.timedelta(hours=1)
+
+    # Crea el evento
+    crear_evento(service, inicio, fin)
+
+
+
+    
+
+    
+    return render_template('calendario.html')
+
+
 
 if __name__ == '__main__':
    
