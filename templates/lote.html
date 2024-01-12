@@ -65,9 +65,16 @@
 
                                     <td>{{ lote.nombre_producto }}</td>
                                     <td>{{ lote.numero_lote }}</td>
-                                    <td>{{ lote.fecha_vencimiento }}</td>
+                                    <td>
+                                        {% if lote.fecha_vencimiento %}
+                                            {{ lote.fecha_vencimiento }}
+                                        {% else %}
+                                            No tiene vencimiento
+                                        {% endif %}
+                                    </td>
                                     <td>{{ lote.cantidad_lote }}</td>
                                     <td>
+                                        
                                         {% if lote.estado_lote == 1 %}
                                         <span class="badge bg-success">Activo</span>
                                         {% elif lote.estado_lote == 2 %}
@@ -76,6 +83,8 @@
                                         <span class="badge bg-gradient-indigo">Por vencerse</span>
                                         {% elif lote.estado_lote == 4 %}
                                         <span class="badge bg-fuchsia">Sin stock</span>
+                                        {% elif lote.estado_lote == 5 %}
+                                        <span class="badge bg-success">Activo</span>
                                         {% endif %}
                                     </td>
 
@@ -115,19 +124,13 @@
                         </select>
                         <div class="form-group">
                             <label>Fecha de Vencimiento:</label>
-                            <input type="date" name="fecha_vencimiento" class="form-control" required>
+                            <input type="date" name="fecha_vencimiento" class="form-control" >
                         </div>
                         <div class="form-group">
                             <label>Cantidad:</label>
-                            <input type="number" name="cantidad" class="form-control" required>
+                            <input type="number" name="cantidad" class="form-control" >
                         </div>
-                        <div class="form-group">
-                            <label>Estado:</label>
-                            <select name="estado" class="form-control">
-                                <option value="1">Activo</option>
-                                <option value="2">Inactivo</option>
-                            </select>
-                        </div>
+                        <input type="number" name="estado" id="estado" value="1" hidden>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
@@ -153,20 +156,14 @@
                         <div class="form-group">
                             <label>Fecha de Vencimiento:</label>
                             <input type="date" name="fecha_vencimiento" class="form-control"
-                                value="{{ lote.fecha_vencimiento }}" required>
+                                value="{{ lote.fecha_vencimiento }}" >
                         </div>
                         <div class="form-group">
                             <label>Cantidad:</label>
                             <input type="number" name="cantidad" class="form-control" value="{{ lote.cantidad_lote }}"
                                 required>
                         </div>
-                        <div class="form-group">
-                            <label>Estado:</label>
-                            <select name="estado" class="form-control">
-                                <option value="1" {% if lote.estado==1 %}selected{% endif %}>Activo</option>
-                                <option value="2" {% if lote.estado==2 %}selected{% endif %}>Inactivo</option>
-                            </select>
-                        </div>
+                       
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>

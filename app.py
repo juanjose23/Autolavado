@@ -342,9 +342,9 @@ def actualizar_estado_lotes(db_session: Session):
             WHEN fecha_vencimiento IS NOT NULL AND fecha_vencimiento >= :fecha_actual THEN 
                 CASE 
                     WHEN fecha_vencimiento < :fecha_proxima THEN 3  -- Por vencerse largo
-                    ELSE 1  -- Por vencerse
+                    ELSE  1 -- Por vencerse
                 END
-            ELSE 0  -- Otro estado (si es necesario)
+            ELSE 1 -- Otro estado (si es necesario)
         END
         WHERE estado NOT IN (2, 4)
     """)
@@ -373,7 +373,7 @@ def actualizar_estado_lotes(db_session: Session):
         UPDATE lote_producto
         SET estado = 4
         WHERE cantidad <= 0
-        AND estado NOT IN (2, 3, 4)
+        AND estado NOT IN (2, 4)
     """)
     result_sin_cantidad = db_session.execute(query_sin_cantidad)
     db_session.commit()
@@ -1013,7 +1013,7 @@ def obtener_info_lotes_valor():
     query = text("""
         SELECT p.id, p.nombre, lp.id AS lote, lp.numero_lote, lp.fecha_vencimiento,
                lp.cantidad, lp.estado AS estado_lote,
-               pr.precio, pr.estado AS estado_precio,
+               pr.precio,
                lp.cantidad * pr.precio AS valor_lote
         FROM producto p
         JOIN lote_producto lp ON p.id = lp.id_producto
@@ -1025,7 +1025,7 @@ def obtener_info_lotes_valor():
 
     lotes = []
     for result in results:
-        id_producto, nombre_producto,lote, numero_lote, fecha_vencimiento, cantidad_lote, estado_lote, precio, estado_precio, valor_lote = result
+        id_producto, nombre_producto,lote, numero_lote, fecha_vencimiento, cantidad_lote, estado_lote, precio, valor_lote = result
 
         lote = {
             'id_producto': id_producto,
@@ -1036,7 +1036,7 @@ def obtener_info_lotes_valor():
             'cantidad_lote': cantidad_lote,
             'estado_lote': estado_lote,
             'precio': precio,
-            'estado_precio': estado_precio,
+           
             'valor_lote': valor_lote
         }
 
@@ -1056,6 +1056,7 @@ def agregar_datos_sucursal():
 def before_request():
     print("Ejecutando antes de la solicitud")
     estadisticas_resultantes = actualizar_estado_lotes(db_session)
+    print(estadisticas_resultantes)
 
     
 @app.route("/recuperar",methods=['GET','POST'])
@@ -1929,42 +1930,59 @@ ORDER BY
 def insertar_lote():
     if request.method == 'POST':
         id_producto = request.form.get('idproducto')
-        fecha_vencimiento = request.form.get('fecha_vencimiento')
+        fecha_vencimiento_str = request.form.get('fecha_vencimiento')
         cantidad = request.form.get('cantidad')
-        estado = request.form.get('estado')
-
-      
+        estado = int(request.form.get('estado'))
+        
+        # Generar número de lote
         numero_lote = generar_numero_lote()
 
-     
-        query = text("""
-    INSERT INTO lote_producto (id_producto, numero_lote, fecha_vencimiento,fecha_registro, cantidad, estado)
-    VALUES (:id_producto, :numero_lote, :fecha_vencimiento,:fecha_registro, :cantidad, :estado)
-    RETURNING id
-""")
+        # Convertir la cadena de fecha de vencimiento a objeto datetime
+        fecha_vencimiento = None
+        if fecha_vencimiento_str:
+            fecha_vencimiento = datetime.strptime(fecha_vencimiento_str, '%Y-%m-%d')
 
-        lote_id= db_session.execute(query, {
+        # Crear la consulta SQL base sin especificar fecha_vencimiento
+        query_base = """
+            INSERT INTO lote_producto (id_producto, numero_lote, fecha_vencimiento, fecha_registro, cantidad, estado)
+            VALUES (:id_producto, :numero_lote, {}, :fecha_registro, :cantidad, :estado)
+            RETURNING id
+        """
+
+        # Definir la consulta final dependiendo de la presencia de fecha_vencimiento
+        if fecha_vencimiento is not None:
+            query = text(query_base.format(":fecha_vencimiento"))
+        else:
+            query = text(query_base.format("NULL"))
+
+        # Ejecutar la consulta y obtener el ID del nuevo lote
+        lote_id = db_session.execute(query, {
             'id_producto': id_producto,
             'numero_lote': numero_lote,
             'fecha_vencimiento': fecha_vencimiento,
-            'fecha_registro' : datetime.now(),
+            'fecha_registro': datetime.now(),
             'cantidad': cantidad,
-            'estado': estado
+            'estado': estado  # Coloca :estado en el diccionario de parámetros
         }).scalar()
 
-        
-    
-        insertar_movimiento_inventario(db_session,lote_id,"Lote nuevo", cantidad)
+        # Insertar el movimiento en el inventario
+        insertar_movimiento_inventario(db_session, lote_id, "Lote nuevo", cantidad)
+
         flash('Se ha creado el lote', 'success')
         return redirect(url_for('lotes'))
+
 
 @app.route('/editar_lote/<int:lote_id>', methods=['POST'])
 def editar_lote(lote_id):
     if request.method == 'POST':
-        fecha_vencimiento = request.form['fecha_vencimiento']
+        fecha_vencimiento_str = request.form['fecha_vencimiento']
         nueva_cantidad = int(request.form['cantidad'])  # Convertir a entero
       
-      
+        # Convertir la cadena de fecha de vencimiento a objeto datetime
+        fecha_vencimiento = None
+        if fecha_vencimiento_str:
+            fecha_vencimiento = datetime.strptime(fecha_vencimiento_str, '%Y-%m-%d')
+
         query_cantidad_actual = text("SELECT cantidad FROM lote_producto WHERE id = :lote_id")
         cantidad_actual = db_session.execute(query_cantidad_actual, {'lote_id': lote_id}).scalar()
        
@@ -1985,7 +2003,7 @@ def editar_lote(lote_id):
   
             db_session.commit()
             # Determinar el tipo de movimiento
-            tipo_movimiento = "Se incremento la cantidad" if nueva_cantidad > cantidad_actual else "Se redujo la cantidad"
+            tipo_movimiento = "Se incrementó la cantidad" if nueva_cantidad > cantidad_actual else "Se redujo la cantidad"
 
             # Calcular la cantidad de cambio en el inventario
             cantidad_cambio = abs(nueva_cantidad - cantidad_actual)
@@ -2003,16 +2021,13 @@ def editar_lote(lote_id):
             """)
             db_session.execute(query_actualizacion, {
                 'fecha_vencimiento': fecha_vencimiento,
-                'cantidad': nueva_cantidad,
                 'lote_id': lote_id
             })
   
             db_session.commit()
 
-          
         flash('Se ha actualizado el lote', 'success')
     return redirect(url_for('lotes'))
-
 
 @app.route("/movimientos",methods=['GET','POST'])
 def movimientos():

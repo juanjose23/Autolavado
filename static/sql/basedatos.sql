@@ -75,6 +75,8 @@ CREATE TABLE lote_producto
     estado INTEGER
 );
 
+
+
 CREATE TABLE movimiento_inventario
 (
     id SERIAL PRIMARY KEY,
