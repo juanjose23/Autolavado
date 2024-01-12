@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 from decimal import *
 import datetime
@@ -12,6 +13,8 @@ from sqlalchemy.orm import *
 from utils import *
 from flask import session
 from collections import defaultdict
+from datetime import datetime, timedelta, timezone
+from pytz import timezone
 import requests
 import json
 import pdfkit
@@ -19,6 +22,11 @@ import random
 import string
 import locale
 import pickle
+
+# Configura el locale a español
+locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+
+
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -33,6 +41,15 @@ app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = os.getenv("correo")
 app.config['MAIL_PASSWORD'] = os.getenv("clave")
 app.secret_key = '123'
+
+
+@app.after_request
+def after_request(response):
+    response.headers.add('Content-Type', 'application/json; charset=utf-8')
+    response.headers.add('Content-Encoding', 'utf-8')
+    return response
+
+
 
 mail = Mail(app)
 locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
@@ -541,6 +558,7 @@ def obtener_precioproductos(db_session):
     query=text("SELECT pp.*,p.id AS producto, p.nombre, p.logo FROM precio pp INNER JOIN producto p ON p.id = pp.id_producto")
     precios=db_session.execute(query).fetchall()
     return precios
+
 
 def obtener_productos_ventas(db_session):
     query = text("""
@@ -1206,7 +1224,8 @@ def obtener_servicios():
                 "id":row.id,
                 "descripcion":row.descripcion,
                 "nombre": row.nombre,
-                "precio": row.precio
+                "precio": row.precio,
+                "realizacion": row.realizacion.strftime('%H:%M:%S')
             }
             servicios.append(servicio)
         return jsonify(servicios)
@@ -2218,7 +2237,7 @@ def ventas_servicios():
 
 @app.route("/ver_productos_cliente",methods=['GET', 'POST'])
 def ver_productos_cliente():
-    productos = obtener_precioproductos(db_session)
+    productos = obtener_productos(db_session)
 
     return render_template("productos_generador.html",productos=productos)
 
@@ -2235,7 +2254,7 @@ def ver_servicios_clientes():
     flash("El PDF se ha generado correctamente, los usuarios ya podran visualizar los nuevos cambios!", "success")
     return render_template("servicios_generador.html", servicios=servicios)
 
-def generar_pdf_servicios():
+def generar_pdf_servicios(db_session):
     # Aquí es donde se renderiza tu plantilla HTML con Jinja
     # Se obtiene la lista de productos
     servicios = obtener_servicios_activos(db_session)
@@ -2261,11 +2280,12 @@ def generar_pdf_servicios():
     return True
 
 
-def generar_pdf_productos():
+def generar_pdf_productos(db_session):
     # Aquí es donde se renderiza tu plantilla HTML con Jinja
     # Se obtiene la lista de productos
-    productos = obtener_precioproductos(db_session)
-    rendered = render_template('servicios_generador.html', productos=productos)
+    productos = obtener_productos(db_session)
+
+    rendered = render_template('productos_generador.html', productos=productos)
     # Aquí es donde se convierte el HTML renderizado a PDF
     options = {
         'enable-local-file-access': '',
@@ -2288,13 +2308,15 @@ def generar_pdf_productos():
 
 @app.route('/generarPDFServicios', methods=['GET'])
 def pruebitaPDFServicios():
-    generar_pdf_servicios()
+
+    generar_pdf_servicios(db_session)
     flash("Se ha actualizado correctamente el servicio, recuerda de actualizar el PDF para los usuarios del BOT!", "success")
     return redirect('/ver_servicios_clientes')
 
 @app.route('/generarPDFProductos', methods=['GET'])
 def pruebitaPDFProductos():
-    generar_pdf_productos()
+
+    generar_pdf_productos(db_session)
     flash("Se ha actualizado correctamente el servicio, recuerda de actualizar el PDF para los usuarios del BOT!", "success")
     return redirect('/ver_productos_cliente')
 
@@ -2304,7 +2326,7 @@ SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 def obtener_servicio():
     creds = None
-    if os.path.exists('token.pickle') and os.path.getsize('token.pickle') > 0:
+    if os.path.exists('token.pickle'):
         with open('token.pickle', 'rb') as token:
             creds = pickle.load(token)
     if not creds or not creds.valid:
@@ -2333,19 +2355,299 @@ def crear_evento(service, inicio, fin):
     evento_creado = service.events().insert(calendarId='primary', body=evento).execute()
     print(f"Evento creado: {evento_creado['htmlLink']}")
 
-@app.route('/calendario', methods=['GET', 'POST'])
-def calendario():
-    # Obtiene el servicio de Google Calendar
-    service = obtener_servicio()
-    # Define las horas de inicio y fin del evento
-    inicio = datetime.now()
-    fin = inicio + timedelta(hours=1)
-    # Crea el evento
-    crear_evento(service, inicio, fin)
-    return render_template('calendario.html')
+@app.route('/api_obtener_dias_disponibles/', methods=['GET', 'POST'])
+def api_obtener_dias_disponibles():
 
 
 
+    # # Obtiene el servicio de Google Calendar
+    # service = obtener_servicio()
+
+    # # Define las horas de inicio y fin del evento
+    # inicio = datetime.now()
+    # fin = inicio + timedelta(hours=1)
+
+    # # Crea el evento
+    # crear_evento(service, inicio, fin)
+
+    rows = horariosistema(db_session)
+
+
+    # Crear el diccionario
+    tabla = {}
+    for row in rows:
+        tabla[row[2]] = {"estado": row[5], "apertura": row[3].strftime("%H:%M"), "cierre": row[4].strftime("%H:%M")}
+    
+    dias_semana = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"]
+    
+    #ESTRUCTURA DE LA TABLA DEL SELECT
+        # Tu tabla en forma de diccionario con horarios de apertura y cierre
+    # tabla = {
+    #     "Lunes": {"estado": 1, "apertura": "08:00", "cierre": "18:00"},
+    #     "Martes": {"estado": 1, "apertura": "08:00", "cierre": "18:00"},
+    #     "Miércoles": {"estado": 1, "apertura": "08:00", "cierre": "18:00"},
+    #     "Jueves": {"estado": 1, "apertura": "08:00", "cierre": "18:00"},
+    #     "Viernes": {"estado": 1, "apertura": "08:00", "cierre": "18:00"},
+    #     "Sábado": {"estado": 1, "apertura": "08:00", "cierre": "18:00"},
+    #     "Domingo": {"estado": 2, "apertura": "00:00", "cierre": "00:00"}
+    # }
+
+        # Lista de los días de la semana en orden
+    dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+
+    # Obtén el día de la semana y la hora actual
+    hoy = datetime.now()
+    dia_actual = dias_semana[hoy.weekday()]
+    hora_actual = datetime.strptime(hoy.strftime("%H:%M"), "%H:%M")
+
+    # Encuentra el índice del día de la semana actual en la lista
+    indice_actual = dias_semana.index(dia_actual)
+
+    # Reordena la lista de días de la semana para que comience desde el día actual
+    dias_semana = dias_semana[indice_actual:] + dias_semana[:indice_actual]
+
+    # Crea una lista para almacenar los próximos 7 días
+    proximos_dias = []
+
+    # Recorre la lista de días de la semana
+    i = 0
+    while len(proximos_dias) < 7 and i < 14:  # Limita el valor de i a 14
+        # Calcula la fecha para el día de la semana actual
+        fecha = hoy + timedelta(days=i)
+        
+        # Obtiene el nombre del día de la semana
+        dia_semana = dias_semana[i % 7]
+        
+        # Verifica si el día está disponible y si la hora actual es antes de la hora de cierre
+        hora_cierre = datetime.strptime(tabla[dia_semana]["cierre"], "%H:%M")
+        if tabla[dia_semana]["estado"] == 1 and (hora_actual < hora_cierre or fecha.date() > hoy.date()):
+            # Si el día está disponible y no ha pasado la hora de cierre, añádelo a la lista de próximos días
+            proximos_dias.append(fecha.strftime("%A %d de %B de %Y"))
+        i += 1
+
+    # Imprime los próximos 7 días
+    for dia in proximos_dias:
+        print(dia)
+        
+    
+    return jsonify(proximos_dias)
+
+
+@app.route("/reservas",methods=['GET','POST'])
+def reservas():
+
+    
+    return 'se consultó'
+
+# Esta API es para obtener del bot el la duración del servicio seleccionado
+# ademas de su dia
+@cross_origin()
+@app.route('/api_duracionLavado_dia' , methods=['GET', 'POST'])
+def api_duracionLavado_dia():
+    if request.method == 'POST':
+        try:
+            data = request.get_json()
+            print(data)
+            realizacion = data['realizacion']
+            fecha = data['fecha']
+            nombre = data['nombre']
+
+            # Divide la cadena en horas, minutos y segundos
+            horas, minutos, segundos = map(int, realizacion.split(':'))
+
+            # Convierte las horas y minutos a minutos
+            total_minutos = horas * 60 + minutos
+
+            print(total_minutos)
+
+            rows = horariosistema(db_session)
+
+
+            # Crear el diccionario
+            tabla = {}
+            for row in rows:
+                tabla[row[2]] = {"estado": row[5], "apertura": row[3].strftime("%H:%M"), "cierre": row[4].strftime("%H:%M")}
+            
+            dias_semana = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"]
+            
+            print(tabla)
+            # Convierte la fecha string a datetime
+            fecha_formateada = datetime.strptime(fecha, '%A %d de %B de %Y')
+            dia = fecha_formateada.day
+
+            # Convierte el día a string
+            dia_str = str(dia)
+
+            print(dia_str)
+
+            # Obtiene el día de la semana
+            dia_semana = fecha_formateada.strftime("%A")
+
+
+
+
+            # Verifica si el día está disponible y si la hora actual es antes de la hora de cierre
+            dia_semana = dia_semana.encode('latin1').decode('utf8') # Codifica el día de la semana para que aparezca acento
+            dia_semana = dia_semana.lower().capitalize() #Le pone la primera letra en mayuscula
+            hora_apertura = datetime.strptime(tabla[dia_semana]["apertura"], "%H:%M")
+            hora_cierre = datetime.strptime(tabla[dia_semana]["cierre"], "%H:%M")
+
+            hora_apertura_formateada = hora_apertura.time() # Extrae solo la hora de apertura
+            hora_cierre_formateada = hora_cierre.time() #Extrae solo la hora de cierre
+
+            service = obtener_servicio() # Obtiene el servicio de Google Calendar TOKEN
+            print(dia_semana)
+            print(hora_apertura_formateada)
+            print(hora_cierre_formateada)
+
+            # Especifica la zona horaria
+            tz = timezone('America/Managua')
+
+            # Convertir las horas a formato de 24 horas
+            hora_apertura = hora_apertura_formateada.hour
+            hora_cierre = hora_cierre_formateada.hour
+
+            # Mapeo de los días de la semana a números
+            dias = {
+                "Lunes": 1,
+                "Martes": 2,
+                "Miércoles": 3,
+                "Jueves": 4,
+                "Viernes": 5,
+                "Sábado": 6,
+                "Domingo": 7
+            }
+
+            # Asegúrate de usar la zona horaria correcta
+            tz = timezone('America/Managua')
+
+            # Obtener el año y el mes en curso
+            anio_actual = datetime.now().year
+            mes_actual = datetime.now().month
+
+            print(dias)
+
+            # Crear las fechas de inicio y fin
+            # fecha_inicio = datetime(anio_actual, mes_actual, dias[dia_semana], hora_apertura, tzinfo=tz)
+            # fecha_fin = datetime(anio_actual, mes_actual, dias[dia_semana], hora_cierre, tzinfo=tz)
+            fecha_inicio = datetime(anio_actual, mes_actual, dia, hora_apertura_formateada.hour, hora_apertura_formateada.minute , tzinfo=tz)  # 8 AM del 11 de enero de 2024
+            fecha_fin = datetime(anio_actual, mes_actual, dia, hora_cierre_formateada.hour, hora_apertura_formateada.minute, tzinfo=tz)  # 5 PM del mismo día
+
+            # Obtiene los eventos en ese rango de tiempo
+            events_result = service.events().list(
+                calendarId='primary', 
+                timeMin=fecha_inicio.isoformat(),
+                timeMax=fecha_fin.isoformat(),
+                singleEvents=True,
+                orderBy='startTime'
+            ).execute()
+
+            events = events_result.get('items', [])
+
+            # Eventos existentes (hora inicio y fin en formato 'HH:MM')
+            eventos_existentes = []
+
+            for event in events:
+                start = event['start'].get('dateTime', event['start'].get('date'))
+                end = event['end'].get('dateTime', event['end'].get('date'))
+                
+                # Convierte la fecha y hora a un objeto datetime
+                fecha_hora_inicio = datetime.fromisoformat(start)
+                fecha_hora_fin = datetime.fromisoformat(end)
+                
+                # Formatea la hora y minuto en el formato 'HH:MM'
+                hora_inicio = fecha_hora_inicio.strftime('%H:%M')
+                hora_fin = fecha_hora_fin.strftime('%H:%M')
+                
+                # Agrega la hora de inicio y fin a la lista
+                eventos_existentes.append((hora_inicio, hora_fin))
+
+            print(eventos_existentes)
+
+            bloques_disponibles = consultar_horarios_disponibles_googleCalendar(dia_semana, total_minutos, eventos_existentes)
+
+
+
+            
+
+           
+            
+
+            return jsonify(bloques_disponibles)
+        except Exception as e:
+            print(e)
+            return jsonify({'success': False, 'message': 'Ocurrió un error'})
+
+
+    return jsonify({'success': True})
+
+
+@app.route('/consultaGooglePrueba', methods=['GET', 'POST'])
+def consultaGooglePrueba():
+
+    
+
+
+    return 'se consultó'
+
+def consultar_horarios_disponibles_googleCalendar(dia_disponible, duracion_evento, eventos_existentes):
+    # Tu diccionario
+    rows = horariosistema(db_session)
+
+
+
+
+    # Crear el diccionario
+    horario = {}
+    for row in rows:
+        horario[row[2]] = {"estado": row[5], "apertura": row[3].strftime("%H:%M"), "cierre": row[4].strftime("%H:%M")}
+
+    # Duración del evento en minutos
+
+
+    # Tiempo de margen en minutos
+    margen = 10
+
+    # Eventos existentes (hora inicio y fin en formato 'HH:MM')
+    eventos_existentes = []
+
+    bloques_disponibles = []
+
+    def obtener_horarios_disponibles(dia, duracion_evento, margen, eventos_existentes):
+        apertura = datetime.strptime(horario[dia]['apertura'], '%H:%M')
+        cierre = datetime.strptime(horario[dia]['cierre'], '%H:%M')
+        duracion_evento = timedelta(minutes=duracion_evento)
+        margen = timedelta(minutes=margen)
+
+        horarios_disponibles = []
+        hora_actual = apertura
+
+        for inicio, fin in eventos_existentes:
+            inicio = datetime.strptime(inicio, '%H:%M')
+            fin = datetime.strptime(fin, '%H:%M')
+
+            while hora_actual + duracion_evento <= inicio:
+                horarios_disponibles.append((hora_actual.time(), (hora_actual + duracion_evento).time()))
+                hora_actual += duracion_evento + margen
+
+            hora_actual = fin + margen
+
+        while hora_actual + duracion_evento <= cierre:
+            horarios_disponibles.append((hora_actual.time(), (hora_actual + duracion_evento).time()))
+            hora_actual += duracion_evento + margen
+
+        return horarios_disponibles
+
+    horarios_disponibles = obtener_horarios_disponibles(dia_disponible, duracion_evento, margen, eventos_existentes)
+
+
+    for inicio, fin in horarios_disponibles:
+        horario = f'Disponible de {inicio} a {fin}'
+        bloques_disponibles.append(horario)
+
+    # Ahora horarios_str contiene todas las cadenas de texto
+    print(bloques_disponibles)
+    return bloques_disponibles
 if __name__ == '__main__':
    
     app.run(host='127.0.0.1', port=8000, debug=True)
