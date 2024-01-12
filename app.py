@@ -1276,7 +1276,7 @@ def validar_numero_celular():
     try:
         numero_celular = request.json.get('numero_celular')
         existe = ValidarNumeroCelularExistente(numero_celular)
-        return jsonify({'existe': existe})
+        return jsonify({'existe': existe}),200
 
     except Exception as error:
        
@@ -2428,7 +2428,7 @@ def api_obtener_dias_disponibles():
     # Imprime los próximos 7 días
     for dia in proximos_dias:
         print(dia)
-        
+    
     
     return jsonify(proximos_dias)
 
