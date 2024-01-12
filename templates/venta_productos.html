@@ -30,16 +30,16 @@
 <section class="content">
     <div class="card">
         <div class="card-header card-default p-0 text-center">
-            <h4 class="mb-0 font-weight-bold text-black">Realizar venta por producto</h4>
-            <div class="d-grid gap-1 col-6 mx-auto">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0 font-weight-bold text-dark">Realizar Venta por productos</h4>
                 <a class="btn btn-danger" href="/ventas">Cancelar</a>
-
             </div>
         </div>
+        
         <div class="container">
 
 
-            <form>
+            <form id="formularioproductos">
                 <div class="form-group">
                     <label for="cliente">Cliente:</label>
                     <select class="form-control select2bs4" id="cliente" name="cliente" required>
@@ -240,35 +240,55 @@
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
 <script>
-    function enviarVenta() {
-        var tipoVenta = document.getElementById('tipo_venta').value;
-        var total = document.getElementById('total').value;
-        var cliente = document.getElementById('cliente').value;
+    async function enviarVenta(event) {
+        try {
+            // Evitar que el formulario se envíe automáticamente
+            event.preventDefault();
 
-        // Objeto con los datos a enviar al servidor
-        var data = {
-            cliente: cliente,
-            tipo_venta: tipoVenta,
-            total: total,
-            productos: productos
-        };
+            var tipoVenta = document.getElementById('tipo_venta').value;
+            var total = document.getElementById('total').value;
+            var cliente = document.getElementById('cliente').value;
 
-        // Realizar la solicitud POST al servidor Flask
-        axios.post('/venta_productos', data)
-            .then(function (response) {
+            // Objeto con los datos a enviar al servidor
+            var data = {
+                cliente: cliente,
+                tipo_venta: tipoVenta,
+                total: total,
+                productos: productos
+            };
+            if (productos.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Tiene que agregar productos',
+                });
+            }
+            else {
+                // Realizar la solicitud al servidor usando axios y esperar la respuesta
+                const res = await axios.post('/venta_productos', data);
+                console.log(`Estado: ${res.status}`);
+                console.log('Cuerpo: ', res.data);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Exito',
+                    text: 'Se ha registrado la venta',
+                });
+                setTimeout(() => {
+                    window.location = "/ventas";
+                }, 2000);
+            }
 
-                console.log(response.data);
 
-                Swal.fire('Venta Generada', 'La venta se ha generado exitosamente.', 'success');
-            })
-            .catch(function (error) {
-                // Aquí puedes manejar errores, por ejemplo, mostrar un mensaje de error
-                Swal.fire('Error', 'Ha ocurrido un error al procesar la venta.', 'error');
-            });
+        } catch (err) {
+            console.error(err);
+        } finally {
+
+        }
     }
 
-    // Asignar la función enviarVenta al evento click del botón Generar Venta
-    document.getElementById('generarVenta').addEventListener('click', enviarVenta);
+    // Asignar la función enviarVenta al evento submit del formulario
+    document.getElementById('formularioproductos').addEventListener('submit', enviarVenta);
+
 </script>
 
 {% endblock %}

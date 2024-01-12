@@ -965,13 +965,38 @@ Atentamente,
 Lavacar ASOCATIE
     '''
 
-    asunto = 'Asignación de credenciales - Acceso a cuenta'
+    asunto = 'Recuperacion de contraseña - Acceso a cuenta'
     remitente = 'ingsoftwar123@gmail.com'
     destinatario = [correo_destino]
 
     msg = Message(asunto, sender=remitente, recipients=destinatario)
     msg.body = cuerpo
     mail.send(msg)
+
+
+def enviar_reporte_por_venta(nombre, correo_destino):
+    cuerpo = f'''
+    Estimado(a) {nombre},
+    A continuación se encuentra adjuntado el reporte correspondiente a la venta realizada el dia de hoy\n
+    Atentamente,
+    Lavacar ASOCATIE '''
+
+    asunto = 'Reporte del dia - Reporte de venta'
+    remitente = 'ingsoftwar123@gmail.com'
+    destinatario = [correo_destino]
+
+    msg = Message(asunto, sender=remitente, recipients=destinatario)
+    msg.body = cuerpo
+
+    # Adjuntar el archivo PDF
+    pdf_file_path = '/static/pdf/report/ventas.pdf'  # Cambia esto por la ruta correcta
+    with app.open_resource(pdf_file_path) as pdf_file:
+        msg.attach(pdf_file_path, 'application/pdf', pdf_file.read())
+
+    # Enviar el correo
+    mail.send(msg)
+
+
 def BuscarPorIdPersona(db_session: Session, id):
     query = text("""
             SELECT p.nombre, pn.apellido,p.correo
@@ -1026,6 +1051,13 @@ def obtener_datos_sucursal():
 @app.context_processor
 def agregar_datos_sucursal():
     return dict(datos_sucursal=obtener_datos_sucursal())
+
+@app.before_request
+def before_request():
+    print("Ejecutando antes de la solicitud")
+    estadisticas_resultantes = actualizar_estado_lotes(db_session)
+
+    
 @app.route("/recuperar",methods=['GET','POST'])
 def recuperar_contraseña():
 
@@ -2083,77 +2115,90 @@ def ventaservicios():
     return render_template("ventas_servicios.html",clientes=clientes,tipos=tipos,servicios=servicios)
 @app.route("/venta_productos", methods=['POST'])
 def procesar_venta():
-    data = request.json
-    productos = data.get('productos', [])
-    persona_id = data.get('cliente')
-    tipo_venta = data.get('tipo_venta')
-    total = data.get('total')
-    print(data)
-    codigo = generar_codigo_venta(db_session)
+    if request.method == 'POST':
+        try:
+            data = request.json
+            productos = data.get('productos', [])
+            persona_id = data.get('cliente')
+            tipo_venta = data.get('tipo_venta')
+            total = data.get('total')
+            codigo = generar_codigo_venta(db_session)
 
-    id_venta = insertar_venta(db_session, tipo_venta, persona_id, codigo, 0, total, 1)
+            id_venta = insertar_venta(db_session, tipo_venta, persona_id, codigo, 0, total, 1)
 
-    for producto_info in productos:
-        producto_id = producto_info.get('id')
-        precio = producto_info.get('precio', Decimal('0.00'))
-        cantidad_venta = producto_info.get('cantidad', 0)
-        subtotal = cantidad_venta * precio
-        result = obtener_info_lote_mas_antiguo(db_session, producto_id)
-
-        if result and result["cantidad"] > 0:
-            id_lote = int(result["id_lote"])
-            cantidad_lote = int(result["cantidad"])
-
-            while cantidad_venta > 0:
-                # Determinar la cantidad a restar en este lote
-                cantidad_a_restar_lote = min(cantidad_venta, cantidad_lote)
-
-                # Restar la cantidad del lote
-                restar_cantidad_lote(db_session, id_lote, cantidad_a_restar_lote)
-
-                # Restar la cantidad vendida del inventario
-                insertar_movimiento_inventario(db_session, id_lote, "Por venta", cantidad_a_restar_lote)
-
-                # Restar la cantidad restante
-                cantidad_venta -= cantidad_a_restar_lote
-
-                # Insertar detalles de venta
-                insertar_venta_producto(db_session, id_venta, producto_id,precio, cantidad_a_restar_lote, subtotal)
-
-                # Obtener la información del lote más antiguo para la siguiente iteración
+            for producto_info in productos:
+                producto_id = producto_info.get('id')
+                precio = producto_info.get('precio', Decimal('0.00'))
+                cantidad_venta = producto_info.get('cantidad', 0)
+                subtotal = cantidad_venta * precio
                 result = obtener_info_lote_mas_antiguo(db_session, producto_id)
 
                 if result and result["cantidad"] > 0:
                     id_lote = int(result["id_lote"])
                     cantidad_lote = int(result["cantidad"])
-                else:
-                    print("No hay más lotes disponibles para restar la cantidad vendida.")
-                    break
 
-    db_session.commit()
-    flash("La venta se ha realizado correctamente","success")
-    return redirect('/ventas')
+                    while cantidad_venta > 0:
+                        # Determinar la cantidad a restar en este lote
+                        cantidad_a_restar_lote = min(cantidad_venta, cantidad_lote)
 
-@app.route("/venta_servicios",methods=["GET", "POST"])
+                        # Restar la cantidad del lote
+                        restar_cantidad_lote(db_session, id_lote, cantidad_a_restar_lote)
+
+                        # Restar la cantidad vendida del inventario
+                        insertar_movimiento_inventario(db_session, id_lote, "Por venta", cantidad_a_restar_lote)
+
+                        # Restar la cantidad restante
+                        cantidad_venta -= cantidad_a_restar_lote
+
+                        # Insertar detalles de venta
+                        insertar_venta_producto(db_session, id_venta, producto_id, precio, cantidad_a_restar_lote, subtotal)
+
+                        # Obtener la información del lote más antiguo para la siguiente iteración
+                        result = obtener_info_lote_mas_antiguo(db_session, producto_id)
+
+                        if result and result["cantidad"] > 0:
+                            id_lote = int(result["id_lote"])
+                            cantidad_lote = int(result["cantidad"])
+                        else:
+                            print("No hay más lotes disponibles para restar la cantidad vendida.")
+                            break
+
+                db_session.commit()
+        
+            return jsonify({"mensaje": "Success"}), 200
+        except Exception as e:
+            print(f"Error: {e}")
+            return jsonify({"mensaje": "Error interno del servidor"}), 500
+    return 'null', 400
+
+
+        
+
+@app.route("/venta_servicios", methods=["POST"])
 def ventas_servicios():
-    data = request.json
-    persona_id = data.get('cliente')
-    tipo_venta = data.get('tipo_venta')
-    total = data.get('total')
-    servicios=data.get('servicios',[])
-    codigo = generar_codigo_venta(db_session)
+    try:
+        data = request.json
+        persona_id = data.get('cliente')
+        tipo_venta = data.get('tipo_venta')
+        total = data.get('total')
+        servicios = data.get('servicios', [])
+        codigo = generar_codigo_venta(db_session)
 
-    id_venta = insertar_venta(db_session, tipo_venta, persona_id, codigo, 0, total, 1)
-    for servicios_info in servicios:
-        servicios_id = servicios_info.get('id')
-        precio = servicios_info.get('precio', Decimal('0.00'))
-        cantidad_venta = servicios_info.get('cantidad', 0)
-        subtotal = cantidad_venta * precio
-        insertar_detalle_venta(db_session,id_venta,servicios_id,precio,cantidad_venta,subtotal)
+        id_venta = insertar_venta(db_session, tipo_venta, persona_id, codigo, 0, total, 1)
 
+        for servicios_info in servicios:
+            servicios_id = servicios_info.get('id')
+            precio = servicios_info.get('precio', Decimal('0.00'))
+            cantidad_venta = servicios_info.get('cantidad', 0)
+            subtotal = cantidad_venta * precio
+            insertar_detalle_venta(db_session, id_venta, servicios_id, precio, cantidad_venta, subtotal)
 
-    flash("La venta se ha realizado correctamente","success")
-    return redirect('/ventas')
+        # Enviar respuesta JSON en caso de éxito
+        return jsonify({"mensaje": "La venta se ha realizado correctamente", "tipo": "success"}),200
+    except Exception as e:
+        print(f"Error en ventas_servicios: {e}")
+        # Enviar respuesta JSON en caso de error
+        return jsonify({"mensaje": "Hubo un error al procesar la venta de servicios. Por favor, inténtalo nuevamente.", "tipo": "error"}),500
 
 
 @app.route("/ver_productos_cliente",methods=['GET', 'POST'])
@@ -2198,8 +2243,6 @@ def generar_pdf_servicios():
     }
     css = ['static/css/boostrap4.css', 'static/css/style_servicios_generador.css']
     pdf = pdfkit.from_string(rendered, 'static/pdf/servicios/Servicios.pdf', options=options, css=css)
-
-
     return True
 
 
@@ -2207,7 +2250,6 @@ def generar_pdf_productos():
     # Aquí es donde se renderiza tu plantilla HTML con Jinja
     # Se obtiene la lista de productos
     productos = obtener_precioproductos(db_session)
-
     rendered = render_template('servicios_generador.html', productos=productos)
     # Aquí es donde se convierte el HTML renderizado a PDF
     options = {
@@ -2226,21 +2268,17 @@ def generar_pdf_productos():
     }
     css = ['static/css/boostrap4.css', 'static/css/style_servicios_generador.css']
     pdf = pdfkit.from_string(rendered, 'static/pdf/productos/Productos.pdf', options=options, css=css)
-
-
     return True
 
 
 @app.route('/generarPDFServicios', methods=['GET'])
 def pruebitaPDFServicios():
-
     generar_pdf_servicios()
     flash("Se ha actualizado correctamente el servicio, recuerda de actualizar el PDF para los usuarios del BOT!", "success")
     return redirect('/ver_servicios_clientes')
 
 @app.route('/generarPDFProductos', methods=['GET'])
 def pruebitaPDFProductos():
-
     generar_pdf_productos()
     flash("Se ha actualizado correctamente el servicio, recuerda de actualizar el PDF para los usuarios del BOT!", "success")
     return redirect('/ver_productos_cliente')
@@ -2282,24 +2320,13 @@ def crear_evento(service, inicio, fin):
 
 @app.route('/calendario', methods=['GET', 'POST'])
 def calendario():
-
-
-
     # Obtiene el servicio de Google Calendar
     service = obtener_servicio()
-
     # Define las horas de inicio y fin del evento
     inicio = datetime.now()
     fin = inicio + timedelta(hours=1)
-
     # Crea el evento
     crear_evento(service, inicio, fin)
-
-
-
-    
-
-    
     return render_template('calendario.html')
 
 

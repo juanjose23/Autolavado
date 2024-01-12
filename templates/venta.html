@@ -31,17 +31,21 @@
     <div class="container-fluid">
         <div class="row">
             <div class="card col-md-12">
-                <div class=" card-tabs">
-                    <div class="card-header">
-                        <h4 class=" font-weight-bold text-primary">¡Bienvenido al Registro de Ventas!</h4>
-                        <div class="align-content-end text-right">
-                            <div class="d-grid gap-1 col-6 mx-auto">
-                                <a class="btn btn-primary" href="/ventasproductos">Generar venta por producto</a>
-                                <a class="btn btn-primary" href="/ventaservicios">Generar Venta por servicios</a>
+
+                <div class="card-header">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h4 class="font-weight-bold text-primary mb-0">¡Bienvenido al Registro de Ventas!</h4>
+                        </div>
+                        <div class="col text-right">
+                            <div class="btn-group">
+                                <a class="btn btn-success" href="/ventasproductos">Generar Venta por Producto</a>
+                                <a class="btn btn-info" href="/ventaservicios">Generar Venta por Servicios</a>
                             </div>
                         </div>
                     </div>
                 </div>
+
 
                 <div class="nav  nav-tabs" id="vert-tabs-tab" role="tablist" aria-orientation="horizontal">
                     <a class="nav-link active" id="vert-tabs-home-tab" data-toggle="pill" href="#vert-tabs-home"
@@ -73,7 +77,7 @@
                                             <th>Total</th>
                                             <th>Tipo de pago</th>
                                             <th>Estado</th>
-                                            
+
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -81,18 +85,18 @@
                                         <tr>
                                             <td>{{ productos.codigo }}</td>
                                             <td>{{ productos.fecha }}</td>
-                                        
+
                                             <td>
                                                 {% if productos.subtotal_detalle_venta %}
                                                 Venta por servicio
                                                 {% elif productos.subtotal_venta_producto %}
                                                 venta por producto
                                                 {% else %}
-                                               Desconocido
+                                                Desconocido
                                                 {% endif %}
                                             </td>
                                             <td>{{productos.persona_nombre}}</td>
-                                            <td> 
+                                            <td>
                                                 {% if productos.producto_nombre %}
                                                 {{ productos.producto_nombre }}
                                                 {% elif productos.servicio_nombre %}
@@ -138,7 +142,7 @@
                                                 <span class="badge bg-danger">Inactivo</span>
                                                 {% endif %}
                                             </td>
-                                            
+
                                         </tr>
                                         {% endfor %}
 
