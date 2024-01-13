@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+
 import os
 from decimal import *
 import datetime
@@ -43,11 +43,7 @@ app.config['MAIL_PASSWORD'] = os.getenv("clave")
 app.secret_key = '123'
 
 
-@app.after_request
-def after_request(response):
-    response.headers.add('Content-Type', 'application/json; charset=utf-8')
-    response.headers.add('Content-Encoding', 'utf-8')
-    return response
+
 
 
 
@@ -1072,7 +1068,7 @@ def agregar_datos_sucursal():
 
 @app.before_request
 def before_request():
-    print("Ejecutando antes de la solicitud")
+ 
     estadisticas_resultantes = actualizar_estado_lotes(db_session)
     print(estadisticas_resultantes)
 
@@ -1108,17 +1104,19 @@ def recuperar_contraseñas():
 @cross_origin()
 @app.route('/api/InsertarCliente', methods=['POST'])
 def api_InsertarCliente():
+   
     if request.method == 'POST':
         try:
             data = request.get_json()
             nombre = data['nombre']
             correo = data['correo']
             celular = data['celular']
-            apellidos = data['apellidos']
-            tipo = data['tipo']
-
+            print(data)
             id_persona = insertar_persona(db_session, nombre, correo,"En direccion", celular)
-            insertar_persona_natural(db_session, id_persona, apellidos,null,null,null, tipo)
+            fecha_hoy = datetime.now()
+# Formatea la fecha de hoy en formato de fecha de nacimiento (día, mes, año)
+            fecha_nacimiento_formato = fecha_hoy.strftime("%d/%m/%Y")
+            insertar_persona_natural(db_session,id_persona,"Actualizar","cedula",fecha_nacimiento_formato,"O","Natural")
             codigo = generar_codigo_cliente(nombre,id_persona,celular)
             codigo_cliente=insertar_cliente(db_session, id_persona,codigo,"Normal","No hay")
 
@@ -1147,6 +1145,11 @@ def insertar_usuarios():
         nombre = request_data['nombre']
         celular = request_data['celular']
         id_persona = insertar_persona(db_session, nombre,"No hay","En direccion", celular)
+        fecha_hoy = datetime.now()
+
+# Formatea la fecha de hoy en formato de fecha de nacimiento (día, mes, año)
+        fecha_nacimiento_formato = fecha_hoy.strftime("%d/%m/%Y")
+        insertar_persona_natural(db_session,id_persona,"Actualizar","cedula",fecha_nacimiento_formato,"O","Natural")
         codigo = generar_codigo_cliente(nombre,id_persona,celular)
         codigo_cliente=insertar_cliente(db_session, id_persona,codigo,"Cliente no registrado","No hay")
 
