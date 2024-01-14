@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 import os
 from decimal import *
 import datetime
@@ -15,6 +15,7 @@ from flask import session
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pytz import timezone
+from dateutil import parser
 import requests
 import json
 import pdfkit
@@ -22,6 +23,7 @@ import random
 import string
 import locale
 import pickle
+import arrow
 
 # Configura el locale a español
 locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
@@ -43,7 +45,11 @@ app.config['MAIL_PASSWORD'] = os.getenv("clave")
 app.secret_key = '123'
 
 
-
+@app.after_request
+def after_request(response):
+    response.headers.add('Content-Type', 'application/json; charset=utf-8')
+    response.headers.add('Content-Encoding', 'utf-8')
+    return response
 
 
 
@@ -1068,7 +1074,7 @@ def agregar_datos_sucursal():
 
 @app.before_request
 def before_request():
- 
+    print("Ejecutando antes de la solicitud")
     estadisticas_resultantes = actualizar_estado_lotes(db_session)
     print(estadisticas_resultantes)
 
@@ -1135,6 +1141,7 @@ def api_InsertarCliente():
 
     return 'null', 400
 
+
 @cross_origin()
 @app.route('/api/InsertarClienteObligatorio', methods=['GET', 'POST'])
 def insertar_usuarios():
@@ -1146,9 +1153,6 @@ def insertar_usuarios():
         nombre = request_data['nombre']
         celular = request_data['celular']
         id_persona = insertar_persona(db_session, nombre,"No hay","En direccion", celular)
-        fecha_hoy = datetime.now()
-        fecha_nacimiento_formato = fecha_hoy.strftime("%d/%m/%Y")
-        insertar_persona_natural(db_session,id_persona,"Actualizar","cedula",fecha_nacimiento_formato,"O","Natural")
         codigo = generar_codigo_cliente(nombre,id_persona,celular)
         codigo_cliente=insertar_cliente(db_session, id_persona,codigo,"Cliente no registrado","No hay")
 
@@ -2342,9 +2346,9 @@ def obtener_servicio():
     service = build('calendar', 'v3', credentials=creds)
     return service
 
-def crear_evento(service, inicio, fin):
+def crear_evento(service, nombre_reserva, inicio, fin):
     evento = {
-        'summary': 'Reserva de autolavado',
+        'summary': nombre_reserva,
         'start': {
             'dateTime': inicio.isoformat(),
             'timeZone': 'America/Managua',
@@ -2428,6 +2432,10 @@ def api_obtener_dias_disponibles():
         i += 1
 
     # Imprime los próximos 7 días
+    proximos_dias = [dia.encode('latin1').decode('utf8') for dia in proximos_dias]
+
+    proximos_dias = [dia.lower().capitalize() for dia in proximos_dias]
+
     for dia in proximos_dias:
         print(dia)
     
@@ -2449,50 +2457,49 @@ def api_duracionLavado_dia():
     if request.method == 'POST':
         try:
             data = request.get_json()
-            print(data)
             realizacion = data['realizacion']
             fecha = data['fecha']
             nombre = data['nombre']
 
             # Divide la cadena en horas, minutos y segundos
-            horas, minutos, segundos = map(int, realizacion.split(':'))
+            horas, minutos, segundos = estructurarTexto_a_variables(realizacion)
 
             # Convierte las horas y minutos a minutos
-            total_minutos = horas * 60 + minutos
-
+            total_minutos = convertirHoras_a_Minutos(horas, minutos, segundos)
             print(total_minutos)
 
+            # Obtiene los horarios del sistema
             rows = horariosistema(db_session)
 
-
-            # Crear el diccionario
+            # Crear el diccionario con los horarios del sistema
             tabla = {}
             for row in rows:
                 tabla[row[2]] = {"estado": row[5], "apertura": row[3].strftime("%H:%M"), "cierre": row[4].strftime("%H:%M")}
             
             dias_semana = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"]
             
-            print(tabla)
+
             # Convierte la fecha string a datetime
-            fecha_formateada = datetime.strptime(fecha, '%A %d de %B de %Y')
+            fecha_formateada = formatear_fecha(fecha)
+
+            # Obtiene solamente el día del mes
             dia = fecha_formateada.day
 
-            # Convierte el día a string
-            dia_str = str(dia)
 
-            print(dia_str)
-
-            # Obtiene el día de la semana
+            # Obtiene el día de la semana en español
+            ## NOTA
+            ### Para evitar los problemas de codificación, se codifica el día de la semana a latin1
             dia_semana = fecha_formateada.strftime("%A")
+            # Convierte en bytes el latin1 y luego lo decodifica a utf8 para que aparezca el acento correctamente
+            dia_semana = dia_semana.encode('latin1').decode('utf8')
+            #Le pone la primera letra en mayuscula para que pueda ser reconocido por el diccionario
+            dia_semana = dia_semana.lower().capitalize()
 
 
-
-
-            # Verifica si el día está disponible y si la hora actual es antes de la hora de cierre
-            dia_semana = dia_semana.encode('latin1').decode('utf8') # Codifica el día de la semana para que aparezca acento
-            dia_semana = dia_semana.lower().capitalize() #Le pone la primera letra en mayuscula
             hora_apertura = datetime.strptime(tabla[dia_semana]["apertura"], "%H:%M")
             hora_cierre = datetime.strptime(tabla[dia_semana]["cierre"], "%H:%M")
+
+
 
             hora_apertura_formateada = hora_apertura.time() # Extrae solo la hora de apertura
             hora_cierre_formateada = hora_cierre.time() #Extrae solo la hora de cierre
@@ -2568,13 +2575,6 @@ def api_duracionLavado_dia():
 
             bloques_disponibles = consultar_horarios_disponibles_googleCalendar(dia_semana, total_minutos, eventos_existentes)
 
-
-
-            
-
-           
-            
-
             return jsonify(bloques_disponibles)
         except Exception as e:
             print(e)
@@ -2582,6 +2582,84 @@ def api_duracionLavado_dia():
 
 
     return jsonify({'success': True})
+
+@cross_origin()
+@app.route('/api_agregar_reserva', methods=['POST'])
+def api_agregar_reserva():
+    try:
+        # data = request.get_json()
+        # nombre = data['nombre']
+        # apellido = data['apellido']
+        # telefono = data['telefono']
+        # correo = data['correo']
+        # fecha = data['fecha']
+        # bloque = data['bloque']
+
+        # # Convierte la fecha string a datetime
+        # fecha_formateada = formatear_fecha(fecha)
+
+        # # Obtiene solamente el día del mes
+        # dia = fecha_formateada.day
+
+        # # Obtiene el día de la semana en español
+        # ## NOTA
+        # ### Para evitar los problemas de codificación, se codifica el día de la semana a latin1
+        # dia_semana = fecha_formateada.strftime("%A")
+        # # Convierte en bytes el latin1 y luego lo decodifica a utf8 para que aparezca el acento correctamente
+        # dia_semana = dia_semana.encode('latin1').decode('utf8')
+        # #Le pone la primera letra en mayuscula para que pueda ser reconocido por el diccionario
+        # dia_semana = dia_semana.lower().capitalize()
+
+
+
+        # Proceso de Google Calendar
+
+        service = obtener_servicio() # Obtiene el servicio de Google Calendar TOKEN
+
+        # Tus cadenas de tiempo
+        cadena_tiempo = '10:00 AM a 11:00 AM'
+
+        # Separa las cadenas de tiempo
+        inicio_reserva_str, final_reserva_str = cadena_tiempo.split(' a ')
+
+        # Elimina los espacios extra
+        inicio_reserva_str = inicio_reserva_str.strip()
+        final_reserva_str = final_reserva_str.strip()
+
+        # Formato de tiempo
+        formato = '%I:%M %p'
+
+        # Convierte las cadenas a objetos datetime.time
+        inicio_reserva = datetime.strptime(inicio_reserva_str, formato).time()
+        final_reserva = datetime.strptime(final_reserva_str, formato).time()
+
+        # Convierte los objetos datetime.time a formato 24 horas
+        inicio_reserva_24h = inicio_reserva.strftime('%H:%M')
+        final_reserva_24h = final_reserva.strftime('%H:%M')
+
+        print('Inicio de reserva:', inicio_reserva_24h)
+        print('Final de reserva:', final_reserva_24h)
+
+        nombre_reserva = 'Reserva de prueba'
+
+        
+        crear_evento(service, nombre_reserva, inicio_reserva_24h, final_reserva_24h)
+
+
+
+        
+
+        return jsonify({'sucess': True, 'message': 'Se ha agregado la reserva correctamente'})
+
+    except Exception as e:
+        print(e)
+        return jsonify({'success': False, 'message': 'Ocurrió un error'})   
+    
+
+
+
+
+
 
 
 @app.route('/consultaGooglePrueba', methods=['GET', 'POST'])
@@ -2644,12 +2722,32 @@ def consultar_horarios_disponibles_googleCalendar(dia_disponible, duracion_event
 
 
     for inicio, fin in horarios_disponibles:
-        horario = f'Disponible de {inicio} a {fin}'
+        inicio_str = convertir_a_12_horas(inicio)
+        fin_str = convertir_a_12_horas(fin)
+
+        horario = f'{inicio_str} a {fin_str}'
         bloques_disponibles.append(horario)
 
     # Ahora horarios_str contiene todas las cadenas de texto
     print(bloques_disponibles)
     return bloques_disponibles
+
+def convertir_a_12_horas(hora):
+    if hora.hour < 12:
+        if hora.hour == 0:
+            hora_str = '12:{:02d} AM'.format(hora.minute)
+        else:
+            hora_str = '{:02d}:{:02d} AM'.format(hora.hour, hora.minute)
+    else:
+        if hora.hour > 12:
+            hora_str = '{:02d}:{:02d} PM'.format(hora.hour - 12, hora.minute)
+        else:
+            hora_str = '{:02d}:{:02d} PM'.format(hora.hour, hora.minute)
+    return hora_str
+
+
+
+
 if __name__ == '__main__':
    
     app.run(host='127.0.0.1', port=8000, debug=True)
