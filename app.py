@@ -1102,23 +1102,25 @@ def recuperar_contraseñas():
 
     return redirect('/recuperar')
 @cross_origin()
-@app.route('/api/InsertarCliente', methods=['POST'])
+@app.route('/api_InsertarCliente', methods=['POST'])
 def api_InsertarCliente():
-   
     if request.method == 'POST':
         try:
             data = request.get_json()
+            print(data)
             nombre = data['nombre']
+            apellidos = data['apellidos']
             correo = data['correo']
             celular = data['celular']
-            print(data)
+            tipo = data['tipo']
+
             id_persona = insertar_persona(db_session, nombre, correo,"En direccion", celular)
-            fecha_hoy = datetime.now()
-# Formatea la fecha de hoy en formato de fecha de nacimiento (día, mes, año)
-            fecha_nacimiento_formato = fecha_hoy.strftime("%d/%m/%Y")
-            insertar_persona_natural(db_session,id_persona,"Actualizar","cedula",fecha_nacimiento_formato,"O","Natural")
+            print(id_persona)
+            insertar_persona_natural(db_session, id_persona, apellidos, None, None, None, tipo)
             codigo = generar_codigo_cliente(nombre,id_persona,celular)
+            print(codigo)
             codigo_cliente=insertar_cliente(db_session, id_persona,codigo,"Normal","No hay")
+            print(codigo_cliente)
 
             db_session.commit()
             return jsonify({"codigo_cliente": codigo_cliente}), 200
@@ -1133,7 +1135,6 @@ def api_InsertarCliente():
 
     return 'null', 400
 
-
 @cross_origin()
 @app.route('/api/InsertarClienteObligatorio', methods=['GET', 'POST'])
 def insertar_usuarios():
@@ -1146,8 +1147,6 @@ def insertar_usuarios():
         celular = request_data['celular']
         id_persona = insertar_persona(db_session, nombre,"No hay","En direccion", celular)
         fecha_hoy = datetime.now()
-
-# Formatea la fecha de hoy en formato de fecha de nacimiento (día, mes, año)
         fecha_nacimiento_formato = fecha_hoy.strftime("%d/%m/%Y")
         insertar_persona_natural(db_session,id_persona,"Actualizar","cedula",fecha_nacimiento_formato,"O","Natural")
         codigo = generar_codigo_cliente(nombre,id_persona,celular)
