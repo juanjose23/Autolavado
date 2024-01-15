@@ -424,7 +424,6 @@ def insertar_venta(db_session, id_tipo, id_cliente, codigo, descuento, total, es
 
     # Recuperar el ID de la venta recién insertada
     id_venta = result.fetchone()[0]
-    print(id_venta)
     db_session.commit()
 
     return id_venta
@@ -447,6 +446,49 @@ def insertar_detalle_venta(db_session: Session, id_venta, id_servicio, precio_un
 
     db_session.execute(query, {"id_venta": id_venta, "id_servicio": id_servicio, "precio_unitario": precio_unitario,"cantidad":cantidad, "subtotal": subtotal})
     db_session.commit()
+def insertar_detalle_venta_cita(db_session, id_venta, id_reserva, precio_unitario, subtotal):
+    try:
+        # Definir la consulta SQL con text
+        consulta = text("""
+            INSERT INTO detalle_venta_cita (id_venta, id_reserva, precio_unitario, subtotal)
+            VALUES (:id_venta, :id_reserva, :precio_unitario, :subtotal)
+        """)
+
+        # Ejecutar la consulta con los valores proporcionados
+        db_session.execute(consulta, {
+            'id_venta': id_venta,
+            'id_reserva': id_reserva,
+            'precio_unitario': precio_unitario,
+            'subtotal': subtotal
+        })
+
+        # Confirmar la transacción
+        db_session.commit()
+
+    except Exception as e:
+        print(f"Error al insertar en la tabla detalle_venta_cita: {e}")
+
+def cambiar_estado_reservacion(db_session: Session, id_reservacion: int, nuevo_estado: int):
+    try:
+        # Definir la consulta SQL con text
+        consulta = text("""
+            UPDATE reservacion
+            SET estado = :nuevo_estado
+            WHERE id = :id_reservacion
+        """)
+
+        # Ejecutar la consulta con los valores proporcionados
+        db_session.execute(consulta, {'id_reservacion': id_reservacion, 'nuevo_estado': nuevo_estado})
+
+        # Confirmar la transacción
+        db_session.commit()
+
+        # Cerrar la sesión (si se va a cerrar, depende del contexto de la aplicación)
+        # db_session.close()
+
+    except Exception as e:
+        print(f'Error al cambiar el estado de la reservación: {str(e)}')
+    
 def cambiar_estado_venta(db_session: Session, id_venta, nuevo_estado):
     query = text("""
         UPDATE venta
@@ -456,6 +498,8 @@ def cambiar_estado_venta(db_session: Session, id_venta, nuevo_estado):
 
     db_session.execute(query, {"id_venta": id_venta, "nuevo_estado": nuevo_estado})
     db_session.commit()
+
+
 
 def obtener_info_lote_mas_antiguo(db_session: Session, id_producto):
     query = text("""
@@ -624,7 +668,10 @@ def obtener_ventas(db_session):
     vp.id AS venta_producto_id,
     vp.precio_unitario AS precio_unitario_producto,
     vp.cantidad AS cantidad_venta_producto,
-    vp.subtotal AS subtotal_venta_producto
+    vp.subtotal AS subtotal_venta_producto,
+    vc.precio_unitario AS precios,
+    vc.subtotal AS subtotalcita,
+    s2.nombre AS citas
 FROM
     venta v
 JOIN tipo_venta tv ON v.id_tipo = tv.id
@@ -633,15 +680,42 @@ JOIN persona p ON c.id_persona = p.id
 LEFT JOIN detalle_venta dv ON v.id = dv.id_venta
 LEFT JOIN servicios s ON dv.id_servicio = s.id
 LEFT JOIN venta_productos vp ON v.id = vp.id_venta
+LEFT JOIN detalle_venta_cita vc ON v.id=vc.id_venta
+LEFT JOIN reservacion r ON vc.id_reserva = r.id
+LEFT JOIN servicios s2 ON r.idservicio = s2.id
 LEFT JOIN producto p2 ON vp.id_producto = p2.id
 ORDER BY
-    v.id,
-    dv.id,
-    vp.id;
+    v.id DESC
+   
 """)
     ventas = db_session.execute(query).fetchall()
     return ventas
+def obtener_reservacion(db_session:session):
+    query=text("""SELECT r.*, p.nombre AS cliente, h.dia, s.nombre AS servicio, p.celular
+FROM reservacion r
+INNER JOIN clientes c ON c.id = r.idcliente
+INNER JOIN horarios h ON h.id = r.idhorario
+INNER JOIN servicios s ON s.id = r.idservicio
+LEFT JOIN persona p ON c.id_persona = p.id
+""")
+    result=db_session.execute(query).fetchall()
+    return result
+def obtener_reservacion_hoy(db_session: sessionmaker):
+    # Obtener la fecha actual
+    fecha_actual = datetime.now().date()
 
+    query = text("""
+        SELECT r.*, p.nombre AS cliente, h.dia, s.nombre AS servicio, p.celular
+        FROM reservacion r
+        INNER JOIN clientes c ON c.id = r.idcliente
+        INNER JOIN horarios h ON h.id = r.idhorario
+        INNER JOIN servicios s ON s.id = r.idservicio
+        LEFT JOIN persona p ON c.id_persona = p.id
+        WHERE r.estado = 1 AND r.fecha = :fecha_actual    ORDER BY r.hora
+    """)
+
+    result = db_session.execute(query, {"fecha_actual": fecha_actual}).fetchall()
+    return result
 def ValidarNumeroCelularExistente(numero):
     query = text("SELECT id FROM persona WHERE celular = :numero")
     exists = db_session.execute(query, {"numero": numero}).scalar()
@@ -2127,14 +2201,33 @@ def cambiarestadocliente(cliente_id):
     cambiar_estado_cliente(db_session,cliente_id,2)   
 
     return redirect(url_for('clientes'))
-
+@app.route("/citas",methods=['GET','POST'])
+@login_required
+def reserva():
+    reservaciones=obtener_reservacion(db_session)
+    return render_template("reservacion.html",reservaciones=reservaciones)
 @app.route("/ventas",methods=['GET'])
 @login_required
 def venta():
-    
     ventas=obtener_ventas(db_session)
-    print(ventas)
-    return render_template("venta.html",ventas=ventas)
+   
+   
+    reservaciones=obtener_reservacion_hoy(db_session)
+    tipos=obtener_tipo_venta(db_session)
+    return render_template("venta.html",ventas=ventas,reservaciones=reservaciones,tipos=tipos)
+
+@app.route('/ventacitas',methods=['POST'])
+def ventacitas():
+    tipo_venta=request.form['tipo_venta']
+    cliente=request.form['idcliente']
+    total=request.form['subtotal']
+    id_reserva=request.form['id']
+    codigo = generar_codigo_venta(db_session)
+    id_venta = insertar_venta(db_session, tipo_venta,cliente, codigo, 0, total, 1)
+    insertar_detalle_venta_cita(db_session,id_venta,id_reserva,total,total)
+    cambiar_estado_reservacion(db_session,id_reserva,4)
+    flash("Se ha realizado la venta con exito","success")
+    return redirect('/ventas')
 @app.route("/ventasproductos",methods=['GET','POST'])
 @login_required
 def ventasproductos():

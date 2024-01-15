@@ -119,8 +119,8 @@ CREATE TABLE reservacion(
     idcliente INTEGER REFERENCES clientes(id),
     idhorario INTEGER REFERENCES horarios(id),
     idservicio INTEGER REFERENCES servicios(id),
-    codigo VARCHAR(50) unique,
-    tipopago VARCHAR(250) NOT NULL,
+  	idevento_calendar INTEGER,
+    codigo VARCHAR(50) unique,  
     fecha DATE NOT NULL,
     hora TIME NOT NULL,
     subtotal DECIMAL(10,2),
@@ -153,6 +153,15 @@ CREATE TABLE detalle_venta
     id_servicio INTEGER REFERENCES servicios(id),
     precio_unitario NUMERIC NOT NULL,
     cantidad INTEGER,
+    subtotal numeric NOT NULL
+);
+
+CREATE TABLE detalle_venta_cita
+(
+    id SERIAL PRIMARY KEY,
+    id_venta INTEGER REFERENCES venta(id),
+    id_reserva INTEGER REFERENCES reservacion(id),
+    precio_unitario NUMERIC NOT NULL,
     subtotal numeric NOT NULL
 );
 
