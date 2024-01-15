@@ -52,7 +52,10 @@
                         role="tab" aria-controls="vert-tabs-home" aria-selected="true">Ventas generales</a>
 
                     <a class="nav-link" id="vert-tabs-messages-tab" data-toggle="pill" href="#vert-tabs-messages"
-                        role="tab" aria-controls="vert-tabs-messages" aria-selected="false">Ventas por citas</a>
+                        role="tab" aria-controls="vert-tabs-messages" aria-selected="false"> <span
+                            class="badge badge-pill badge-info">
+                            {{ cantidad }}
+                        </span>Ventas por citas</a>
 
                 </div>
 
@@ -82,49 +85,52 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {%   for venta in ventas %}
+                                        {% for venta in ventas %}
                                         <tr>
-                                            <td>{{venta.venta_id  }}</td>
+                                            <td>{{venta.venta_id }}</td>
                                             <td>{{ venta.codigo }}</td>
                                             <td>{{ venta.fecha }}</td>
                                             <td>
                                                 {% if venta.subtotal_detalle_venta %}
-                                                    Venta por servicio
+                                                Venta por servicio
                                                 {% elif venta.subtotal_venta_producto %}
-                                                    Venta por producto
+                                                Venta por producto
                                                 {% elif venta.subtotalcita %}
-                                                    Venta por cita
+                                                Venta por cita
                                                 {% else %}
-                                                    Desconocido
+                                                Desconocido
                                                 {% endif %}
                                             </td>
                                             <td>{{ venta.persona_nombre }}</td>
                                             <td>
                                                 {% if venta.producto_nombre %}
-                                                    {{ venta.producto_nombre }}
+                                                {{ venta.producto_nombre }}
                                                 {% elif venta.servicio_nombre %}
-                                                    {{ venta.servicio_nombre }}
+                                                {{ venta.servicio_nombre }}
                                                 {% elif venta.citas %}
-                                                    {{ venta.citas }}
+                                                {{ venta.citas }}
                                                 {% else %}
-                                                    No hay nombre disponible
+                                                No hay nombre disponible
                                                 {% endif %}
                                             </td>
-                                            <td>{{ venta.cantidad_detalle_venta or venta.cantidad_venta_producto or 'No hay cantidad' }}</td>
-                                            <td>{{ venta.precio_unitario_detalle_venta or venta.precio_unitario_producto or venta.precios or 'No hay precio unitario' }}</td>
-                                            <td>{{ venta.subtotal_detalle_venta or venta.subtotal_venta_producto or venta.subtotalcita or 'No hay subtotal' }}</td>
+                                            <td>{{ venta.cantidad_detalle_venta or venta.cantidad_venta_producto or 'No
+                                                hay cantidad' }}</td>
+                                            <td>{{ venta.precio_unitario_detalle_venta or venta.precio_unitario_producto
+                                                or venta.precios or 'No hay precio unitario' }}</td>
+                                            <td>{{ venta.subtotal_detalle_venta or venta.subtotal_venta_producto or
+                                                venta.subtotalcita or 'No hay subtotal' }}</td>
                                             <td>{{ venta.totales }}</td>
                                             <td>{{ venta.tipo_venta_nombre }}</td>
                                             <td>
                                                 {% if venta.venta_estado == 1 %}
-                                                    <span class="badge bg-success">Activo</span>
+                                                <span class="badge bg-success">Activo</span>
                                                 {% elif venta.venta_estado == 2 %}
-                                                    <span class="badge bg-danger">Inactivo</span>
+                                                <span class="badge bg-danger">Inactivo</span>
                                                 {% endif %}
                                             </td>
                                         </tr>
-                                    {% endfor %}
-                                    
+                                        {% endfor %}
+
                                     </tbody>
                                 </table>
                             </div>
@@ -147,14 +153,14 @@
                                 <div class="row">
                                     {% for reserva in reservaciones %}
                                     <div class="col-md-3 mb-4">
-                                        <div class="card">
+                                        <div class="card busqueda">
                                             <div class="card-body">
                                                 <h5 class="card-title">Reservación #{{ reserva.id }}</h5>
                                                 <p class="card-text">Cliente: {{ reserva.cliente }}</p>
                                                 <p class="card-text card-text-telefono">Telefono: {{ reserva.celular }}
                                                 </p>
-                                                <p class="card-text">Dia: {{ reserva.dia }}</p>
-                                                <p class="card-text">Hora: {{ reserva.hora }}</p>
+                                                <p class="card-text">Hora inicio: {{ reserva.hora_inicio }}</p>
+                                                <p class="card-text">Hora fin: {{ reserva.hora_fin }}</p>
                                                 <p class="card-text">Total: ${{ reserva.subtotal }}</p>
                                                 <button type="button" class="btn btn-info" data-toggle="modal"
                                                     data-target="#myModal{{ reserva.id }}">
@@ -178,7 +184,8 @@
                                                     </button>
                                                 </div>
                                                 <div class="modal-body">
-                                                    <form id="enviarInfoForm{{ reserva.id }}" action="/ventacitas" method="POST">
+                                                    <form id="enviarInfoForm{{ reserva.id }}" action="/ventacitas"
+                                                        method="POST">
                                                         <div class="form-group">
                                                             <label for="subtotal{{ reserva.id }}">Total:</label>
                                                             <input type="text" class="form-control"
@@ -192,14 +199,12 @@
                                                                 id="reservaId{{ reserva.id }}"
                                                                 value="{{reserva.codigo}}" readonly>
                                                             <input type="text" class="form-control"
-                                                                id="reservaId{{ reserva.id }}" name="id"value="{{reserva.id}}"
-                                                                hidden>
-                                                                <input type="text" class="form-control" name="subtotal"
-                                                                 value="{{reserva.subtotal}}"
-                                                                hidden>
-                                                                <input type="text" class="form-control" name="idcliente"
-                                                                 value="{{reserva.idcliente}}"
-                                                                hidden>
+                                                                id="reservaId{{ reserva.id }}" name="id"
+                                                                value="{{reserva.id}}" hidden>
+                                                            <input type="text" class="form-control" name="subtotal"
+                                                                value="{{reserva.subtotal}}" hidden>
+                                                            <input type="text" class="form-control" name="idcliente"
+                                                                value="{{reserva.idcliente}}" hidden>
                                                         </div>
                                                         <div class="form-group">
                                                             <label for="tipo_venta">Tipo de Venta:</label>
@@ -232,12 +237,35 @@
         // Manejar la búsqueda en tiempo real por número de teléfono
         document.getElementById('btnBuscar').addEventListener('click', function () {
             var telefono = document.getElementById('inputTelefono').value.toLowerCase();
+            if (telefono.trim() === '') {
+                // Mostrar una alerta SweetAlert indicando que el campo está vacío
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Campo Vacío',
+                    text: 'Por favor, ingrese un número de teléfono antes de buscar.'
+                });
+                return; // Detener la ejecución si el campo está vacío
+            }
+            var encontrados = false;
 
-            document.querySelectorAll('.card').forEach(function (card) {
+            document.querySelectorAll('.busqueda').forEach(function (card) {
                 var cardTelefono = card.querySelector('.card-text-telefono').textContent.toLowerCase();
                 var displayStyle = cardTelefono.includes(telefono) ? 'block' : 'none';
                 card.style.display = displayStyle;
+
+                if (displayStyle === 'block') {
+                    encontrados = true;
+                }
             });
+
+            // Mostrar una alerta si no se encontraron registros
+            if (!encontrados) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'No se encontraron registros',
+                    text: 'No hay registros que coincidan con la búsqueda.'
+                });
+            }
         });
 
         // Restaurar la visibilidad de todas las tarjetas al hacer clic en el botón Limpiar
@@ -249,6 +277,6 @@
             document.getElementById('inputTelefono').value = '';
         });
     });
-</script>
 
+</script>
 {% endblock %}

@@ -1,4 +1,7 @@
 
+from google.auth.transport.requests import Request
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
 import os
 from decimal import *
 import datetime
@@ -27,9 +30,6 @@ import pickle
 locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
 
 
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 app.config["SESSION_PERMANENT"] = False
@@ -43,86 +43,108 @@ app.config['MAIL_PASSWORD'] = os.getenv("clave")
 app.secret_key = '123'
 
 
-
-
-
-
 mail = Mail(app)
 locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
 engine = create_engine(os.getenv("DATABASE_URL"))
 db_session = scoped_session(sessionmaker(bind=engine))
 
+
 def insertar_persona(db_session: Session, nombre, correo, direccion, celular):
     # Preparar y ejecutar una consulta SQL
-    query = text("INSERT INTO persona (nombre, correo, direccion, celular) VALUES (:nombre, :correo, :direccion, :celular) RETURNING id")
-    result = db_session.execute(query, {"nombre": nombre, "correo": correo, "direccion":direccion, "celular": celular})
-    
+    query = text(
+        "INSERT INTO persona (nombre, correo, direccion, celular) VALUES (:nombre, :correo, :direccion, :celular) RETURNING id")
+    result = db_session.execute(query, {
+                                "nombre": nombre, "correo": correo, "direccion": direccion, "celular": celular})
+
     # Obtener el ID de la nueva persona
     id_persona = result.fetchone()[0]
-    
+
     # Hacer commit para persistir la nueva persona en la base de datos
     db_session.commit()
-    
+
     # Retornar el ID de la nueva persona
     return id_persona
 
-def insertar_persona_natural(db_session: Session, id_persona, apellidos,cedula,fecha_nacimiento,genero, tipo):
+
+def insertar_persona_natural(db_session: Session, id_persona, apellidos, cedula, fecha_nacimiento, genero, tipo):
     query = text("INSERT INTO persona_natural (id_persona, apellido,cedula,fecha_nacimiento,genero, tipo_persona) VALUES (:id_persona, :apellido,:cedula,:fecha_nacimiento,:genero, :tipo_persona)")
-    db_session.execute(query, {"id_persona": id_persona, "apellido": apellidos,"cedula":cedula,"fecha_nacimiento":fecha_nacimiento,"genero":genero, "tipo_persona": tipo})
+    db_session.execute(query, {"id_persona": id_persona, "apellido": apellidos, "cedula": cedula,
+                       "fecha_nacimiento": fecha_nacimiento, "genero": genero, "tipo_persona": tipo})
     db_session.commit()
 
-def insertar_cliente(db_session: Session, id_persona,codigo_cliente, tipo,foto):
- 
+
+def insertar_cliente(db_session: Session, id_persona, codigo_cliente, tipo, foto):
+
     query = text("INSERT INTO clientes (id_persona, codigo, tipo_cliente, foto, estado) VALUES (:id_persona, :codigo, :tipo_cliente, :foto, :estado)")
-    db_session.execute(query, {"id_persona": id_persona, "codigo": codigo_cliente, "tipo_cliente": tipo, "foto":foto, "estado": '1'})
+    db_session.execute(query, {"id_persona": id_persona, "codigo": codigo_cliente,
+                       "tipo_cliente": tipo, "foto": foto, "estado": '1'})
     db_session.commit()
     return codigo_cliente
 
+
 def update_persona(db_session: Session, id_persona, nombre, correo, celular, direccion):
-    query = text("UPDATE persona SET nombre = :nombre, correo = :correo, direccion = :direccion, celular = :celular WHERE id = :id_persona")
-    db_session.execute(query, {"id_persona": id_persona, "nombre": nombre, "correo": correo, "direccion": direccion, "celular": celular})
+    query = text(
+        "UPDATE persona SET nombre = :nombre, correo = :correo, direccion = :direccion, celular = :celular WHERE id = :id_persona")
+    db_session.execute(query, {"id_persona": id_persona, "nombre": nombre,
+                       "correo": correo, "direccion": direccion, "celular": celular})
     db_session.commit()
+
 
 def update_persona_natural(db_session: Session, id_persona, apellidos, tipo):
-    query = text("UPDATE persona_natural SET apellido = :apellidos, tipo_persona = :tipo WHERE id_persona = :id_persona")
-    db_session.execute(query, {"id_persona": id_persona, "apellidos": apellidos, "tipo": tipo})
+    query = text(
+        "UPDATE persona_natural SET apellido = :apellidos, tipo_persona = :tipo WHERE id_persona = :id_persona")
+    db_session.execute(
+        query, {"id_persona": id_persona, "apellidos": apellidos, "tipo": tipo})
     db_session.commit()
+
 
 def update_cliente(db_session: Session, id_persona, tipo, foto, estado):
-    query = text("UPDATE clientes SET tipo_cliente = :tipo, foto = :foto, estado = :estado WHERE id = :id_persona")
-    db_session.execute(query, {"id_persona": id_persona, "tipo": tipo, "foto": foto, "estado": estado})
+    query = text(
+        "UPDATE clientes SET tipo_cliente = :tipo, foto = :foto, estado = :estado WHERE id = :id_persona")
+    db_session.execute(
+        query, {"id_persona": id_persona, "tipo": tipo, "foto": foto, "estado": estado})
     db_session.commit()
+
 
 def cambiar_estado_cliente(db_session: Session, id_persona, nuevo_estado):
-    query = text("UPDATE clientes SET estado = :nuevo_estado WHERE id = :id_persona")
-    db_session.execute(query, {"id_persona": id_persona, "nuevo_estado": nuevo_estado})
+    query = text(
+        "UPDATE clientes SET estado = :nuevo_estado WHERE id = :id_persona")
+    db_session.execute(
+        query, {"id_persona": id_persona, "nuevo_estado": nuevo_estado})
     db_session.commit()
 
+
 def generar_codigo_reservacion(db_session):
-    codigo = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+    codigo = ''.join(random.choices(
+        string.ascii_uppercase + string.digits, k=8))
 
     # Verificar que el código no exista ya en la base de datos
     query = text("SELECT COUNT(*) FROM reservacion WHERE codigo = :codigo")
     count = db_session.execute(query, {"codigo": codigo}).fetchone()[0]
 
     while count > 0:
-        codigo = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        codigo = ''.join(random.choices(
+            string.ascii_uppercase + string.digits, k=8))
         count = db_session.execute(query, {"codigo": codigo}).fetchone()[0]
 
     return codigo
 
+
 def generar_codigo_trabajador(db_session: Session):
-    codigo = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+    codigo = ''.join(random.choices(
+        string.ascii_uppercase + string.digits, k=8))
 
     # Verificar que el código no exista ya en la base de datos
     query = text("SELECT COUNT(*) FROM trabajador WHERE codigo = :codigo")
     count = db_session.execute(query, {"codigo": codigo}).fetchone()[0]
 
     while count > 0:
-        codigo = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        codigo = ''.join(random.choices(
+            string.ascii_uppercase + string.digits, k=8))
         count = db_session.execute(query, {"codigo": codigo}).fetchone()[0]
 
     return codigo
+
 
 def insertar_trabajador(db_session, id_persona, codigo, foto, estado):
     query = text("""
@@ -130,8 +152,10 @@ def insertar_trabajador(db_session, id_persona, codigo, foto, estado):
         VALUES (:id_persona, :codigo, :foto, :estado)
     """)
 
-    db_session.execute(query, {"id_persona": id_persona, "codigo": codigo, "foto": foto, "estado": estado})
+    db_session.execute(query, {"id_persona": id_persona,
+                       "codigo": codigo, "foto": foto, "estado": estado})
     db_session.commit()
+
 
 def actualizar_trabajador(db_session, id_trabajador, foto, estado):
     query = text("""
@@ -140,8 +164,10 @@ def actualizar_trabajador(db_session, id_trabajador, foto, estado):
         WHERE id = :id_trabajador
     """)
 
-    db_session.execute(query, {"id_trabajador": id_trabajador, "foto": foto, "estado": estado})
+    db_session.execute(
+        query, {"id_trabajador": id_trabajador, "foto": foto, "estado": estado})
     db_session.commit()
+
 
 def cambiar_estado_trabajador(db_session, id_trabajador, nuevo_estado):
     query = text("""
@@ -150,36 +176,39 @@ def cambiar_estado_trabajador(db_session, id_trabajador, nuevo_estado):
         WHERE id = :id_trabajador
     """)
 
-    db_session.execute(query, {"id_trabajador": id_trabajador, "nuevo_estado": nuevo_estado})
+    db_session.execute(
+        query, {"id_trabajador": id_trabajador, "nuevo_estado": nuevo_estado})
     db_session.commit()
 
 
-
-
-
-
 def guardar_reservacion(db_session: Session, id_cliente, id_horario, id_servicio,  tipo_pago, fecha, hora, subtotal, observacion, estado):
-    codigo=generar_codigo_reservacion()
+    codigo = generar_codigo_reservacion()
     query = text("""
         INSERT INTO reservacion (idcliente, idhorario, idservicio, codigo, tipopago, fecha, hora, subtotal, observacion, estado)
         VALUES (:id_cliente, :id_horario, :id_servicio, :codigo, :tipo_pago, :fecha, :hora, :subtotal, :observacion, :estado)
         RETURNING id
     """)
-    result = db_session.execute(query, {"id_cliente": id_cliente,"id_horario": id_horario,"id_servicio": id_servicio,"codigo": codigo,"tipo_pago": tipo_pago,"fecha": fecha,"hora": hora,"subtotal": subtotal,"observacion": observacion,"estado": estado})
+    result = db_session.execute(query, {"id_cliente": id_cliente, "id_horario": id_horario, "id_servicio": id_servicio, "codigo": codigo,
+                                "tipo_pago": tipo_pago, "fecha": fecha, "hora": hora, "subtotal": subtotal, "observacion": observacion, "estado": estado})
     id_reservacion = result.fetchone()[0]
 
     # Devolver el ID de la reservación
     return codigo
+
+
 def insertar_producto(db_session: Session, nombre, descripcion, logo, estado):
     query = text("""
         INSERT INTO producto (nombre, descripcion, logo, estado)
         VALUES (:nombre, :descripcion, :logo, :estado)
     """)
 
-    db_session.execute(query, {"nombre": nombre, "descripcion": descripcion, "logo": logo, "estado": estado})
+    db_session.execute(query, {
+                       "nombre": nombre, "descripcion": descripcion, "logo": logo, "estado": estado})
     db_session.commit()
 
 # Actualizar producto
+
+
 def actualizar_producto(db_session: Session, id_producto, nombre, descripcion, logo, estado):
     query = text("""
         UPDATE producto
@@ -187,17 +216,23 @@ def actualizar_producto(db_session: Session, id_producto, nombre, descripcion, l
         WHERE id = :id_producto
     """)
 
-    db_session.execute(query, {"id_producto": id_producto, "nombre": nombre, "descripcion": descripcion, "logo": logo, "estado": estado})
+    db_session.execute(query, {"id_producto": id_producto, "nombre": nombre,
+                       "descripcion": descripcion, "logo": logo, "estado": estado})
     db_session.commit()
 
 # Cambiar estado del producto
+
+
 def cambiar_estado_productos(db_session, id_producto, nuevo_estado):
     # Tu lógica para cambiar el estado del producto aquí
-    query = text("UPDATE producto SET estado = :nuevo_estado WHERE id = :id_producto")
-    db_session.execute(query, {"id_producto": id_producto, "nuevo_estado": nuevo_estado})
+    query = text(
+        "UPDATE producto SET estado = :nuevo_estado WHERE id = :id_producto")
+    db_session.execute(
+        query, {"id_producto": id_producto, "nuevo_estado": nuevo_estado})
     db_session.commit()
     # Puedes retornar algo si es necesario
     return "Estado del producto cambiado exitosamente"
+
 
 def insertar_precio(db_session: Session, id_producto, precio, estado):
     fecha_actual = datetime.now().date()
@@ -206,7 +241,8 @@ def insertar_precio(db_session: Session, id_producto, precio, estado):
         VALUES (:id_producto, :precio,:fecha_registro, :estado)
     """)
 
-    db_session.execute(query, {"id_producto": id_producto, "precio": precio,"fecha_registro":fecha_actual, "estado": estado})
+    db_session.execute(query, {"id_producto": id_producto, "precio": precio,
+                       "fecha_registro": fecha_actual, "estado": estado})
     db_session.commit()
 
 
@@ -217,8 +253,10 @@ def cambiar_estado_precio(db_session: Session, id_precio, nuevo_estado):
         WHERE id = :id_precio
     """)
 
-    db_session.execute(query, {"id_precio": id_precio, "nuevo_estado": nuevo_estado})
+    db_session.execute(
+        query, {"id_precio": id_precio, "nuevo_estado": nuevo_estado})
     db_session.commit()
+
 
 def insertar_horario(db_session: Session, dia, hora_apertura, hora_cierre, estado):
     query = text("""
@@ -226,8 +264,10 @@ def insertar_horario(db_session: Session, dia, hora_apertura, hora_cierre, estad
         VALUES (:dia, :hora_apertura, :hora_cierre, :estado)
     """)
 
-    db_session.execute(query, {"dia": dia, "hora_apertura": hora_apertura, "hora_cierre": hora_cierre, "estado": estado})
+    db_session.execute(query, {"dia": dia, "hora_apertura": hora_apertura,
+                       "hora_cierre": hora_cierre, "estado": estado})
     db_session.commit()
+
 
 def update_horario(db_session: Session, id_horario, dia, hora_apertura, hora_cierre, estado):
     query = text("""
@@ -236,8 +276,10 @@ def update_horario(db_session: Session, id_horario, dia, hora_apertura, hora_cie
         WHERE id = :id_horario
     """)
 
-    db_session.execute(query, {"id_horario": id_horario, "dia": dia, "hora_apertura": hora_apertura, "hora_cierre": hora_cierre, "estado": estado})
+    db_session.execute(query, {"id_horario": id_horario, "dia": dia,
+                       "hora_apertura": hora_apertura, "hora_cierre": hora_cierre, "estado": estado})
     db_session.commit()
+
 
 def cambiar_estado_horario(db_session: Session, id_horario, nuevo_estado):
     query = text("""
@@ -246,27 +288,33 @@ def cambiar_estado_horario(db_session: Session, id_horario, nuevo_estado):
         WHERE id = :id_horario
     """)
 
-    db_session.execute(query, {"id_horario": id_horario, "nuevo_estado": nuevo_estado})
+    db_session.execute(
+        query, {"id_horario": id_horario, "nuevo_estado": nuevo_estado})
     db_session.commit()
 
-def insertar_servicio(db_session: Session, nombre, descripcion, foto,realizacion, estado):
+
+def insertar_servicio(db_session: Session, nombre, descripcion, foto, realizacion, estado):
     query = text("""
         INSERT INTO servicios (nombre, descripcion, foto,realizacion, estado)
         VALUES (:nombre, :descripcion, :foto,:realizacion, :estado)
     """)
 
-    db_session.execute(query, {"nombre": nombre, "descripcion": descripcion, "foto": foto,"realizacion":realizacion, "estado": estado})
+    db_session.execute(query, {"nombre": nombre, "descripcion": descripcion,
+                       "foto": foto, "realizacion": realizacion, "estado": estado})
     db_session.commit()
 
-def update_servicio(db_session: Session, id_servicio, nombre, descripcion, foto,realizacion, estado):
+
+def update_servicio(db_session: Session, id_servicio, nombre, descripcion, foto, realizacion, estado):
     query = text("""
         UPDATE servicios
         SET nombre = :nombre, descripcion = :descripcion, foto = :foto,realizacion =:realizacion, estado = :estado
         WHERE id = :id_servicio
     """)
 
-    db_session.execute(query, {"id_servicio": id_servicio, "nombre": nombre, "descripcion": descripcion, "foto": foto,"realizacion":realizacion, "estado": estado})
+    db_session.execute(query, {"id_servicio": id_servicio, "nombre": nombre,
+                       "descripcion": descripcion, "foto": foto, "realizacion": realizacion, "estado": estado})
     db_session.commit()
+
 
 def cambiar_estado_servicio(db_session: Session, id_servicio, nuevo_estado):
     query = text("""
@@ -275,8 +323,10 @@ def cambiar_estado_servicio(db_session: Session, id_servicio, nuevo_estado):
         WHERE id = :id_servicio
     """)
 
-    db_session.execute(query, {"id_servicio": id_servicio, "nuevo_estado": nuevo_estado})
+    db_session.execute(
+        query, {"id_servicio": id_servicio, "nuevo_estado": nuevo_estado})
     db_session.commit()
+
 
 def insertar_precio_servicio(db_session: Session, id_servicio, precio, estado):
     fecha_actual = datetime.now().date()
@@ -285,8 +335,10 @@ def insertar_precio_servicio(db_session: Session, id_servicio, precio, estado):
         VALUES (:id_servicio, :precio,:fecha_registro, :estado)
     """)
 
-    db_session.execute(query, {"id_servicio": id_servicio, "precio": precio,"fecha_registro":fecha_actual, "estado": estado})
+    db_session.execute(query, {"id_servicio": id_servicio, "precio": precio,
+                       "fecha_registro": fecha_actual, "estado": estado})
     db_session.commit()
+
 
 def update_precio_servicio(db_session: Session, id_precio_servicio, id_servicio, precio, estado):
     query = text("""
@@ -295,8 +347,10 @@ def update_precio_servicio(db_session: Session, id_precio_servicio, id_servicio,
         WHERE id = :id_precio_servicio
     """)
 
-    db_session.execute(query, {"id_precio_servicio": id_precio_servicio, "id_servicio": id_servicio, "precio": precio, "estado": estado})
+    db_session.execute(query, {"id_precio_servicio": id_precio_servicio,
+                       "id_servicio": id_servicio, "precio": precio, "estado": estado})
     db_session.commit()
+
 
 def cambiar_estado_precio_servicio(db_session: Session, id_precio_servicio, nuevo_estado):
     query = text("""
@@ -305,8 +359,10 @@ def cambiar_estado_precio_servicio(db_session: Session, id_precio_servicio, nuev
         WHERE id = :id_precio_servicio
     """)
 
-    db_session.execute(query, {"id_precio_servicio": id_precio_servicio, "nuevo_estado": nuevo_estado})
+    db_session.execute(
+        query, {"id_precio_servicio": id_precio_servicio, "nuevo_estado": nuevo_estado})
     db_session.commit()
+
 
 def insertar_movimiento_inventario(db_session, id_lote, tipo_movimiento, cantidad):
     # Obtener la fecha y hora actual
@@ -328,6 +384,8 @@ def insertar_movimiento_inventario(db_session, id_lote, tipo_movimiento, cantida
 
     # Commit los cambios en la sesión
     db_session.commit()
+
+
 def obtener_movimientos_por_lote(db_session):
     query = text("""
         SELECT lp.numero_lote, mi.tipo_movimiento, mi.cantidad, mi.fecha_movimiento
@@ -338,9 +396,11 @@ def obtener_movimientos_por_lote(db_session):
     result = db_session.execute(query).fetchall()
 
     return result
+
+
 def actualizar_estado_lotes(db_session: Session):
     fecha_actual = date.today()
-    
+
     # Inicializar estadísticas
     estadisticas = {
         'por_vencerse': 0,
@@ -361,11 +421,13 @@ def actualizar_estado_lotes(db_session: Session):
         END
         WHERE estado NOT IN (2, 4)
     """)
-    
+
     # Definir la fecha límite para considerar como "por vencerse largo"
-    fecha_proxima = fecha_actual + timedelta(days=30)  # Puedes ajustar el número de días según tus necesidades
-    
-    result_por_vencer = db_session.execute(query_por_vencer, {"fecha_actual": fecha_actual, "fecha_proxima": fecha_proxima})
+    # Puedes ajustar el número de días según tus necesidades
+    fecha_proxima = fecha_actual + timedelta(days=30)
+
+    result_por_vencer = db_session.execute(
+        query_por_vencer, {"fecha_actual": fecha_actual, "fecha_proxima": fecha_proxima})
     db_session.commit()
     estadisticas['por_vencerse'] = result_por_vencer.rowcount
 
@@ -377,7 +439,8 @@ def actualizar_estado_lotes(db_session: Session):
         AND fecha_vencimiento < :fecha_actual
         AND estado NOT IN (2, 4)
     """)
-    result_vencidos = db_session.execute(query_vencidos, {"fecha_actual": fecha_actual})
+    result_vencidos = db_session.execute(
+        query_vencidos, {"fecha_actual": fecha_actual})
     db_session.commit()
     estadisticas['vencidos'] = result_vencidos.rowcount
 
@@ -393,16 +456,19 @@ def actualizar_estado_lotes(db_session: Session):
     estadisticas['sin_cantidad'] = result_sin_cantidad.rowcount
 
     return estadisticas
+
+
 def generar_codigo_venta(db_session: Session):
     # Obtener el último ID de venta desde la base de datos
     query = text("SELECT MAX(id) FROM venta")
     resultado = db_session.execute(query).scalar()
-    
+
     # Generar el código de venta basado en el último ID
     nuevo_id_venta = resultado + 1 if resultado else 1
     codigo_venta = f'V-{nuevo_id_venta}'
-    
+
     return codigo_venta
+
 
 def insertar_venta(db_session, id_tipo, id_cliente, codigo, descuento, total, estado):
     fecha_actual = datetime.now().date()
@@ -429,23 +495,28 @@ def insertar_venta(db_session, id_tipo, id_cliente, codigo, descuento, total, es
     return id_venta
 
 
-def insertar_venta_producto(db_session: Session, id_venta, id_producto,precio, cantidad, subtotal):
+def insertar_venta_producto(db_session: Session, id_venta, id_producto, precio, cantidad, subtotal):
     query = text("""
         INSERT INTO venta_productos (id_venta, id_producto,precio_unitario, cantidad, subtotal)
         VALUES (:id_venta, :id_producto,:precio_unitario, :cantidad, :subtotal)
     """)
 
-    db_session.execute(query, {"id_venta": id_venta, "id_producto": id_producto,"precio_unitario":precio, "cantidad": cantidad, "subtotal": subtotal})
+    db_session.execute(query, {"id_venta": id_venta, "id_producto": id_producto,
+                       "precio_unitario": precio, "cantidad": cantidad, "subtotal": subtotal})
     db_session.commit()
 
-def insertar_detalle_venta(db_session: Session, id_venta, id_servicio, precio_unitario,cantidad, subtotal):
+
+def insertar_detalle_venta(db_session: Session, id_venta, id_servicio, precio_unitario, cantidad, subtotal):
     query = text("""
         INSERT INTO detalle_venta (id_venta, id_servicio, precio_unitario,cantidad, subtotal)
         VALUES (:id_venta, :id_servicio, :precio_unitario,:cantidad, :subtotal)
     """)
 
-    db_session.execute(query, {"id_venta": id_venta, "id_servicio": id_servicio, "precio_unitario": precio_unitario,"cantidad":cantidad, "subtotal": subtotal})
+    db_session.execute(query, {"id_venta": id_venta, "id_servicio": id_servicio,
+                       "precio_unitario": precio_unitario, "cantidad": cantidad, "subtotal": subtotal})
     db_session.commit()
+
+
 def insertar_detalle_venta_cita(db_session, id_venta, id_reserva, precio_unitario, subtotal):
     try:
         # Definir la consulta SQL con text
@@ -468,6 +539,7 @@ def insertar_detalle_venta_cita(db_session, id_venta, id_reserva, precio_unitari
     except Exception as e:
         print(f"Error al insertar en la tabla detalle_venta_cita: {e}")
 
+
 def cambiar_estado_reservacion(db_session: Session, id_reservacion: int, nuevo_estado: int):
     try:
         # Definir la consulta SQL con text
@@ -478,7 +550,8 @@ def cambiar_estado_reservacion(db_session: Session, id_reservacion: int, nuevo_e
         """)
 
         # Ejecutar la consulta con los valores proporcionados
-        db_session.execute(consulta, {'id_reservacion': id_reservacion, 'nuevo_estado': nuevo_estado})
+        db_session.execute(
+            consulta, {'id_reservacion': id_reservacion, 'nuevo_estado': nuevo_estado})
 
         # Confirmar la transacción
         db_session.commit()
@@ -488,7 +561,8 @@ def cambiar_estado_reservacion(db_session: Session, id_reservacion: int, nuevo_e
 
     except Exception as e:
         print(f'Error al cambiar el estado de la reservación: {str(e)}')
-    
+
+
 def cambiar_estado_venta(db_session: Session, id_venta, nuevo_estado):
     query = text("""
         UPDATE venta
@@ -496,9 +570,9 @@ def cambiar_estado_venta(db_session: Session, id_venta, nuevo_estado):
         WHERE id = :id_venta
     """)
 
-    db_session.execute(query, {"id_venta": id_venta, "nuevo_estado": nuevo_estado})
+    db_session.execute(query, {"id_venta": id_venta,
+                       "nuevo_estado": nuevo_estado})
     db_session.commit()
-
 
 
 def obtener_info_lote_mas_antiguo(db_session: Session, id_producto):
@@ -509,7 +583,6 @@ def obtener_info_lote_mas_antiguo(db_session: Session, id_producto):
     ORDER BY fecha_registro ASC
     LIMIT 1
 """)
-
 
     result = db_session.execute(query, {"id_producto": id_producto}).fetchone()
 
@@ -527,8 +600,10 @@ def restar_cantidad_lote(db_session: Session, id_lote, cantidad_restar):
         WHERE id = :id_lote 
     """)
 
-    db_session.execute(query, {"id_lote": id_lote, "cantidad_restar": cantidad_restar})
+    db_session.execute(
+        query, {"id_lote": id_lote, "cantidad_restar": cantidad_restar})
     db_session.commit()
+
 
 def insertar_usuario(db_session: Session, id_persona, usuario, contraseña, estado):
     query = text("""
@@ -536,8 +611,10 @@ def insertar_usuario(db_session: Session, id_persona, usuario, contraseña, esta
         VALUES (:id_persona, :usuario, :contraseña, :estado)
     """)
 
-    db_session.execute(query, { "id_persona": id_persona, "usuario": usuario, "contraseña": contraseña, "estado": estado})
+    db_session.execute(query, {"id_persona": id_persona,
+                       "usuario": usuario, "contraseña": contraseña, "estado": estado})
     db_session.commit()
+
 
 def actualizar_contraseña(db_session: Session, id_usuario, nueva_contraseña):
     query = text("""
@@ -546,7 +623,8 @@ def actualizar_contraseña(db_session: Session, id_usuario, nueva_contraseña):
         WHERE id = :id_usuario
     """)
 
-    db_session.execute(query, {"nueva_contraseña": nueva_contraseña, "id_usuario": id_usuario})
+    db_session.execute(
+        query, {"nueva_contraseña": nueva_contraseña, "id_usuario": id_usuario})
     db_session.commit()
 
 
@@ -557,7 +635,8 @@ def cambiar_estado_usuario(db_session: Session, id_usuario, nuevo_estado):
         WHERE id = :id_usuario
     """)
 
-    db_session.execute(query, {"id_usuario": id_usuario, "nuevo_estado": nuevo_estado})
+    db_session.execute(
+        query, {"id_usuario": id_usuario, "nuevo_estado": nuevo_estado})
     db_session.commit()
 
 
@@ -568,8 +647,10 @@ def cambiar_estado_reservacion(db_session: Session, id_reservacion, nuevo_estado
         WHERE id = :id_reservacion
     """)
 
-    db_session.execute(query, {"id_reservacion": id_reservacion, "nuevo_estado": nuevo_estado})
+    db_session.execute(
+        query, {"id_reservacion": id_reservacion, "nuevo_estado": nuevo_estado})
     db_session.commit()
+
 
 def obtener_servicios_activos(db_session: Session):
     query = text('SELECT s.id, s.descripcion, s.nombre, s.realizacion, ps.precio FROM servicios s LEFT JOIN precio_servicios ps ON s.id = ps.id_servicios WHERE s.estado = 1 and ps.estado = 1')
@@ -585,18 +666,21 @@ def consultar_servicios(db_session: Session, filtro_id=None):
         WHERE s.estado = 1 AND ps.estado = 1
         AND (s.id = :filtro_id OR :filtro_id IS NULL)
     """)
-    
+
     result = db_session.execute(query, {"filtro_id": filtro_id}).fetchall()
     return result
+
 
 def obtener_productos(db_session):
     query = text("SELECT * FROM producto")
     productos = db_session.execute(query).fetchall()
     return productos
 
+
 def obtener_precioproductos(db_session):
-    query=text("SELECT pp.*,p.id AS producto, p.nombre, p.logo FROM precio pp INNER JOIN producto p ON p.id = pp.id_producto")
-    precios=db_session.execute(query).fetchall()
+    query = text(
+        "SELECT pp.*,p.id AS producto, p.nombre, p.logo FROM precio pp INNER JOIN producto p ON p.id = pp.id_producto")
+    precios = db_session.execute(query).fetchall()
     return precios
 
 
@@ -621,7 +705,6 @@ def obtener_productos_ventas(db_session):
             'precio': producto.precio,
             'cantidad_total': producto.cantidad_total
         })
-        
 
     # Convertimos la estructura en una lista de tuplas para mantener la estructura original
     productos_resultado = [
@@ -630,10 +713,14 @@ def obtener_productos_ventas(db_session):
     ]
 
     return productos_resultado
+
+
 def obtener_tipo_venta(db_session):
-    query=text("""SELECT * FROM tipo_venta WHERE estado = 1""")
-    ventas=db_session.execute(query).fetchall()
+    query = text("""SELECT * FROM tipo_venta WHERE estado = 1""")
+    ventas = db_session.execute(query).fetchall()
     return ventas
+
+
 def obtener_productos_sin_precio(db_session):
     query = text("""
 SELECT p.*
@@ -647,8 +734,9 @@ SELECT p.*
     productos_sin_precio = db_session.execute(query).fetchall()
     return productos_sin_precio
 
+
 def obtener_ventas(db_session):
-    query=text("""
+    query = text("""
 	SELECT
     v.id AS venta_id,
     v.codigo,
@@ -690,41 +778,105 @@ ORDER BY
 """)
     ventas = db_session.execute(query).fetchall()
     return ventas
-def obtener_reservacion(db_session:session):
-    query=text("""SELECT r.*, p.nombre AS cliente, h.dia, s.nombre AS servicio, p.celular
+
+
+def obtener_reservacion(db_session: session):
+    query = text("""SELECT r.*, p.nombre AS cliente,s.nombre AS servicio, p.celular
 FROM reservacion r
 INNER JOIN clientes c ON c.id = r.idcliente
-INNER JOIN horarios h ON h.id = r.idhorario
 INNER JOIN servicios s ON s.id = r.idservicio
 LEFT JOIN persona p ON c.id_persona = p.id
 """)
-    result=db_session.execute(query).fetchall()
+    result = db_session.execute(query).fetchall()
     return result
+
+
 def obtener_reservacion_hoy(db_session: sessionmaker):
     # Obtener la fecha actual
     fecha_actual = datetime.now().date()
 
     query = text("""
-        SELECT r.*, p.nombre AS cliente, h.dia, s.nombre AS servicio, p.celular
+        SELECT r.*, p.nombre AS cliente, s.nombre AS servicio, p.celular
         FROM reservacion r
         INNER JOIN clientes c ON c.id = r.idcliente
-        INNER JOIN horarios h ON h.id = r.idhorario
         INNER JOIN servicios s ON s.id = r.idservicio
         LEFT JOIN persona p ON c.id_persona = p.id
-        WHERE r.estado = 1 AND r.fecha = :fecha_actual    ORDER BY r.hora
+        WHERE r.estado = 1 AND r.fecha = :fecha_actual    ORDER BY r.hora_inicio
     """)
 
-    result = db_session.execute(query, {"fecha_actual": fecha_actual}).fetchall()
+    result = db_session.execute(
+        query, {"fecha_actual": fecha_actual}).fetchall()
     return result
+
+
+def obtener_cantidad_reservaciones_hoy(db_session):
+    try:
+        # Definir la consulta SQL con text
+        consulta = text("""
+            SELECT COUNT(*) AS cantidad_reservaciones
+            FROM reservacion
+            WHERE fecha = CURRENT_DATE
+                AND estado = 1;
+        """)
+
+        # Ejecutar la consulta y obtener el resultado
+        resultado = db_session.execute(consulta).fetchone()
+
+        # Obtener la cantidad de reservaciones del resultado
+        cantidad_reservaciones = resultado[0]  # Usar el índice numérico
+
+        return cantidad_reservaciones
+    except Exception as e:
+        # Manejar la excepción según tus necesidades
+        print(f"Error al obtener la cantidad de reservaciones: {e}")
+        return None
+
+
+def actualizar_estados(db_session):
+    # Obtén la fecha y hora actuales
+    now = datetime.now()
+
+    # Calcula la hora hace 20 minutos
+    hace_20_minutos = now - timedelta(minutes=20)
+
+    # Actualiza los estados directamente en la base de datos
+    db_session.execute(text("""
+        UPDATE reservacion
+        SET estado = 3
+        WHERE fecha = :fecha
+          AND hora_inicio <= :hora_20_min_atras
+          AND estado = 1
+    """), {
+        'fecha': now.date(),
+        'hora_20_min_atras': hace_20_minutos.strftime("%H:%M:%S")
+    })
+    db_session.commit()
+
+def actualizar_estados_pasados(db_session):
+    # Obtén la fecha y hora actuales
+    now = datetime.now()
+
+    # Actualiza los estados directamente en la base de datos
+    db_session.execute(text("""
+        UPDATE reservacion
+        SET estado = 3
+        WHERE fecha < :fecha_actual
+          AND estado = 1
+    """), {'fecha_actual': now.date()})
+    db_session.commit()
+
+
 def ValidarNumeroCelularExistente(numero):
     query = text("SELECT id FROM persona WHERE celular = :numero")
     exists = db_session.execute(query, {"numero": numero}).scalar()
     return exists
 
+
 def obtener_serviciossistema(db_session: Session):
     query = text("SELECT *  FROM servicios ")
     result = db_session.execute(query).fetchall()
     return result
+
 
 def obtener_servicios_sin_precio(db_session):
     query = text("""
@@ -739,13 +891,16 @@ def obtener_servicios_sin_precio(db_session):
     productos_sin_precio = db_session.execute(query).fetchall()
     return productos_sin_precio
 
+
 def obtener_precios_servicios(db_session):
-    query=text("SELECT pp.*,p.id AS producto, p.nombre FROM precio_servicios pp INNER JOIN servicios p ON p.id = pp.id_servicios ")
-    precios=db_session.execute(query).fetchall()
+    query = text(
+        "SELECT pp.*,p.id AS producto, p.nombre FROM precio_servicios pp INNER JOIN servicios p ON p.id = pp.id_servicios ")
+    precios = db_session.execute(query).fetchall()
     return precios
 
-def ObtenerTrabajadores(db_session:session):
-    query=text("""
+
+def ObtenerTrabajadores(db_session: session):
+    query = text("""
             SELECT 
                 t.id AS trabajador_id, t.codigo, t.foto, t.estado,
                 p.id AS persona_id, p.nombre, p.correo, p.direccion, p.celular,
@@ -756,7 +911,9 @@ def ObtenerTrabajadores(db_session:session):
         """)
     result = db_session.execute(query).fetchall()
     return result
-def ObtenerEmpleadoSinUsuario(db_session:session):
+
+
+def ObtenerEmpleadoSinUsuario(db_session: session):
     consulta = text("""
            SELECT p.id AS persona_id, p.nombre, p.correo
             FROM persona p
@@ -764,12 +921,14 @@ def ObtenerEmpleadoSinUsuario(db_session:session):
             LEFT JOIN usuario u ON p.id = u.id_persona
             WHERE t.id IS NOT NULL AND u.id IS NULL AND t.estado = 1
         """)
-    result=db_session.execute(consulta).fetchall()
+    result = db_session.execute(consulta).fetchall()
     return result
+
 
 def obtener_info_persona(id_persona):
     # Declarar la consulta SQL como texto
-    consulta_sql = text('SELECT p.nombre, pn.apellido, t.foto FROM persona p JOIN persona_natural pn ON p.id = pn.id_persona JOIN trabajador t ON p.id = t.id_persona WHERE p.id = :id_persona')
+    consulta_sql = text(
+        'SELECT p.nombre, pn.apellido, t.foto FROM persona p JOIN persona_natural pn ON p.id = pn.id_persona JOIN trabajador t ON p.id = t.id_persona WHERE p.id = :id_persona')
 
     # Ejecutar la consulta
     result = db_session.execute(consulta_sql, {'id_persona': id_persona})
@@ -779,8 +938,9 @@ def obtener_info_persona(id_persona):
 
     return datos
 
-def mostra_clientes(db_session:session):
-    query=text(  """
+
+def mostra_clientes(db_session: session):
+    query = text("""
          SELECT
             c.id,
             p.id AS id_persona,
@@ -807,22 +967,25 @@ def mostra_clientes(db_session:session):
             persona_natural pn ON p.id = pn.id_persona
      
     """)
-    result=db_session.execute(query).fetchall()
+    result = db_session.execute(query).fetchall()
 
     return result
 
 
-
-def obtenerusuarios(db_session:session):
-    query=text(""" SELECT s.*, p.nombre,pn.apellido FROM usuario s
+def obtenerusuarios(db_session: session):
+    query = text(""" SELECT s.*, p.nombre,pn.apellido FROM usuario s
 INNER JOIN persona p ON p.id = s.id_persona
 INNER JOIN persona_natural pn ON pn.id =s.id_persona """)
-    result=db_session.execute(query).fetchall()
+    result = db_session.execute(query).fetchall()
     return result
-def horariosistema(db_session:session):
-    query=text(""" SELECT * FROM horarios ORDER BY id ASC """)
-    result=db_session.execute(query).fetchall()
+
+
+def horariosistema(db_session: session):
+    query = text(""" SELECT * FROM horarios ORDER BY id ASC """)
+    result = db_session.execute(query).fetchall()
     return result
+
+
 def actualizar_horario(db_session: Session, horario_id, hora_apertura, hora_cierre, estado):
     # Consulta SQL para actualizar el horario
     query = text("""
@@ -848,7 +1011,7 @@ def actualizar_horario(db_session: Session, horario_id, hora_apertura, hora_cier
     else:
         # No se encontró el horario con el ID proporcionado
         return False
-    
+
 
 def cambiar_estado_horario(db_session: Session, horario_id, nuevo_estado):
     # Consulta SQL para cambiar el estado del horario
@@ -875,11 +1038,10 @@ def cambiar_estado_horario(db_session: Session, horario_id, nuevo_estado):
 
 
 def obtener_cupos_disponibles():
-    dias_semana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+    dias_semana = ['Lunes', 'Martes', 'Miércoles',
+                   'Jueves', 'Viernes', 'Sábado', 'Domingo']
     dia_hoy = datetime.now().strftime('%A')
     fecha_hoy = datetime.now().date()
-
-   
 
     # Obtiene todos los horarios disponibles para los próximos 7 días
     query_horarios = text("""
@@ -904,7 +1066,8 @@ def obtener_cupos_disponibles():
 
         # Calcula la fecha del horario sumando días
         idx_dia_horario = dias_semana.index(dia_horario)
-        fecha_horario = fecha_hoy + timedelta(days=(idx_dia_horario - fecha_hoy.weekday() + 7) % 7)
+        fecha_horario = fecha_hoy + \
+            timedelta(days=(idx_dia_horario - fecha_hoy.weekday() + 7) % 7)
 
         # Consulta para obtener las reservaciones en el intervalo horario
         query_reservaciones = text("""
@@ -923,7 +1086,8 @@ def obtener_cupos_disponibles():
 
         # Calcula la cantidad de cupos disponibles
         duracion_servicio = 2  # Duración del servicio en horas
-        cupos_disponibles = (hora_cierre.hour - hora_apertura.hour) // duracion_servicio - reservaciones
+        cupos_disponibles = (
+            hora_cierre.hour - hora_apertura.hour) // duracion_servicio - reservaciones
 
         # Almacena la información del horario y cupos disponibles en la lista
         horario_info = {
@@ -935,52 +1099,48 @@ def obtener_cupos_disponibles():
         }
         horarios_resultado.append(horario_info)
 
-  
-
     # Retorna la lista de horarios y cupos disponibles
     return horarios_resultado
 
 
-
-
 def obtener_cupos_hoy(horario, fecha_hoy):
-   
 
-    id_horario = horario[0] 
+    id_horario = horario[0]
     fecha_actual_str = fecha_hoy.strftime('%Y-%m-%d')
 
-  
     query_reservas_hoy = text("""
         SELECT COUNT(*) FROM reservacion
         WHERE fecha = :fecha_actual
         AND idhorario = :id_horario
     """)
 
-   
-    cupos_hoy = db_session.execute(query_reservas_hoy, {"fecha_actual": fecha_actual_str, "id_horario": id_horario}).scalar()
+    cupos_hoy = db_session.execute(query_reservas_hoy, {
+                                   "fecha_actual": fecha_actual_str, "id_horario": id_horario}).scalar()
 
     return cupos_hoy
+
+
 def mostrar_fechas_y_horas_reservas():
-   
+
     fecha_hoy = datetime.now().date()
 
-    
     fecha_fin = fecha_hoy + timedelta(days=7)
 
-    
     query_reservas = text("""
         SELECT fecha, hora
         FROM reservacion
         WHERE fecha BETWEEN :fecha_hoy AND :fecha_fin
     """)
 
-    
-    result = db_session.execute(query_reservas, {"fecha_hoy": fecha_hoy, "fecha_fin": fecha_fin}).fetchall()
+    result = db_session.execute(
+        query_reservas, {"fecha_hoy": fecha_hoy, "fecha_fin": fecha_fin}).fetchall()
 
     # Mostrar las fechas y horas de las reservas
-    fechas_horas_reservas = [(reserva[0].strftime("%Y-%m-%d"), reserva[1].strftime("%H:%M:%S")) for reserva in result]
+    fechas_horas_reservas = [(reserva[0].strftime(
+        "%Y-%m-%d"), reserva[1].strftime("%H:%M:%S")) for reserva in result]
 
     return fechas_horas_reservas
+
 
 def actualizar_horarios_con_reservas(horarios, reservas):
     for reserva in reservas:
@@ -991,26 +1151,27 @@ def actualizar_horarios_con_reservas(horarios, reservas):
                 if hora_reserva in horario["horas_cupos"]:
                     # Ajusta las horas_cupos y los cupos disponibles
                     ajustar_cupos_con_reserva(horario, hora_reserva)
-    
+
     return horarios  # Retorna la lista de horarios actualizada
+
 
 def ajustar_cupos_con_reserva(horario, hora_reserva):
     # Encuentra la posición de la hora_reserva en la lista de horas_cupos
     index_hora_reserva = horario["horas_cupos"].index(hora_reserva)
-    
+
     # Calcula la duración del servicio en minutos
     duracion_servicio = 1 * 60 + 40  # Supongamos que la duración es 1 hora y 40 minutos
-    
+
     # Ajusta las horas_cupos eliminando la hora_reserva y sumando la duración del servicio
     horario["horas_cupos"] = horario["horas_cupos"][:index_hora_reserva] + \
-                             [hora_reserva + timedelta(minutes=duracion_servicio * i) for i in range(1, horario["cupos_disponibles"] + 1)] + \
-                             horario["horas_cupos"][index_hora_reserva + 1:]
-    
+        [hora_reserva + timedelta(minutes=duracion_servicio * i) for i in range(1, horario["cupos_disponibles"] + 1)] + \
+        horario["horas_cupos"][index_hora_reserva + 1:]
+
     # Ajusta los cupos disponibles restando 1
     horario["cupos_disponibles"] -= 1
 
 
-def enviar_correo_con_contraseña(nombre,nombre_usuario, correo_destino, contraseña):
+def enviar_correo_con_contraseña(nombre, nombre_usuario, correo_destino, contraseña):
     cuerpo = f'''
     Estimado(a) {nombre},
 
@@ -1035,6 +1196,8 @@ def enviar_correo_con_contraseña(nombre,nombre_usuario, correo_destino, contras
     msg = Message(asunto, sender=remitente, recipients=destinatario)
     msg.body = cuerpo
     mail.send(msg)
+
+
 def enviar_correo_con_codigo(nombre, correo_destino, contraseña):
     cuerpo = f'''
     Estimado(a) {nombre},
@@ -1077,7 +1240,8 @@ def enviar_reporte_por_venta(nombre, correo_destino):
     msg.body = cuerpo
 
     # Adjuntar el archivo PDF
-    pdf_file_path = '/static/pdf/report/ventas.pdf'  # Cambia esto por la ruta correcta
+    # Cambia esto por la ruta correcta
+    pdf_file_path = '/static/pdf/report/ventas.pdf'
     with app.open_resource(pdf_file_path) as pdf_file:
         msg.attach(pdf_file_path, 'application/pdf', pdf_file.read())
 
@@ -1113,68 +1277,79 @@ def obtener_info_lotes_valor():
 
     lotes = []
     for result in results:
-        id_producto, nombre_producto,lote, numero_lote, fecha_vencimiento, cantidad_lote, estado_lote, precio, valor_lote = result
+        id_producto, nombre_producto, lote, numero_lote, fecha_vencimiento, cantidad_lote, estado_lote, precio, valor_lote = result
 
         lote = {
             'id_producto': id_producto,
             'nombre_producto': nombre_producto,
-            'lote':lote,
+            'lote': lote,
             'numero_lote': numero_lote,
             'fecha_vencimiento': fecha_vencimiento,
             'cantidad_lote': cantidad_lote,
             'estado_lote': estado_lote,
             'precio': precio,
-           
+
             'valor_lote': valor_lote
         }
 
         lotes.append(lote)
 
     return lotes
+
+
 def obtener_datos_sucursal():
-    query=text(""" SELECT * FROM sucursal """)
-    result=db_session.execute(query).first()
+    query = text(""" SELECT * FROM sucursal """)
+    result = db_session.execute(query).first()
     return result
-   
+
+
 @app.context_processor
 def agregar_datos_sucursal():
     return dict(datos_sucursal=obtener_datos_sucursal())
 
+
 @app.before_request
 def before_request():
- 
+
     estadisticas_resultantes = actualizar_estado_lotes(db_session)
+    actualizar_estados(db_session)
+    actualizar_estados_pasados(db_session)
+
     print(estadisticas_resultantes)
 
-    
-@app.route("/recuperar",methods=['GET','POST'])
+
+@app.route("/recuperar", methods=['GET', 'POST'])
 def recuperar_contraseña():
 
     return render_template("recuperar.html")
-@app.route("/enviar_codigo",methods=['GET','POST'])
+
+
+@app.route("/enviar_codigo", methods=['GET', 'POST'])
 def recuperar_contraseñas():
     if request.method == "POST":
-        usuario=request.form['correo']
+        usuario = request.form['correo']
         result = db_session.execute(
             text("SELECT id,id_persona FROM usuario WHERE usuario = :usuario"),
             {"usuario": usuario}
         )
         usuario_db = result.fetchone()
         if usuario_db:
-          
-            persona= BuscarPorIdPersona(db_session,usuario_db[1])
+
+            persona = BuscarPorIdPersona(db_session, usuario_db[1])
             nombre, apellido, correo = persona
             nombres = nombre + ' ' + apellido
             contraseña = generar_contraseña()
-            enviar_correo_con_codigo(nombres,correo,contraseña)
+            enviar_correo_con_codigo(nombres, correo, contraseña)
             hashed_password = generate_password_hash(contraseña)
-            actualizar_contraseña(db_session,usuario_db[0],hashed_password)
-            flash("Se ha enviado tu nueva contraseña a tu correo electronico","success")
+            actualizar_contraseña(db_session, usuario_db[0], hashed_password)
+            flash("Se ha enviado tu nueva contraseña a tu correo electronico", "success")
             return redirect('/login')
         else:
-            flash("No se ha encontrado el nombre del usuario","error")
+            flash("No se ha encontrado el nombre del usuario", "error")
 
     return redirect('/recuperar')
+
+
 @cross_origin()
 @app.route('/api_InsertarCliente', methods=['POST'])
 def api_InsertarCliente():
@@ -1188,12 +1363,15 @@ def api_InsertarCliente():
             celular = data['celular']
             tipo = data['tipo']
 
-            id_persona = insertar_persona(db_session, nombre, correo,"En direccion", celular)
+            id_persona = insertar_persona(
+                db_session, nombre, correo, "En direccion", celular)
             print(id_persona)
-            insertar_persona_natural(db_session, id_persona, apellidos, None, None, None, tipo)
-            codigo = generar_codigo_cliente(nombre,id_persona,celular)
+            insertar_persona_natural(
+                db_session, id_persona, apellidos, None, None, None, tipo)
+            codigo = generar_codigo_cliente(nombre, id_persona, celular)
             print(codigo)
-            codigo_cliente=insertar_cliente(db_session, id_persona,codigo,"Normal","No hay")
+            codigo_cliente = insertar_cliente(
+                db_session, id_persona, codigo, "Normal", "No hay")
             print(codigo_cliente)
 
             db_session.commit()
@@ -1209,6 +1387,7 @@ def api_InsertarCliente():
 
     return 'null', 400
 
+
 @cross_origin()
 @app.route('/api/InsertarClienteObligatorio', methods=['GET', 'POST'])
 def insertar_usuarios():
@@ -1219,35 +1398,36 @@ def insertar_usuarios():
         request_data = request.get_json()
         nombre = request_data['nombre']
         celular = request_data['celular']
-        id_persona = insertar_persona(db_session, nombre,"No hay","En direccion", celular)
+        id_persona = insertar_persona(
+            db_session, nombre, "No hay", "En direccion", celular)
         fecha_hoy = datetime.now()
         fecha_nacimiento_formato = fecha_hoy.strftime("%d/%m/%Y")
-        insertar_persona_natural(db_session,id_persona,"Actualizar","cedula",fecha_nacimiento_formato,"O","Natural")
-        codigo = generar_codigo_cliente(nombre,id_persona,celular)
-        codigo_cliente=insertar_cliente(db_session, id_persona,codigo,"Cliente no registrado","No hay")
+        insertar_persona_natural(db_session, id_persona, "Actualizar",
+                                 "cedula", fecha_nacimiento_formato, "O", "Natural")
+        codigo = generar_codigo_cliente(nombre, id_persona, celular)
+        codigo_cliente = insertar_cliente(
+            db_session, id_persona, codigo, "Cliente no registrado", "No hay")
 
         db_session.commit()
 
         return jsonify({"codigo_cliente": codigo_cliente}), 200
-        
-    return 'null', 400
 
+    return 'null', 400
 
 
 @app.route('/')
 @login_required
 def index():
-    
+
     estadisticas_resultantes = actualizar_estado_lotes(db_session)
 
-        
     return render_template('index.html')
-
 
 
 def obtener_horariosAtencion(db_session):
     try:
-        query = text("SELECT dia, hora_apertura, hora_cierre, estado FROM horarios")
+        query = text(
+            "SELECT dia, hora_apertura, hora_cierre, estado FROM horarios")
         rows = db_session.execute(query).fetchall()
         # Devolver los resultados en formato JSON
         # Ejecutar consulta SQL
@@ -1256,49 +1436,42 @@ def obtener_horariosAtencion(db_session):
         for dia, hora_apertura, hora_cierre, estado in rows:
             if estado == 1:
                 # Convertir las horas a formato de 12 horas y determinar AM o PM
-                apertura = datetime.strptime(hora_apertura.strftime('%H:%M:%S'), '%H:%M:%S').strftime('%I:%M %p')
-                cierre = datetime.strptime(hora_cierre.strftime('%H:%M:%S'), '%H:%M:%S').strftime('%I:%M %p')
+                apertura = datetime.strptime(hora_apertura.strftime(
+                    '%H:%M:%S'), '%H:%M:%S').strftime('%I:%M %p')
+                cierre = datetime.strptime(hora_cierre.strftime(
+                    '%H:%M:%S'), '%H:%M:%S').strftime('%I:%M %p')
                 print(f"{dia}: {apertura} a {cierre}")
             elif estado == 2:
                 print(f"{dia}: *CERRADO*")
 
         return jsonify(rows)
-        
 
     except Exception as error:
         # Manejar errores y devolver una respuesta apropiada
         print('Error:', str(error))
         return jsonify({'error': 'Ocurrió un error al obtener los horarios'}), 500
 
-    
+
 @cross_origin()
 @app.route('/api/obtenerHorariosSucursalesUbicaciones', methods=['GET'])
 def obtenerHorariosSucursalesUbicaciones():
 
-
     sucursales
     horariosAtencion = obtener_horariosAtencion(db_session)
 
-
-
-
-
     return true
 
-
-
-    
 
 @cross_origin()
 @app.route('/api/getservicios', methods=['GET'])
 def obtener_servicios():
     try:
-        result  = obtener_servicios_activos(db_session)
+        result = obtener_servicios_activos(db_session)
         servicios = []
         for row in result:
             servicio = {
-                "id":row.id,
-                "descripcion":row.descripcion,
+                "id": row.id,
+                "descripcion": row.descripcion,
                 "nombre": row.nombre,
                 "precio": row.precio,
                 "realizacion": row.realizacion.strftime('%H:%M:%S')
@@ -1341,26 +1514,27 @@ def obtener_servicios_descripcion():
 
     except Exception as error:
         # Registrar el error para una mejor gestión
-        app.logger.error('Error en la función obtener_servicios_descripcion: %s', str(error))
+        app.logger.error(
+            'Error en la función obtener_servicios_descripcion: %s', str(error))
         # Devolver una respuesta de error al cliente
         return jsonify({'error': 'Ocurrió un error al obtener los servicios con descripción'}), 500
 
 
-@cross_origin()  
+@cross_origin()
 @app.route('/api/validarnumerocelular', methods=['POST'])
 def validar_numero_celular():
     try:
         numero_celular = request.json.get('numero_celular')
         existe = ValidarNumeroCelularExistente(numero_celular)
-        return jsonify({'existe': existe}),200
+        return jsonify({'existe': existe}), 200
 
     except Exception as error:
-       
+
         print('Error:', str(error))
         return jsonify({'error': 'Ocurrió un error al validar el número de celular'}), 500
 
 
-@cross_origin()  
+@cross_origin()
 @app.route('/api/reservacion', methods=['POST'])
 def validar_numero_celulars():
     try:
@@ -1369,22 +1543,28 @@ def validar_numero_celulars():
         return jsonify({'existe': existe})
 
     except Exception as error:
-       
+
         print('Error:', str(error))
         return jsonify({'error': 'Ocurrió un error al validar el número de celular'}), 500
+
+
 def obtener_nombre_dia_actual():
-    dia_actual = datetime.now().strftime("%A")  # Obtener el nombre del día actual en inglés
+    # Obtener el nombre del día actual en inglés
+    dia_actual = datetime.now().strftime("%A")
     nombre_dia_actual = dia_actual.capitalize()
     return nombre_dia_actual
+
 
 def obtener_horario_actual():
     dia_actual = datetime.now().strftime("%A")  # Obtener el nombre del día actual
     nombre_dia_actual = dia_actual.capitalize()
-    print( nombre_dia_actual)
-    query = text("SELECT hora_apertura, hora_cierre FROM horarios WHERE dia = :dia")
+    print(nombre_dia_actual)
+    query = text(
+        "SELECT hora_apertura, hora_cierre FROM horarios WHERE dia = :dia")
     result = db_session.execute(query, {"dia":  nombre_dia_actual})
     horario_actual = result.fetchone()
     return horario_actual
+
 
 def generar_bloques_disponibles_para_semana():
     # Obtener el nombre del día actual en español con la primera letra en mayúscula
@@ -1396,7 +1576,7 @@ def generar_bloques_disponibles_para_semana():
     if horario_actual:
         hora_apertura = horario_actual[0]
         hora_cierre = horario_actual[1]
-       
+
         # Convertir la hora de apertura y cierre a objetos datetime.time
         hora_aperturas = hora_apertura.strftime("%H:%M")
         hora_cierres = hora_cierre.strftime("%H:%M")
@@ -1404,29 +1584,33 @@ def generar_bloques_disponibles_para_semana():
         print(hora_cierres)
         # Resto del código...
     else:
-        print(f"No se encontró un horario para el día {dia_actual} en la base de datos.")
+        print(
+            f"No se encontró un horario para el día {dia_actual} en la base de datos.")
 
-        
-@app.route('/inicio',methods=['GET','POST'])
+
+@app.route('/inicio', methods=['GET', 'POST'])
 @login_required
 def inicio():
-   
+
     bloques_disponibles = generar_bloques_disponibles_para_semana()
 # Imprimir los bloques disponibles generados
     if bloques_disponibles:
         for bloque in bloques_disponibles:
-            print(f"Hora Inicio: {bloque['hora_inicio']}, Hora Fin: {bloque['hora_fin']}")
+            print(
+                f"Hora Inicio: {bloque['hora_inicio']}, Hora Fin: {bloque['hora_fin']}")
     else:
         print("No se encontró el horario para el día actual en la base de datos.")
     actualizar_estado_lotes(db_session)
     return render_template("index.html")
 
-@app.route('/productos',methods=['GET','POST'])
+
+@app.route('/productos', methods=['GET', 'POST'])
 @login_required
 def productos():
     productos = obtener_productos(db_session)
-  
-    return render_template('productos.html',productos=productos)
+
+    return render_template('productos.html', productos=productos)
+
 
 @app.route('/CrearProducto', methods=['POST'])
 def crear_producto():
@@ -1437,7 +1621,7 @@ def crear_producto():
     carpeta_destino = 'static/img/productos'
     logo = guardar_imagen(archivo, carpeta_destino)
     insertar_producto(db_session, nombre, descripcion, logo, estado)
-    flash("Se ha registrado correctamente el producto","success")
+    flash("Se ha registrado correctamente el producto", "success")
     generar_pdf_productos(db_session)
     return redirect('/productos')
 
@@ -1447,30 +1631,29 @@ def actualizar_productos():
     id_producto = request.form.get('id')
     nombre = request.form.get('nombre')
     descripcion = request.form.get('descripcion')
-    estado=request.form.get('estado')
+    estado = request.form.get('estado')
     archivo = request.files['logo']
-    logos=request.form.get('logos')
+    logos = request.form.get('logos')
     if archivo:
         carpeta_destino = 'static/img/productos'
         logo = guardar_imagen(archivo, carpeta_destino)
         try:
             os.remove(logos)
         except Exception as e:
-                print(f"No se pudo eliminar la imagen anterior: {e}")
-       
-        actualizar_producto(db_session, id_producto, nombre, descripcion, logo, estado)
+            print(f"No se pudo eliminar la imagen anterior: {e}")
+
+        actualizar_producto(db_session, id_producto,
+                            nombre, descripcion, logo, estado)
         flash("Se ha actualizado correctamente el producto", "success")
         generar_pdf_productos(db_session)
         return redirect('/productos')
     else:
-            # Si no se proporcionó un archivo o la extensión no es permitida, solo actualizar la información sin cambiar la imagen
-        actualizar_producto(db_session, id_producto, nombre, descripcion,logos, estado)
+        # Si no se proporcionó un archivo o la extensión no es permitida, solo actualizar la información sin cambiar la imagen
+        actualizar_producto(db_session, id_producto, nombre,
+                            descripcion, logos, estado)
         flash("Se ha actualizado correctamente el producto ", "success")
         generar_pdf_productos(db_session)
         return redirect('/productos')
-  
- 
-  
 
 
 @app.route('/CambiarEstadoProducto', methods=['POST'])
@@ -1479,58 +1662,65 @@ def cambiar_estado_producto():
     nuevo_estado = request.form.get('estado')
     cambiar_estado_productos(db_session, id_producto, nuevo_estado)
     generar_pdf_productos(db_session)
-    flash("Se ha desactivado el producto","success")
+    flash("Se ha desactivado el producto", "success")
     return redirect('/productos')
 
-@app.route('/precioproducto',methods=['GET','POST'])
+
+@app.route('/precioproducto', methods=['GET', 'POST'])
 @login_required
 def precioproducto():
-    Precios=obtener_precioproductos(db_session);
-    productos=obtener_productos_sin_precio(db_session)
-    return render_template("precioproducto.html",productos=productos,Precios=Precios)
+    Precios = obtener_precioproductos(db_session)
+    productos = obtener_productos_sin_precio(db_session)
+    return render_template("precioproducto.html", productos=productos, Precios=Precios)
 
-@app.route('/CrearPrecio',methods=['GET','POST'])
+
+@app.route('/CrearPrecio', methods=['GET', 'POST'])
 def crearprecioproducto():
-    idproducto=request.form.get('idproducto')
-    precio=request.form.get('precio')
-    estado=request.form.get('estado')
-    insertar_precio(db_session,idproducto,precio,estado)
-    flash("Se ha registrado correctamente el precio","success")
+    idproducto = request.form.get('idproducto')
+    precio = request.form.get('precio')
+    estado = request.form.get('estado')
+    insertar_precio(db_session, idproducto, precio, estado)
+    flash("Se ha registrado correctamente el precio", "success")
     return redirect('/precioproducto')
 
-@app.route('/CambiarPrecio/<int:id>',methods=['GET','POST'])
+
+@app.route('/CambiarPrecio/<int:id>', methods=['GET', 'POST'])
 def cambiaprecioproducto(id):
-    idproducto=request.form.get('idproducto')
-    precio=request.form.get('precio')
-    estado=request.form.get('estado')
-    insertar_precio(db_session,idproducto,precio,estado)
-    cambiar_estado_precio(db_session,id,2)
-    flash("Se ha registrado correctamente el precio","success")
+    idproducto = request.form.get('idproducto')
+    precio = request.form.get('precio')
+    estado = request.form.get('estado')
+    insertar_precio(db_session, idproducto, precio, estado)
+    cambiar_estado_precio(db_session, id, 2)
+    flash("Se ha registrado correctamente el precio", "success")
     return redirect('/precioproducto')
 
-@app.route('/CambiarPrecioestado/<int:id>',methods=['GET','POST'])
+
+@app.route('/CambiarPrecioestado/<int:id>', methods=['GET', 'POST'])
 def cambiaprecioproductoestado(id):
-   
-    cambiar_estado_precio(db_session,id,2)
-    flash("Se ha desactivado  correctamente el precio","success")
+
+    cambiar_estado_precio(db_session, id, 2)
+    flash("Se ha desactivado  correctamente el precio", "success")
     return redirect('/precioproducto')
+
 
 @app.route('/servicios')
 @login_required
 def servicios():
-    servicios=obtener_serviciossistema(db_session)
-    return render_template("servicios.html" ,servicios=servicios)
+    servicios = obtener_serviciossistema(db_session)
+    return render_template("servicios.html", servicios=servicios)
+
 
 @app.route("/crearservicio", methods=["POST"])
 def crearservicios():
     nombre = request.form.get('nombre')
     descripcion = request.form.get('descripcion')
     estado = request.form.get('estado')
-    realizacion=request.form.get('realizacion')
+    realizacion = request.form.get('realizacion')
     archivo = request.files['foto']
     carpeta_destino = 'static/img/servicios'
     logo = guardar_imagen(archivo, carpeta_destino)
-    insertar_servicio(db_session,nombre,descripcion,logo,realizacion,estado)
+    insertar_servicio(db_session, nombre, descripcion,
+                      logo, realizacion, estado)
     generar_pdf_servicios(db_session)
     flash("Se ha registrado correctamente el servicios", "success")
     return redirect('/servicios')
@@ -1541,7 +1731,7 @@ def actualizar_servicio(servicio_id):
     nombre = request.form.get('nombre')
     descripcion = request.form.get('descripcion')
     estado = request.form.get('estado')
-    realizacion=request.form.get('realizacion')
+    realizacion = request.form.get('realizacion')
     archivo = request.files['foto']
     logos = request.form.get('logos')
 
@@ -1555,63 +1745,72 @@ def actualizar_servicio(servicio_id):
         except Exception as e:
             print(f"No se pudo eliminar la imagen anterior: {e}")
 
-        update_servicio(db_session, servicio_id, nombre, descripcion, logo,realizacion, estado)
+        update_servicio(db_session, servicio_id, nombre,
+                        descripcion, logo, realizacion, estado)
         flash("Se ha actualizado correctamente el servicio, recuerda de actualizar el PDF para los usuarios del BOT!", "success")
         return redirect(url_for('servicios'))
 
-    update_servicio(db_session, servicio_id, nombre, descripcion, logos,realizacion, estado)
+    update_servicio(db_session, servicio_id, nombre,
+                    descripcion, logos, realizacion, estado)
     flash("Se ha actualizado correctamente el servicio, recuerda de actualizar el PDF para los usuarios del BOT!", "success")
     generar_pdf_servicios(db_session)
     return redirect(url_for('servicios'))
 
+
 @app.route('/eliminar_servicio/<int:servicio_id>', methods=['POST', 'GET'])
 def eliminar_servicio(servicio_id):
-    cambiar_estado_servicio(db_session,servicio_id,2)
+    cambiar_estado_servicio(db_session, servicio_id, 2)
     flash("se ha desactivado el servicio", "success")
     generar_pdf_servicios(db_session)
     return redirect("/servicios")
 
-@app.route("/precio_servicios",methods=['GET','POST'])
+
+@app.route("/precio_servicios", methods=['GET', 'POST'])
 def preciosservicios():
-    servicios=obtener_servicios_sin_precio(db_session)
-    Preciosservicios=obtener_precios_servicios(db_session)
-    return render_template("preciosservicios.html", servicios= servicios, Preciosservicios= Preciosservicios)
-@app.route('/CrearServiciosPrecios',methods=['GET','POST'])
+    servicios = obtener_servicios_sin_precio(db_session)
+    Preciosservicios = obtener_precios_servicios(db_session)
+    return render_template("preciosservicios.html", servicios=servicios, Preciosservicios=Preciosservicios)
+
+
+@app.route('/CrearServiciosPrecios', methods=['GET', 'POST'])
 def crearprecioservicios():
-    idproducto=request.form.get('idproducto')
-    precio=request.form.get('precio')
-    estado=request.form.get('estado')
-    insertar_precio_servicio(db_session,idproducto,precio,estado)
-    flash("Se ha registrado correctamente el precio","success")
+    idproducto = request.form.get('idproducto')
+    precio = request.form.get('precio')
+    estado = request.form.get('estado')
+    insertar_precio_servicio(db_session, idproducto, precio, estado)
+    flash("Se ha registrado correctamente el precio", "success")
     return redirect('/precio_servicios')
 
-@app.route('/CambiarServicios/<int:id>',methods=['GET','POST'])
+
+@app.route('/CambiarServicios/<int:id>', methods=['GET', 'POST'])
 def cambiaprecioservicios(id):
-    idproducto=request.form.get('idproducto')
-    precio=request.form.get('precio')
-    estado=request.form.get('estado')
+    idproducto = request.form.get('idproducto')
+    precio = request.form.get('precio')
+    estado = request.form.get('estado')
 
+    insertar_precio_servicio(db_session, idproducto, precio, estado)
 
-    insertar_precio_servicio(db_session,idproducto,precio,estado)
-
-    cambiar_estado_precio_servicio(db_session,id,2)
-    flash("Se ha registrado correctamente el precio","success")
+    cambiar_estado_precio_servicio(db_session, id, 2)
+    flash("Se ha registrado correctamente el precio", "success")
     return redirect('/precio_servicios')
 
-@app.route('/CambiarServiciosestado/<int:id>',methods=['GET','POST'])
+
+@app.route('/CambiarServiciosestado/<int:id>', methods=['GET', 'POST'])
 def cambiaprecioproductoestadoservcios(id):
-   
-    cambiar_estado_precio_servicio(db_session,id,2)
-    flash("Se ha desactivado  correctamente el precio","success")
+
+    cambiar_estado_precio_servicio(db_session, id, 2)
+    flash("Se ha desactivado  correctamente el precio", "success")
     return redirect('/precio_servicios')
 
-@app.route('/trabajador',methods=['GET','POST'])
+
+@app.route('/trabajador', methods=['GET', 'POST'])
 @login_required
 def trabajador():
     trabajadores = ObtenerTrabajadores(db_session)
-    return render_template("trabajador.html",trabajadores=trabajadores)
+    return render_template("trabajador.html", trabajadores=trabajadores)
 
-@app.route('/crear_trabajador',methods=['POST'])
+
+@app.route('/crear_trabajador', methods=['POST'])
 def crear_trabajador():
     nombre = request.form.get('nombre')
     apellido = request.form.get('apellido')
@@ -1622,19 +1821,22 @@ def crear_trabajador():
     genero = request.form.get('genero')
     celular = request.form.get('celular')
     estado = request.form.get('estado')
-    codigo= generar_codigo_trabajador(db_session)
+    codigo = generar_codigo_trabajador(db_session)
     archivo = request.files['foto']
     carpeta_destino = 'static/img/trabajadores'
     logo = guardar_imagen(archivo, carpeta_destino)
-    IdPersona=insertar_persona(db_session,nombre,correo,direccion,celular)
-    insertar_persona_natural(db_session,IdPersona,apellido,cedula,fecha,genero,"Persona Natural")
-    insertar_trabajador(db_session,IdPersona,codigo,logo,estado)
-    flash("Se ha registrado con exito","success")
+    IdPersona = insertar_persona(
+        db_session, nombre, correo, direccion, celular)
+    insertar_persona_natural(
+        db_session, IdPersona, apellido, cedula, fecha, genero, "Persona Natural")
+    insertar_trabajador(db_session, IdPersona, codigo, logo, estado)
+    flash("Se ha registrado con exito", "success")
     return redirect('/trabajador')
 
-@app.route('/actualizar_trabajador/<int:id>',methods=['POST'])
+
+@app.route('/actualizar_trabajador/<int:id>', methods=['POST'])
 def actualizar_trabajadors(id):
-    persona=request.form.get('persona')
+    persona = request.form.get('persona')
     nombre = request.form.get('nombre')
     apellido = request.form.get('apellido')
     correo = request.form.get('correo')
@@ -1642,7 +1844,7 @@ def actualizar_trabajadors(id):
     celular = request.form.get('celular')
     estado = request.form.get('estado')
     archivo = request.files['foto']
-    logos=request.form.get('logos')
+    logos = request.form.get('logos')
     if archivo:
         carpeta_destino = 'static/img/trabajadores'
         logo = guardar_imagen(archivo, carpeta_destino)
@@ -1651,36 +1853,42 @@ def actualizar_trabajadors(id):
         except Exception as e:
             print(f"No se pudo eliminar la imagen anterior: {e}")
 
-        update_persona(db_session,persona,nombre,correo,celular,direccion)
-        update_persona_natural(db_session,persona,apellido,"Persona Natural")
- 
-        actualizar_trabajador(db_session,id,logo,estado)
-        flash("Se ha actualizado con exito ","success")
+        update_persona(db_session, persona, nombre, correo, celular, direccion)
+        update_persona_natural(db_session, persona,
+                               apellido, "Persona Natural")
+
+        actualizar_trabajador(db_session, id, logo, estado)
+        flash("Se ha actualizado con exito ", "success")
         return redirect('/trabajador')
     else:
-        update_persona(db_session,persona,nombre,correo,celular,direccion)
-        update_persona_natural(db_session,persona,apellido,"Persona Natural")
-        actualizar_trabajador(db_session,id,logos,estado)
-        flash("Se ha actualizado con exito ","success")
+        update_persona(db_session, persona, nombre, correo, celular, direccion)
+        update_persona_natural(db_session, persona,
+                               apellido, "Persona Natural")
+        actualizar_trabajador(db_session, id, logos, estado)
+        flash("Se ha actualizado con exito ", "success")
         return redirect('/trabajador')
-    
-@app.route('/eliminar_trabajador/<int:id>',methods=['POST'])
+
+
+@app.route('/eliminar_trabajador/<int:id>', methods=['POST'])
 def eliminar_trabajadors(id):
-    cambiar_estado_trabajador(db_session,id,2)
-    flash("Se ha desactivado correctamente el trabajador","success")
+    cambiar_estado_trabajador(db_session, id, 2)
+    flash("Se ha desactivado correctamente el trabajador", "success")
     return redirect('/trabajador')
+
 
 @app.errorhandler(404)
 def page_not_found(e):
     # note that we set the 404 status explicitly
-    return render_template('404.html'), 404  
+    return render_template('404.html'), 404
 
-@app.route("/usuarios",methods=['GET','POST'])
+
+@app.route("/usuarios", methods=['GET', 'POST'])
 @login_required
 def usuarios():
-    trabajador=ObtenerEmpleadoSinUsuario(db_session)
-    usuarios=obtenerusuarios(db_session)
-    return render_template("usuarios.html",trabajador=trabajador,usuarios=usuarios)
+    trabajador = ObtenerEmpleadoSinUsuario(db_session)
+    usuarios = obtenerusuarios(db_session)
+    return render_template("usuarios.html", trabajador=trabajador, usuarios=usuarios)
+
 
 @app.route("/crearusuarios", methods=['GET', 'POST'])
 def crear_usuario():
@@ -1688,8 +1896,7 @@ def crear_usuario():
     contraseña = generar_contraseña()
     hashed_password = generate_password_hash(contraseña)
     persona = BuscarPorIdPersona(db_session, id)
-    
-   
+
     if persona:
         nombre, apellido, correo = persona
         nombres = nombre + ' ' + apellido
@@ -1697,37 +1904,39 @@ def crear_usuario():
         enviar_correo_con_contraseña(nombres, usuario, correo, contraseña)
         insertar_usuario(db_session, id, usuario, hashed_password, 0)
 
-   
         flash("Se ha agregado correctamente el usuario!", "success")
         flash("Se ha enviado un correo correctamente con la contraseña para su acceso a la plataforma", "info")
         return redirect('/usuarios')
     else:
         return redirect('/usuarios')
-    
-@app.route("/verificar_usuarios",methods=['GET','POST'])
+
+
+@app.route("/verificar_usuarios", methods=['GET', 'POST'])
 def verificar_usuarios():
     id = request.form.get('id')
-    cambiar_estado_usuario(db_session,id,1)
+    cambiar_estado_usuario(db_session, id, 1)
     flash("Se ha activado correctamente!", "success")
     return redirect('/usuarios')
 
-@app.route("/eliminar_usuario",methods=['GET','POST'])
+
+@app.route("/eliminar_usuario", methods=['GET', 'POST'])
 def eliminar_usuarios():
     id = request.form.get('id')
-    cambiar_estado_usuario(db_session,id,2)
+    cambiar_estado_usuario(db_session, id, 2)
     flash("Se ha desactivado correctamente!", "success")
     return redirect('/usuarios')
 
-@app.route("/login",methods=['GET','POST'])
-def login():
-    return render_template("login.html") 
 
-@app.route("/validar",methods=['GET','POST'])
+@app.route("/login", methods=['GET', 'POST'])
+def login():
+    return render_template("login.html")
+
+
+@app.route("/validar", methods=['GET', 'POST'])
 def validar():
     if request.method == 'POST':
         usuario = request.form['usuario']
         contraseña = request.form['contraseña']
-        
 
         # Consulta SQL para buscar al usuario en la base de datos
         result = db_session.execute(
@@ -1738,39 +1947,43 @@ def validar():
 
         if usuario_db and check_password_hash(usuario_db[3], contraseña):
             # Contraseña válida, iniciar sesión
-           
+
             session['usuario_id'] = usuario_db[0]
-            datos=obtener_info_persona(usuario_db[1])
+            datos = obtener_info_persona(usuario_db[1])
             nombre, apellido, foto = datos
-            session['nombre']=nombre
-            session['apellido']=apellido
-            session['foto']=foto
+            session['nombre'] = nombre
+            session['apellido'] = apellido
+            session['foto'] = foto
             flash('Inicio de sesión exitoso', 'success')
             return redirect(url_for('inicio'))
         else:
             flash('Credenciales incorrectas. Por favor, inténtalo de nuevo.', 'error')
     return redirect('/login')
-@app.route('/cambiar_contraseña',methods=['GET','POST'])
+
+
+@app.route('/cambiar_contraseña', methods=['GET', 'POST'])
 def cambiar_contraseña():
-    id=request.form.get('id')
-    contraseña=request.form.get('contraseña_actual')
-    contraseña_nueva=request.form.get('contraseña_nueva')
+    id = request.form.get('id')
+    contraseña = request.form.get('contraseña_actual')
+    contraseña_nueva = request.form.get('contraseña_nueva')
     result = db_session.execute(
-            text("SELECT * FROM usuario WHERE id = :id"),
-            {"id": id}
-        )
+        text("SELECT * FROM usuario WHERE id = :id"),
+        {"id": id}
+    )
     usuario_db = result.fetchone()
 
     if usuario_db and check_password_hash(usuario_db[3], contraseña):
         hashed_password = generate_password_hash(contraseña_nueva)
-  
-        actualizar_contraseña(db_session,id,hashed_password)
+
+        actualizar_contraseña(db_session, id, hashed_password)
         flash('Inicio de sesión exitoso', 'success')
         return redirect(url_for('inicio'))
     else:
         flash('Credenciales incorrectas. Por favor, inténtalo de nuevo.', 'error')
 
     return redirect('/inicio')
+
+
 @app.route('/logout')
 @login_required
 def logout():
@@ -1779,11 +1992,13 @@ def logout():
     flash('Has cerrado sesión', 'info')
     return redirect(url_for('inicio'))
 
-@app.route("/horario",methods=['GET','POST'])
+
+@app.route("/horario", methods=['GET', 'POST'])
 @login_required
 def horario():
-    horario=horariosistema(db_session)
-    return render_template("horario.html",horario=horario)
+    horario = horariosistema(db_session)
+    return render_template("horario.html", horario=horario)
+
 
 @app.route('/CambiarHorario/<int:horario_id>', methods=['POST'])
 def cambiar_horario(horario_id):
@@ -1792,32 +2007,37 @@ def cambiar_horario(horario_id):
         hora_apertura = request.form['horaapertura']
         hora_cierre = request.form['horacierre']
         estado = request.form['estado']
-        actualizar_horario(db_session,horario_id,hora_apertura,hora_cierre,estado)
+        actualizar_horario(db_session, horario_id,
+                           hora_apertura, hora_cierre, estado)
         flash('Se ha actualizado el horario', 'info')
-        return redirect(url_for('horario')) 
+        return redirect(url_for('horario'))
 
     else:
         return "Método no permitido", 405
+
+
 @app.route('/Cambiarhorarioestado/<int:horario_id>', methods=['POST'])
 def cambiar_horarios(horario_id):
     if request.method == 'POST':
-       
-        cambiar_estado_horario(db_session,horario_id,2)
+
+        cambiar_estado_horario(db_session, horario_id, 2)
         flash('Se ha actualizado el horario', 'info')
-        return redirect(url_for('horario')) 
+        return redirect(url_for('horario'))
 
     else:
-        return "Método no permitido", 405  
+        return "Método no permitido", 405
 
-@app.route("/lotes",methods=['GET','POST'])
+
+@app.route("/lotes", methods=['GET', 'POST'])
 @login_required
 def lotes():
-    productos=obtener_productos(db_session)
-    lotes=obtener_info_lotes_valor()
-   
-    return render_template("lote.html",productos=productos,lotes=lotes)
+    productos = obtener_productos(db_session)
+    lotes = obtener_info_lotes_valor()
 
-@app.route("/sucursales",methods=['GET','POST'])
+    return render_template("lote.html", productos=productos, lotes=lotes)
+
+
+@app.route("/sucursales", methods=['GET', 'POST'])
 @login_required
 def sucursales():
 
@@ -1834,17 +2054,16 @@ def sucursales():
         carpeta_destino = 'static/img/logos'
         logo = guardar_imagen(archivo, carpeta_destino)
 
-      
-
-        insertar_sucursal(db_session,nombre_sucursal,razon_social,direccion_escrita,ubicacion_googleMaps,telefono,logo,estado)
+        insertar_sucursal(db_session, nombre_sucursal, razon_social,
+                          direccion_escrita, ubicacion_googleMaps, telefono, logo, estado)
 
         flash('Se ha creado la sucursal', 'success')
         return redirect(url_for('sucursales'))
 
-   
     return render_template("sucursales.html", surcursales=surcursales)
 
-def  insertar_sucursal(db_session,nombre_sucursal,razon_social,direccion_escrita,ubicacion_googleMaps,telefono,logo,estado):
+
+def insertar_sucursal(db_session, nombre_sucursal, razon_social, direccion_escrita, ubicacion_googleMaps, telefono, logo, estado):
     query = text("""
     INSERT INTO sucursal (nombre, razon_social, ubicacion_escrita, ubicacion_googleMaps, telefono,logo, estado)
     VALUES (:nombre_sucursal, :razon_social, :direccion_escrita, :ubicacion_googleMaps, :telefono,:logo, :estado)
@@ -1857,13 +2076,14 @@ def  insertar_sucursal(db_session,nombre_sucursal,razon_social,direccion_escrita
         'direccion_escrita': direccion_escrita,
         'ubicacion_googleMaps': ubicacion_googleMaps,
         'telefono': telefono,
-        'logo':logo,
+        'logo': logo,
         'estado': estado
     })
 
     db_session.commit()
 
     return true
+
 
 def obtener_sucursales(db_session):
     query = text("""
@@ -1872,10 +2092,8 @@ def obtener_sucursales(db_session):
     """)
 
     sucursales = db_session.execute(query).fetchall()
-    
 
     return sucursales
-
 
 
 @app.route('/eliminar_sucursal/<int:id>', methods=['POST'])
@@ -1884,6 +2102,7 @@ def eliminar_sucursal(id):
         eliminar_sucursal(id)
         flash('Se ha eliminado la sucursal', 'success')
         return redirect(url_for('sucursales'))
+
 
 @app.route('/editar_sucursal/<int:id>', methods=['POST'])
 def editar_sucursal(id):
@@ -1903,21 +2122,22 @@ def editar_sucursal(id):
         if archivo:
             carpeta_destino = 'static/img/trabajadores'
             logo = guardar_imagen(archivo, carpeta_destino)
-            actualizar_sucursal(db_session, id_sucursal, nombre_sucursal, razon_social, direccion_escrita, ubicacion_googleMaps, telefono, logo, estado)
+            actualizar_sucursal(db_session, id_sucursal, nombre_sucursal, razon_social,
+                                direccion_escrita, ubicacion_googleMaps, telefono, logo, estado)
 
             try:
                 os.remove(logos)
             except Exception as e:
                 print(f"No se pudo eliminar la imagen anterior: {e}")
         else:
-            actualizar_sucursal(db_session, id_sucursal, nombre_sucursal, razon_social, direccion_escrita, ubicacion_googleMaps, telefono, logos, estado)
+            actualizar_sucursal(db_session, id_sucursal, nombre_sucursal, razon_social,
+                                direccion_escrita, ubicacion_googleMaps, telefono, logos, estado)
 
     flash('Se ha actualizado la sucursal', 'success')
     return redirect(url_for('sucursales'))
 
 
-       
-def actualizar_sucursal(db_session, id_sucursal, nombre_sucursal, razon_social, direccion_escrita, ubicacion_googleMaps, telefono,logo, estado):
+def actualizar_sucursal(db_session, id_sucursal, nombre_sucursal, razon_social, direccion_escrita, ubicacion_googleMaps, telefono, logo, estado):
     query = text("""
     UPDATE sucursal 
     SET nombre = :nombre_sucursal, 
@@ -1937,13 +2157,14 @@ def actualizar_sucursal(db_session, id_sucursal, nombre_sucursal, razon_social, 
         'direccion_escrita': direccion_escrita,
         'ubicacion_googleMaps': ubicacion_googleMaps,
         'telefono': telefono,
-        'logo':logo,
+        'logo': logo,
         'estado': estado
     })
 
     db_session.commit()
 
     return true
+
 
 def eliminar_sucursal(id):
     query = text("""
@@ -1957,15 +2178,17 @@ def eliminar_sucursal(id):
 
     db_session.commit()
 
-    return true       
+    return true
+
 
 @cross_origin()
-@app.route('/api/obtener_sucursales_horarios',methods=['GET'])
+@app.route('/api/obtener_sucursales_horarios', methods=['GET'])
 def horarios():
 
     sucursales_horarios = obtener_sucursales_horarios(db_session)
 
     return jsonify(sucursales_horarios)
+
 
 def obtener_sucursales_horarios(db_session):
     # Ejecuta la consulta SQL
@@ -1996,7 +2219,6 @@ ORDER BY
 
     """)
 
-
     # Obtiene los resultados
     rows = db_session.execute(query).fetchall()
 
@@ -2026,8 +2248,6 @@ ORDER BY
     return sucursales
 
 
-
-
 @app.route('/insertar_lote', methods=['POST'])
 def insertar_lote():
     if request.method == 'POST':
@@ -2035,14 +2255,15 @@ def insertar_lote():
         fecha_vencimiento_str = request.form.get('fecha_vencimiento')
         cantidad = request.form.get('cantidad')
         estado = int(request.form.get('estado'))
-        
+
         # Generar número de lote
         numero_lote = generar_numero_lote()
 
         # Convertir la cadena de fecha de vencimiento a objeto datetime
         fecha_vencimiento = None
         if fecha_vencimiento_str:
-            fecha_vencimiento = datetime.strptime(fecha_vencimiento_str, '%Y-%m-%d')
+            fecha_vencimiento = datetime.strptime(
+                fecha_vencimiento_str, '%Y-%m-%d')
 
         # Crear la consulta SQL base sin especificar fecha_vencimiento
         query_base = """
@@ -2068,7 +2289,8 @@ def insertar_lote():
         }).scalar()
 
         # Insertar el movimiento en el inventario
-        insertar_movimiento_inventario(db_session, lote_id, "Lote nuevo", cantidad)
+        insertar_movimiento_inventario(
+            db_session, lote_id, "Lote nuevo", cantidad)
 
         flash('Se ha creado el lote', 'success')
         return redirect(url_for('lotes'))
@@ -2079,15 +2301,18 @@ def editar_lote(lote_id):
     if request.method == 'POST':
         fecha_vencimiento_str = request.form['fecha_vencimiento']
         nueva_cantidad = int(request.form['cantidad'])  # Convertir a entero
-      
+
         # Convertir la cadena de fecha de vencimiento a objeto datetime
         fecha_vencimiento = None
         if fecha_vencimiento_str:
-            fecha_vencimiento = datetime.strptime(fecha_vencimiento_str, '%Y-%m-%d')
+            fecha_vencimiento = datetime.strptime(
+                fecha_vencimiento_str, '%Y-%m-%d')
 
-        query_cantidad_actual = text("SELECT cantidad FROM lote_producto WHERE id = :lote_id")
-        cantidad_actual = db_session.execute(query_cantidad_actual, {'lote_id': lote_id}).scalar()
-       
+        query_cantidad_actual = text(
+            "SELECT cantidad FROM lote_producto WHERE id = :lote_id")
+        cantidad_actual = db_session.execute(
+            query_cantidad_actual, {'lote_id': lote_id}).scalar()
+
         if nueva_cantidad != cantidad_actual:
             # Realiza la actualización en la base de datos
             query_actualizacion = text("""
@@ -2102,7 +2327,7 @@ def editar_lote(lote_id):
                 'cantidad': nueva_cantidad,
                 'lote_id': lote_id
             })
-  
+
             db_session.commit()
             # Determinar el tipo de movimiento
             tipo_movimiento = "Se incrementó la cantidad" if nueva_cantidad > cantidad_actual else "Se redujo la cantidad"
@@ -2111,7 +2336,8 @@ def editar_lote(lote_id):
             cantidad_cambio = abs(nueva_cantidad - cantidad_actual)
 
             # Registrar el movimiento en el inventario
-            insertar_movimiento_inventario(db_session, lote_id, tipo_movimiento, cantidad_cambio)
+            insertar_movimiento_inventario(
+                db_session, lote_id, tipo_movimiento, cantidad_cambio)
         else:
             # Realiza la actualización en la base de datos
             query_actualizacion = text("""
@@ -2125,23 +2351,24 @@ def editar_lote(lote_id):
                 'fecha_vencimiento': fecha_vencimiento,
                 'lote_id': lote_id
             })
-  
+
             db_session.commit()
 
         flash('Se ha actualizado el lote', 'success')
     return redirect(url_for('lotes'))
 
-@app.route("/movimientos",methods=['GET','POST'])
+
+@app.route("/movimientos", methods=['GET', 'POST'])
 def movimientos():
-    movimientos=obtener_movimientos_por_lote(db_session)
-    return render_template("movimientos.html",movimientos=movimientos)
+    movimientos = obtener_movimientos_por_lote(db_session)
+    return render_template("movimientos.html", movimientos=movimientos)
 
 
-
-@app.route("/clientes",methods=['GET','POST'])
+@app.route("/clientes", methods=['GET', 'POST'])
 def clientes():
-    clientes=mostra_clientes(db_session)
-    return render_template("clientes.html",clientes=clientes)
+    clientes = mostra_clientes(db_session)
+    return render_template("clientes.html", clientes=clientes)
+
 
 @app.route('/crear_cliente', methods=['POST'])
 def procesar_formulario():
@@ -2158,11 +2385,14 @@ def procesar_formulario():
     archivo = request.files['foto']
     carpeta_destino = 'static/img/trabajadores'
     logo = guardar_imagen(archivo, carpeta_destino)
-    idpersona=insertar_persona(db_session,nombre,correo,direccion,celular)
-    insertar_persona_natural(db_session,idpersona,apellido,cedula,fecha_nacimiento,genero,"Persona natural")
-    codigo=generar_codigo_cliente(nombre,idpersona,celular)
-    insertar_cliente(db_session,idpersona,codigo,tipo_cliente,logo)
+    idpersona = insertar_persona(
+        db_session, nombre, correo, direccion, celular)
+    insertar_persona_natural(db_session, idpersona, apellido,
+                             cedula, fecha_nacimiento, genero, "Persona natural")
+    codigo = generar_codigo_cliente(nombre, idpersona, celular)
+    insertar_cliente(db_session, idpersona, codigo, tipo_cliente, logo)
     return redirect('/clientes')
+
 
 @app.route('/actualizar_cliente/<int:cliente_id>', methods=['POST'])
 def procesar_formulario_actualizacion(cliente_id):
@@ -2181,9 +2411,10 @@ def procesar_formulario_actualizacion(cliente_id):
         logo = guardar_imagen(archivo, carpeta_destino)
 
         update_persona(db_session, persona, nombre, correo, celular, direccion)
-        update_persona_natural(db_session, persona, apellido, "Persona natural")
+        update_persona_natural(db_session, persona,
+                               apellido, "Persona natural")
         update_cliente(db_session, cliente_id, tipo_cliente, logo, estado)
-       
+
         try:
             os.remove(logos)  # Elimina la imagen anterior
         except Exception as e:
@@ -2194,61 +2425,73 @@ def procesar_formulario_actualizacion(cliente_id):
     else:
         # En caso de que no se haya proporcionado un nuevo archivo, simplemente actualiza la información sin cambiar la imagen
         update_persona(db_session, persona, nombre, correo, celular, direccion)
-        update_persona_natural(db_session, persona, apellido, "Persona natural")
+        update_persona_natural(db_session, persona,
+                               apellido, "Persona natural")
         update_cliente(db_session, cliente_id, tipo_cliente, logos, estado)
 
         flash("Se ha actualizado el cliente sin cambiar la imagen.", "success")
 
-   
-
     return redirect(url_for('clientes'))
+
 
 @app.route('/eliminar_cliente/<int:cliente_id>', methods=['POST'])
 def cambiarestadocliente(cliente_id):
-    cambiar_estado_cliente(db_session,cliente_id,2)   
+    cambiar_estado_cliente(db_session, cliente_id, 2)
 
     return redirect(url_for('clientes'))
-@app.route("/citas",methods=['GET','POST'])
+
+
+@app.route("/citas", methods=['GET', 'POST'])
 @login_required
 def reserva():
-    reservaciones=obtener_reservacion(db_session)
-    return render_template("reservacion.html",reservaciones=reservaciones)
-@app.route("/ventas",methods=['GET'])
+    reservaciones = obtener_reservacion(db_session)
+    return render_template("reservacion.html", reservaciones=reservaciones)
+
+
+@app.route("/ventas", methods=['GET'])
 @login_required
 def venta():
-    ventas=obtener_ventas(db_session)
-   
-   
-    reservaciones=obtener_reservacion_hoy(db_session)
-    tipos=obtener_tipo_venta(db_session)
-    return render_template("venta.html",ventas=ventas,reservaciones=reservaciones,tipos=tipos)
+    ventas = obtener_ventas(db_session)
 
-@app.route('/ventacitas',methods=['POST'])
+    reservaciones = obtener_reservacion_hoy(db_session)
+    tipos = obtener_tipo_venta(db_session)
+    cantidad = obtener_cantidad_reservaciones_hoy(db_session)
+    print(cantidad)
+    return render_template("venta.html", ventas=ventas, reservaciones=reservaciones, tipos=tipos, cantidad=cantidad)
+
+
+@app.route('/ventacitas', methods=['POST'])
 def ventacitas():
-    tipo_venta=request.form['tipo_venta']
-    cliente=request.form['idcliente']
-    total=request.form['subtotal']
-    id_reserva=request.form['id']
+    tipo_venta = request.form['tipo_venta']
+    cliente = request.form['idcliente']
+    total = request.form['subtotal']
+    id_reserva = request.form['id']
     codigo = generar_codigo_venta(db_session)
-    id_venta = insertar_venta(db_session, tipo_venta,cliente, codigo, 0, total, 1)
-    insertar_detalle_venta_cita(db_session,id_venta,id_reserva,total,total)
-    cambiar_estado_reservacion(db_session,id_reserva,4)
-    flash("Se ha realizado la venta con exito","success")
+    id_venta = insertar_venta(db_session, tipo_venta,
+                              cliente, codigo, 0, total, 1)
+    insertar_detalle_venta_cita(db_session, id_venta, id_reserva, total, total)
+    cambiar_estado_reservacion(db_session, id_reserva, 4)
+    flash("Se ha realizado la venta con exito", "success")
     return redirect('/ventas')
-@app.route("/ventasproductos",methods=['GET','POST'])
+
+
+@app.route("/ventasproductos", methods=['GET', 'POST'])
 @login_required
 def ventasproductos():
-    productos= obtener_productos_ventas(db_session)
-    clientes=mostra_clientes(db_session)
-    tipos=obtener_tipo_venta(db_session)
-    return render_template("venta_productos.html",productos=productos,clientes=clientes,tipos=tipos)
+    productos = obtener_productos_ventas(db_session)
+    clientes = mostra_clientes(db_session)
+    tipos = obtener_tipo_venta(db_session)
+    return render_template("venta_productos.html", productos=productos, clientes=clientes, tipos=tipos)
 
-@app.route("/ventaservicios",methods=['GET','POST'])
+
+@app.route("/ventaservicios", methods=['GET', 'POST'])
 def ventaservicios():
-    clientes=mostra_clientes(db_session)
-    tipos=obtener_tipo_venta(db_session)
-    servicios=obtener_precios_servicios(db_session)
-    return render_template("ventas_servicios.html",clientes=clientes,tipos=tipos,servicios=servicios)
+    clientes = mostra_clientes(db_session)
+    tipos = obtener_tipo_venta(db_session)
+    servicios = obtener_precios_servicios(db_session)
+    return render_template("ventas_servicios.html", clientes=clientes, tipos=tipos, servicios=servicios)
+
+
 @app.route("/venta_productos", methods=['POST'])
 def procesar_venta():
     if request.method == 'POST':
@@ -2260,7 +2503,8 @@ def procesar_venta():
             total = data.get('total')
             codigo = generar_codigo_venta(db_session)
 
-            id_venta = insertar_venta(db_session, tipo_venta, persona_id, codigo, 0, total, 1)
+            id_venta = insertar_venta(
+                db_session, tipo_venta, persona_id, codigo, 0, total, 1)
 
             for producto_info in productos:
                 producto_id = producto_info.get('id')
@@ -2275,40 +2519,44 @@ def procesar_venta():
 
                     while cantidad_venta > 0:
                         # Determinar la cantidad a restar en este lote
-                        cantidad_a_restar_lote = min(cantidad_venta, cantidad_lote)
+                        cantidad_a_restar_lote = min(
+                            cantidad_venta, cantidad_lote)
 
                         # Restar la cantidad del lote
-                        restar_cantidad_lote(db_session, id_lote, cantidad_a_restar_lote)
+                        restar_cantidad_lote(
+                            db_session, id_lote, cantidad_a_restar_lote)
 
                         # Restar la cantidad vendida del inventario
-                        insertar_movimiento_inventario(db_session, id_lote, "Por venta", cantidad_a_restar_lote)
+                        insertar_movimiento_inventario(
+                            db_session, id_lote, "Por venta", cantidad_a_restar_lote)
 
                         # Restar la cantidad restante
                         cantidad_venta -= cantidad_a_restar_lote
 
                         # Insertar detalles de venta
-                        insertar_venta_producto(db_session, id_venta, producto_id, precio, cantidad_a_restar_lote, subtotal)
+                        insertar_venta_producto(
+                            db_session, id_venta, producto_id, precio, cantidad_a_restar_lote, subtotal)
 
                         # Obtener la información del lote más antiguo para la siguiente iteración
-                        result = obtener_info_lote_mas_antiguo(db_session, producto_id)
+                        result = obtener_info_lote_mas_antiguo(
+                            db_session, producto_id)
 
                         if result and result["cantidad"] > 0:
                             id_lote = int(result["id_lote"])
                             cantidad_lote = int(result["cantidad"])
                         else:
-                            print("No hay más lotes disponibles para restar la cantidad vendida.")
+                            print(
+                                "No hay más lotes disponibles para restar la cantidad vendida.")
                             break
 
                 db_session.commit()
-        
+
             return jsonify({"mensaje": "Success"}), 200
         except Exception as e:
             print(f"Error: {e}")
             return jsonify({"mensaje": "Error interno del servidor"}), 500
     return 'null', 400
 
-
-        
 
 @app.route("/venta_servicios", methods=["POST"])
 def ventas_servicios():
@@ -2320,34 +2568,38 @@ def ventas_servicios():
         servicios = data.get('servicios', [])
         codigo = generar_codigo_venta(db_session)
 
-        id_venta = insertar_venta(db_session, tipo_venta, persona_id, codigo, 0, total, 1)
+        id_venta = insertar_venta(
+            db_session, tipo_venta, persona_id, codigo, 0, total, 1)
 
         for servicios_info in servicios:
             servicios_id = servicios_info.get('id')
             precio = servicios_info.get('precio', Decimal('0.00'))
             cantidad_venta = servicios_info.get('cantidad', 0)
             subtotal = cantidad_venta * precio
-            insertar_detalle_venta(db_session, id_venta, servicios_id, precio, cantidad_venta, subtotal)
+            insertar_detalle_venta(
+                db_session, id_venta, servicios_id, precio, cantidad_venta, subtotal)
 
         # Enviar respuesta JSON en caso de éxito
-        return jsonify({"mensaje": "La venta se ha realizado correctamente", "tipo": "success"}),200
+        return jsonify({"mensaje": "La venta se ha realizado correctamente", "tipo": "success"}), 200
     except Exception as e:
         print(f"Error en ventas_servicios: {e}")
         # Enviar respuesta JSON en caso de error
-        return jsonify({"mensaje": "Hubo un error al procesar la venta de servicios. Por favor, inténtalo nuevamente.", "tipo": "error"}),500
+        return jsonify({"mensaje": "Hubo un error al procesar la venta de servicios. Por favor, inténtalo nuevamente.", "tipo": "error"}), 500
 
 
-@app.route("/ver_productos_cliente",methods=['GET', 'POST'])
+@app.route("/ver_productos_cliente", methods=['GET', 'POST'])
 def ver_productos_cliente():
     productos = obtener_productos(db_session)
 
-    return render_template("productos_generador.html",productos=productos)
+    return render_template("productos_generador.html", productos=productos)
+
 
 def obtener_productos_activos(db_session):
 
     return productos
 
-@app.route("/ver_servicios_clientes",methods=['GET', "POST"])
+
+@app.route("/ver_servicios_clientes", methods=['GET', "POST"])
 def ver_servicios_clientes():
 
     servicios = obtener_servicios_activos(db_session)
@@ -2355,6 +2607,7 @@ def ver_servicios_clientes():
 
     flash("El PDF se ha generado correctamente, los usuarios ya podran visualizar los nuevos cambios!", "success")
     return render_template("servicios_generador.html", servicios=servicios)
+
 
 def generar_pdf_servicios(db_session):
     # Aquí es donde se renderiza tu plantilla HTML con Jinja
@@ -2369,16 +2622,18 @@ def generar_pdf_servicios(db_session):
         'no-outline': None,
         'encoding': 'utf-8',
         'custom-header': [
-        ('Accept-Encoding', 'gzip')
-    ],
+            ('Accept-Encoding', 'gzip')
+        ],
         'cookie': [
             ('cookie-name1', 'cookie-value1'),
             ('cookie-name2', 'cookie-value2'),
         ],
         'no-outline': None
     }
-    css = ['static/css/boostrap4.css', 'static/css/style_servicios_generador.css']
-    pdf = pdfkit.from_string(rendered, 'static/pdf/servicios/Servicios.pdf', options=options, css=css)
+    css = ['static/css/boostrap4.css',
+           'static/css/style_servicios_generador.css']
+    pdf = pdfkit.from_string(
+        rendered, 'static/pdf/servicios/Servicios.pdf', options=options, css=css)
     return True
 
 
@@ -2395,16 +2650,18 @@ def generar_pdf_productos(db_session):
         'no-outline': None,
         'encoding': 'utf-8',
         'custom-header': [
-        ('Accept-Encoding', 'gzip')
-    ],
+            ('Accept-Encoding', 'gzip')
+        ],
         'cookie': [
             ('cookie-name1', 'cookie-value1'),
             ('cookie-name2', 'cookie-value2'),
         ],
         'no-outline': None
     }
-    css = ['static/css/boostrap4.css', 'static/css/style_servicios_generador.css']
-    pdf = pdfkit.from_string(rendered, 'static/pdf/productos/Productos.pdf', options=options, css=css)
+    css = ['static/css/boostrap4.css',
+           'static/css/style_servicios_generador.css']
+    pdf = pdfkit.from_string(
+        rendered, 'static/pdf/productos/Productos.pdf', options=options, css=css)
     return True
 
 
@@ -2414,6 +2671,7 @@ def pruebitaPDFServicios():
     generar_pdf_servicios(db_session)
     flash("Se ha actualizado correctamente el servicio, recuerda de actualizar el PDF para los usuarios del BOT!", "success")
     return redirect('/ver_servicios_clientes')
+
 
 @app.route('/generarPDFProductos', methods=['GET'])
 def pruebitaPDFProductos():
@@ -2426,6 +2684,7 @@ def pruebitaPDFProductos():
 # Define los alcances de la API de Google Calendar
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
+
 def obtener_servicio():
     creds = None
     if os.path.exists('token.pickle'):
@@ -2435,12 +2694,14 @@ def obtener_servicio():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
             creds = flow.run_local_server(port=0)
         with open('token.pickle', 'wb') as token:
             pickle.dump(creds, token)
     service = build('calendar', 'v3', credentials=creds)
     return service
+
 
 def crear_evento(service, inicio, fin):
     evento = {
@@ -2454,13 +2715,13 @@ def crear_evento(service, inicio, fin):
             'timeZone': 'America/Managua',
         },
     }
-    evento_creado = service.events().insert(calendarId='primary', body=evento).execute()
+    evento_creado = service.events().insert(
+        calendarId='primary', body=evento).execute()
     print(f"Evento creado: {evento_creado['htmlLink']}")
+
 
 @app.route('/api_obtener_dias_disponibles/', methods=['GET', 'POST'])
 def api_obtener_dias_disponibles():
-
-
 
     # # Obtiene el servicio de Google Calendar
     # service = obtener_servicio()
@@ -2474,16 +2735,17 @@ def api_obtener_dias_disponibles():
 
     rows = horariosistema(db_session)
 
-
     # Crear el diccionario
     tabla = {}
     for row in rows:
-        tabla[row[2]] = {"estado": row[5], "apertura": row[3].strftime("%H:%M"), "cierre": row[4].strftime("%H:%M")}
-    
-    dias_semana = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"]
-    
-    #ESTRUCTURA DE LA TABLA DEL SELECT
-        # Tu tabla en forma de diccionario con horarios de apertura y cierre
+        tabla[row[2]] = {"estado": row[5], "apertura": row[3].strftime(
+            "%H:%M"), "cierre": row[4].strftime("%H:%M")}
+
+    dias_semana = ["Lunes", "Martes", "Miercoles",
+                   "Jueves", "Viernes", "Sabado", "Domingo"]
+
+    # ESTRUCTURA DE LA TABLA DEL SELECT
+    # Tu tabla en forma de diccionario con horarios de apertura y cierre
     # tabla = {
     #     "Lunes": {"estado": 1, "apertura": "08:00", "cierre": "18:00"},
     #     "Martes": {"estado": 1, "apertura": "08:00", "cierre": "18:00"},
@@ -2494,8 +2756,9 @@ def api_obtener_dias_disponibles():
     #     "Domingo": {"estado": 2, "apertura": "00:00", "cierre": "00:00"}
     # }
 
-        # Lista de los días de la semana en orden
-    dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+    # Lista de los días de la semana en orden
+    dias_semana = ["Lunes", "Martes", "Miércoles",
+                   "Jueves", "Viernes", "Sábado", "Domingo"]
 
     # Obtén el día de la semana y la hora actual
     hoy = datetime.now()
@@ -2516,10 +2779,10 @@ def api_obtener_dias_disponibles():
     while len(proximos_dias) < 7 and i < 14:  # Limita el valor de i a 14
         # Calcula la fecha para el día de la semana actual
         fecha = hoy + timedelta(days=i)
-        
+
         # Obtiene el nombre del día de la semana
         dia_semana = dias_semana[i % 7]
-        
+
         # Verifica si el día está disponible y si la hora actual es antes de la hora de cierre
         hora_cierre = datetime.strptime(tabla[dia_semana]["cierre"], "%H:%M")
         if tabla[dia_semana]["estado"] == 1 and (hora_actual < hora_cierre or fecha.date() > hoy.date()):
@@ -2530,21 +2793,21 @@ def api_obtener_dias_disponibles():
     # Imprime los próximos 7 días
     for dia in proximos_dias:
         print(dia)
-    
-    
+
     return jsonify(proximos_dias)
 
 
-@app.route("/reservas",methods=['GET','POST'])
+@app.route("/reservas", methods=['GET', 'POST'])
 def reservas():
 
-    
     return 'se consultó'
 
 # Esta API es para obtener del bot el la duración del servicio seleccionado
 # ademas de su dia
+
+
 @cross_origin()
-@app.route('/api_duracionLavado_dia' , methods=['GET', 'POST'])
+@app.route('/api_duracionLavado_dia', methods=['GET', 'POST'])
 def api_duracionLavado_dia():
     if request.method == 'POST':
         try:
@@ -2564,14 +2827,15 @@ def api_duracionLavado_dia():
 
             rows = horariosistema(db_session)
 
-
             # Crear el diccionario
             tabla = {}
             for row in rows:
-                tabla[row[2]] = {"estado": row[5], "apertura": row[3].strftime("%H:%M"), "cierre": row[4].strftime("%H:%M")}
-            
-            dias_semana = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"]
-            
+                tabla[row[2]] = {"estado": row[5], "apertura": row[3].strftime(
+                    "%H:%M"), "cierre": row[4].strftime("%H:%M")}
+
+            dias_semana = ["Lunes", "Martes", "Miercoles",
+                           "Jueves", "Viernes", "Sabado", "Domingo"]
+
             print(tabla)
             # Convierte la fecha string a datetime
             fecha_formateada = datetime.strptime(fecha, '%A %d de %B de %Y')
@@ -2585,19 +2849,20 @@ def api_duracionLavado_dia():
             # Obtiene el día de la semana
             dia_semana = fecha_formateada.strftime("%A")
 
-
-
-
             # Verifica si el día está disponible y si la hora actual es antes de la hora de cierre
-            dia_semana = dia_semana.encode('latin1').decode('utf8') # Codifica el día de la semana para que aparezca acento
-            dia_semana = dia_semana.lower().capitalize() #Le pone la primera letra en mayuscula
-            hora_apertura = datetime.strptime(tabla[dia_semana]["apertura"], "%H:%M")
-            hora_cierre = datetime.strptime(tabla[dia_semana]["cierre"], "%H:%M")
+            # Codifica el día de la semana para que aparezca acento
+            dia_semana = dia_semana.encode('latin1').decode('utf8')
+            # Le pone la primera letra en mayuscula
+            dia_semana = dia_semana.lower().capitalize()
+            hora_apertura = datetime.strptime(
+                tabla[dia_semana]["apertura"], "%H:%M")
+            hora_cierre = datetime.strptime(
+                tabla[dia_semana]["cierre"], "%H:%M")
 
-            hora_apertura_formateada = hora_apertura.time() # Extrae solo la hora de apertura
-            hora_cierre_formateada = hora_cierre.time() #Extrae solo la hora de cierre
+            hora_apertura_formateada = hora_apertura.time()  # Extrae solo la hora de apertura
+            hora_cierre_formateada = hora_cierre.time()  # Extrae solo la hora de cierre
 
-            service = obtener_servicio() # Obtiene el servicio de Google Calendar TOKEN
+            service = obtener_servicio()  # Obtiene el servicio de Google Calendar TOKEN
             print(dia_semana)
             print(hora_apertura_formateada)
             print(hora_cierre_formateada)
@@ -2632,12 +2897,14 @@ def api_duracionLavado_dia():
             # Crear las fechas de inicio y fin
             # fecha_inicio = datetime(anio_actual, mes_actual, dias[dia_semana], hora_apertura, tzinfo=tz)
             # fecha_fin = datetime(anio_actual, mes_actual, dias[dia_semana], hora_cierre, tzinfo=tz)
-            fecha_inicio = datetime(anio_actual, mes_actual, dia, hora_apertura_formateada.hour, hora_apertura_formateada.minute , tzinfo=tz)  # 8 AM del 11 de enero de 2024
-            fecha_fin = datetime(anio_actual, mes_actual, dia, hora_cierre_formateada.hour, hora_apertura_formateada.minute, tzinfo=tz)  # 5 PM del mismo día
+            fecha_inicio = datetime(anio_actual, mes_actual, dia, hora_apertura_formateada.hour,
+                                    hora_apertura_formateada.minute, tzinfo=tz)  # 8 AM del 11 de enero de 2024
+            fecha_fin = datetime(anio_actual, mes_actual, dia, hora_cierre_formateada.hour,
+                                 hora_apertura_formateada.minute, tzinfo=tz)  # 5 PM del mismo día
 
             # Obtiene los eventos en ese rango de tiempo
             events_result = service.events().list(
-                calendarId='primary', 
+                calendarId='primary',
                 timeMin=fecha_inicio.isoformat(),
                 timeMax=fecha_fin.isoformat(),
                 singleEvents=True,
@@ -2650,36 +2917,30 @@ def api_duracionLavado_dia():
             eventos_existentes = []
 
             for event in events:
-                start = event['start'].get('dateTime', event['start'].get('date'))
+                start = event['start'].get(
+                    'dateTime', event['start'].get('date'))
                 end = event['end'].get('dateTime', event['end'].get('date'))
-                
+
                 # Convierte la fecha y hora a un objeto datetime
                 fecha_hora_inicio = datetime.fromisoformat(start)
                 fecha_hora_fin = datetime.fromisoformat(end)
-                
+
                 # Formatea la hora y minuto en el formato 'HH:MM'
                 hora_inicio = fecha_hora_inicio.strftime('%H:%M')
                 hora_fin = fecha_hora_fin.strftime('%H:%M')
-                
+
                 # Agrega la hora de inicio y fin a la lista
                 eventos_existentes.append((hora_inicio, hora_fin))
 
             print(eventos_existentes)
 
-            bloques_disponibles = consultar_horarios_disponibles_googleCalendar(dia_semana, total_minutos, eventos_existentes)
-
-
-
-            
-
-           
-            
+            bloques_disponibles = consultar_horarios_disponibles_googleCalendar(
+                dia_semana, total_minutos, eventos_existentes)
 
             return jsonify(bloques_disponibles)
         except Exception as e:
             print(e)
             return jsonify({'success': False, 'message': 'Ocurrió un error'})
-
 
     return jsonify({'success': True})
 
@@ -2687,25 +2948,20 @@ def api_duracionLavado_dia():
 @app.route('/consultaGooglePrueba', methods=['GET', 'POST'])
 def consultaGooglePrueba():
 
-    
-
-
     return 'se consultó'
+
 
 def consultar_horarios_disponibles_googleCalendar(dia_disponible, duracion_evento, eventos_existentes):
     # Tu diccionario
     rows = horariosistema(db_session)
 
-
-
-
     # Crear el diccionario
     horario = {}
     for row in rows:
-        horario[row[2]] = {"estado": row[5], "apertura": row[3].strftime("%H:%M"), "cierre": row[4].strftime("%H:%M")}
+        horario[row[2]] = {"estado": row[5], "apertura": row[3].strftime(
+            "%H:%M"), "cierre": row[4].strftime("%H:%M")}
 
     # Duración del evento en minutos
-
 
     # Tiempo de margen en minutos
     margen = 10
@@ -2729,19 +2985,21 @@ def consultar_horarios_disponibles_googleCalendar(dia_disponible, duracion_event
             fin = datetime.strptime(fin, '%H:%M')
 
             while hora_actual + duracion_evento <= inicio:
-                horarios_disponibles.append((hora_actual.time(), (hora_actual + duracion_evento).time()))
+                horarios_disponibles.append(
+                    (hora_actual.time(), (hora_actual + duracion_evento).time()))
                 hora_actual += duracion_evento + margen
 
             hora_actual = fin + margen
 
         while hora_actual + duracion_evento <= cierre:
-            horarios_disponibles.append((hora_actual.time(), (hora_actual + duracion_evento).time()))
+            horarios_disponibles.append(
+                (hora_actual.time(), (hora_actual + duracion_evento).time()))
             hora_actual += duracion_evento + margen
 
         return horarios_disponibles
 
-    horarios_disponibles = obtener_horarios_disponibles(dia_disponible, duracion_evento, margen, eventos_existentes)
-
+    horarios_disponibles = obtener_horarios_disponibles(
+        dia_disponible, duracion_evento, margen, eventos_existentes)
 
     for inicio, fin in horarios_disponibles:
         horario = f'Disponible de {inicio} a {fin}'
@@ -2750,6 +3008,8 @@ def consultar_horarios_disponibles_googleCalendar(dia_disponible, duracion_event
     # Ahora horarios_str contiene todas las cadenas de texto
     print(bloques_disponibles)
     return bloques_disponibles
+
+
 if __name__ == '__main__':
-   
+
     app.run(host='127.0.0.1', port=8000, debug=True)
