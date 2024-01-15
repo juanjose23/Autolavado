@@ -3073,6 +3073,21 @@ def consultar_horarios_disponibles_googleCalendar(dia_disponible, duracion_event
     # Ahora horarios_str contiene todas las cadenas de texto
     print(bloques_disponibles)
     return bloques_disponibles
+
+
+def convertir_a_12_horas(hora):
+    if hora.hour < 12:
+        if hora.hour == 0:
+            hora_str = '12:{:02d} AM'.format(hora.minute)
+        else:
+            hora_str = '{:02d}:{:02d} AM'.format(hora.hour, hora.minute)
+    else:
+        if hora.hour > 12:
+            hora_str = '{:02d}:{:02d} PM'.format(hora.hour - 12, hora.minute)
+        else:
+            hora_str = '{:02d}:{:02d} PM'.format(hora.hour, hora.minute)
+    return hora_str
+
 if __name__ == '__main__':
 
     app.run(host='127.0.0.1', port=8000, debug=True)
