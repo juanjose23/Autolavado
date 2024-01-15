@@ -117,12 +117,12 @@ CREATE TABLE precio_servicios(
 CREATE TABLE reservacion(
     id SERIAL PRIMARY KEY,
     idcliente INTEGER REFERENCES clientes(id),
-    idhorario INTEGER REFERENCES horarios(id),
     idservicio INTEGER REFERENCES servicios(id),
+  	idevento_calendar INTEGER,
     codigo VARCHAR(50) unique,
-    tipopago VARCHAR(250) NOT NULL,
-    fecha DATE NOT NULL,
-    hora TIME NOT NULL,
+    fecha DATE NOT NULL, -- Unificar fecha y hora para hacer un datetime
+    hora_inicio TIME NOT NULL,
+  	hora_fin TIME,
     subtotal DECIMAL(10,2),
     estado INTEGER 
 );
@@ -153,6 +153,15 @@ CREATE TABLE detalle_venta
     id_servicio INTEGER REFERENCES servicios(id),
     precio_unitario NUMERIC NOT NULL,
     cantidad INTEGER,
+    subtotal numeric NOT NULL
+);
+
+CREATE TABLE detalle_venta_cita
+(
+    id SERIAL PRIMARY KEY,
+    id_venta INTEGER REFERENCES venta(id),
+    id_reserva INTEGER REFERENCES reservacion(id),
+    precio_unitario NUMERIC NOT NULL,
     subtotal numeric NOT NULL
 );
 

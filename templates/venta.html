@@ -52,7 +52,10 @@
                         role="tab" aria-controls="vert-tabs-home" aria-selected="true">Ventas generales</a>
 
                     <a class="nav-link" id="vert-tabs-messages-tab" data-toggle="pill" href="#vert-tabs-messages"
-                        role="tab" aria-controls="vert-tabs-messages" aria-selected="false">Ventas por citas</a>
+                        role="tab" aria-controls="vert-tabs-messages" aria-selected="false"> <span
+                            class="badge badge-pill badge-info">
+                            {{ cantidad }}
+                        </span>Ventas por citas</a>
 
                 </div>
 
@@ -66,6 +69,7 @@
                                 <table id="example1" class="table table-bordered table-striped">
                                     <thead>
                                         <tr>
+                                            <th>#</th>
                                             <th>Codigo</th>
                                             <th>Fecha realizacion</th>
                                             <th>Tipo de venta</th>
@@ -81,68 +85,49 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for productos in ventas %}
+                                        {% for venta in ventas %}
                                         <tr>
-                                            <td>{{ productos.codigo }}</td>
-                                            <td>{{ productos.fecha }}</td>
-
+                                            <td>{{venta.venta_id }}</td>
+                                            <td>{{ venta.codigo }}</td>
+                                            <td>{{ venta.fecha }}</td>
                                             <td>
-                                                {% if productos.subtotal_detalle_venta %}
+                                                {% if venta.subtotal_detalle_venta %}
                                                 Venta por servicio
-                                                {% elif productos.subtotal_venta_producto %}
-                                                venta por producto
+                                                {% elif venta.subtotal_venta_producto %}
+                                                Venta por producto
+                                                {% elif venta.subtotalcita %}
+                                                Venta por cita
                                                 {% else %}
                                                 Desconocido
                                                 {% endif %}
                                             </td>
-                                            <td>{{productos.persona_nombre}}</td>
+                                            <td>{{ venta.persona_nombre }}</td>
                                             <td>
-                                                {% if productos.producto_nombre %}
-                                                {{ productos.producto_nombre }}
-                                                {% elif productos.servicio_nombre %}
-                                                {{ productos.servicio_nombre }}
+                                                {% if venta.producto_nombre %}
+                                                {{ venta.producto_nombre }}
+                                                {% elif venta.servicio_nombre %}
+                                                {{ venta.servicio_nombre }}
+                                                {% elif venta.citas %}
+                                                {{ venta.citas }}
                                                 {% else %}
                                                 No hay nombre disponible
                                                 {% endif %}
                                             </td>
+                                            <td>{{ venta.cantidad_detalle_venta or venta.cantidad_venta_producto or 'No
+                                                hay cantidad' }}</td>
+                                            <td>{{ venta.precio_unitario_detalle_venta or venta.precio_unitario_producto
+                                                or venta.precios or 'No hay precio unitario' }}</td>
+                                            <td>{{ venta.subtotal_detalle_venta or venta.subtotal_venta_producto or
+                                                venta.subtotalcita or 'No hay subtotal' }}</td>
+                                            <td>{{ venta.totales }}</td>
+                                            <td>{{ venta.tipo_venta_nombre }}</td>
                                             <td>
-                                                {% if productos.cantidad_detalle_venta %}
-                                                {{ productos.cantidad_detalle_venta }}
-                                                {% elif productos.cantidad_venta_producto %}
-                                                {{ productos.cantidad_venta_producto }}
-                                                {% else %}
-                                                No hay cantidad disponible
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                {% if productos.precio_unitario_detalle_venta %}
-                                                {{ productos.precio_unitario_detalle_venta }}
-                                                {% elif productos.precio_unitario_producto %}
-                                                {{ productos.precio_unitario_producto }}
-                                                {% else %}
-                                                No hay subtotal disponible
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                {% if productos.subtotal_detalle_venta %}
-                                                {{ productos.subtotal_detalle_venta }}
-                                                {% elif productos.subtotal_venta_producto %}
-                                                {{ productos.subtotal_venta_producto }}
-                                                {% else %}
-                                                No hay subtotal disponible
-                                                {% endif %}
-                                            </td>
-                                            <td>{{ productos.totales }}</td>
-
-                                            <td>{{ productos.tipo_venta_nombre }}</td>
-                                            <td>
-                                                {% if productos.venta_estado == 1 %}
+                                                {% if venta.venta_estado == 1 %}
                                                 <span class="badge bg-success">Activo</span>
-                                                {% elif productos.venta_estado == 2 %}
+                                                {% elif venta.venta_estado == 2 %}
                                                 <span class="badge bg-danger">Inactivo</span>
                                                 {% endif %}
                                             </td>
-
                                         </tr>
                                         {% endfor %}
 
@@ -154,336 +139,144 @@
 
                         <div class="tab-pane fade" id="vert-tabs-messages" role="tabpanel"
                             aria-labelledby="vert-tabs-home-tab">
-                            Morbi turpis dolor, vulputate vitae felis non, tincidunt congue mauris. Phasellus
-                            volutpat augue id mi placerat mollis. Vivamus faucibus eu massa eget condimentum.
-                            Fusce nec hendrerit sem, ac tristique nulla. Integer vestibulum orci odio. Cras nec
-                            augue ipsum. Suspendisse ut velit condimentum, mattis urna a, malesuada nunc.
-                            Curabitur eleifend facilisis velit finibus tristique. Nam vulputate, eros non luctus
-                            efficitur, ipsum odio volutpat massa, sit amet sollicitudin est libero sed ipsum.
-                            Nulla lacinia, ex vitae gravida fermentum, lectus ipsum gravida arcu, id fermentum
-                            metus arcu vel metus. Curabitur eget sem eu risus tincidunt eleifend ac ornare
-                            magna.
+                            <div class="container mt-5">
+                                <div class="input-group mb-3">
+                                    <input type="text" class="form-control" id="inputTelefono"
+                                        placeholder="Buscar por teléfono">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-primary" type="button" id="btnBuscar">Buscar</button>
+                                        <button class="btn btn-secondary btn-block" type="button"
+                                            id="btnLimpiar">Limpiar</button>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    {% for reserva in reservaciones %}
+                                    <div class="col-md-3 mb-4">
+                                        <div class="card busqueda">
+                                            <div class="card-body">
+                                                <h5 class="card-title">Reservación #{{ reserva.id }}</h5>
+                                                <p class="card-text">Cliente: {{ reserva.cliente }}</p>
+                                                <p class="card-text card-text-telefono">Telefono: {{ reserva.celular }}
+                                                </p>
+                                                <p class="card-text">Hora inicio: {{ reserva.hora_inicio }}</p>
+                                                <p class="card-text">Hora fin: {{ reserva.hora_fin }}</p>
+                                                <p class="card-text">Total: ${{ reserva.subtotal }}</p>
+                                                <button type="button" class="btn btn-info" data-toggle="modal"
+                                                    data-target="#myModal{{ reserva.id }}">
+                                                    Generar venta
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Modal para cada reservación -->
+                                    <div class="modal fade" id="myModal{{ reserva.id }}" tabindex="-1" role="dialog"
+                                        aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="exampleModalLabel">Generar venta
+                                                    </h5>
+                                                    <button type="button" class="close" data-dismiss="modal"
+                                                        aria-label="Close">
+                                                        <span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <form id="enviarInfoForm{{ reserva.id }}" action="/ventacitas"
+                                                        method="POST">
+                                                        <div class="form-group">
+                                                            <label for="subtotal{{ reserva.id }}">Total:</label>
+                                                            <input type="text" class="form-control"
+                                                                id="subtotal{{ reserva.id }}"
+                                                                value="{{reserva.subtotal}}" readonly>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label for="reservaId{{ reserva.id }}">Codigo
+                                                                Reserva:</label>
+                                                            <input type="text" class="form-control"
+                                                                id="reservaId{{ reserva.id }}"
+                                                                value="{{reserva.codigo}}" readonly>
+                                                            <input type="text" class="form-control"
+                                                                id="reservaId{{ reserva.id }}" name="id"
+                                                                value="{{reserva.id}}" hidden>
+                                                            <input type="text" class="form-control" name="subtotal"
+                                                                value="{{reserva.subtotal}}" hidden>
+                                                            <input type="text" class="form-control" name="idcliente"
+                                                                value="{{reserva.idcliente}}" hidden>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label for="tipo_venta">Tipo de Venta:</label>
+                                                            <select class="form-control select2bs4" id="tipo_venta"
+                                                                name="tipo_venta" required>
+                                                                {% for tipo in tipos %}
+                                                                <option value="{{ tipo.id }}">{{ tipo.nombre }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                        <button type="submit" class="btn btn-success">Generar</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
                         </div>
-
-
-
                     </div>
-
                 </div>
-
             </div>
         </div>
     </div>
-
-
-
 </section>
-
+<!-- Script para la búsqueda en tiempo real sin jQuery -->
 <script>
-    var productos = [];
-
-    function actualizarTabla() {
-        var tableBody = document.getElementById('productosTable').getElementsByTagName('tbody')[0];
-        tableBody.innerHTML = '';
-
-        var total = 0;
-
-        productos.forEach(function (producto) {
-            var row = tableBody.insertRow();
-            var cellProducto = row.insertCell(0);
-            var cellCantidad = row.insertCell(1);
-            var cellPrecio = row.insertCell(2);
-            var cellSubtotal = row.insertCell(3);
-            var cellAcciones = row.insertCell(4);
-
-            cellProducto.innerHTML = producto.nombre;
-            cellCantidad.innerHTML = '<input type="number" class="form-control" value="' + producto.cantidad + '" onchange="actualizarSubtotal(' + producto.id + ', this, ' + producto.precio + ')">';
-            cellPrecio.innerHTML = producto.precio.toFixed(2);
-            var subtotal = producto.cantidad * producto.precio;
-            cellSubtotal.innerHTML = subtotal.toFixed(2);
-            total += subtotal;
-
-            cellAcciones.innerHTML = '<div class="btn-group">' +
-                '<button type="button" class="btn btn-danger btn-sm" onclick="eliminarProducto(' + producto.id + ')">Eliminar</button>' +
-                '<button type="button" class="btn btn-primary btn-sm" onclick="editarCantidad(' + producto.id + ')">Editar Cantidad</button>' +
-                '</div>';
-
-        });
-
-        document.getElementById('total').value = total.toFixed(2);
-    }
-
-    function agregarProducto() {
-        var productoSelect = document.getElementById('producto');
-        var cantidadInput = document.getElementById('cantidad');
-
-        // Validar que la cantidad sea mayor que cero
-        var cantidad = parseInt(cantidadInput.value);
-        if (cantidad > 0) {
-            // Obtener la opción seleccionada
-            var selectedOption = productoSelect.options[productoSelect.selectedIndex];
-
-            // Obtener el atributo de cantidad máxima permitida
-            var cantidadMaxima = parseInt(selectedOption.getAttribute('data-cantidad-maxima'));
-
-            // Verificar si la cantidad es menor o igual a la cantidad máxima
-            if (cantidad <= cantidadMaxima) {
-                var producto = {
-                    id: parseInt(selectedOption.value),
-                    nombre: selectedOption.text.split(' - C$ ')[0],
-                    precio: parseFloat(selectedOption.text.split(' - C$ ')[1]),
-                    cantidad: cantidad
-                };
-
-                productos.push(producto);
-                actualizarTabla();
-
-                // Limpiar campos
-                productoSelect.value = '';
-                cantidadInput.value = '';
-            } else {
+    document.addEventListener('DOMContentLoaded', function () {
+        // Manejar la búsqueda en tiempo real por número de teléfono
+        document.getElementById('btnBuscar').addEventListener('click', function () {
+            var telefono = document.getElementById('inputTelefono').value.toLowerCase();
+            if (telefono.trim() === '') {
+                // Mostrar una alerta SweetAlert indicando que el campo está vacío
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'La cantidad debe ser menor o igual a ' + cantidadMaxima + '.',
+                    icon: 'warning',
+                    title: 'Campo Vacío',
+                    text: 'Por favor, ingrese un número de teléfono antes de buscar.'
                 });
+                return; // Detener la ejecución si el campo está vacío
             }
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'La cantidad debe ser mayor que cero.',
-            });
-        }
-    }
+            var encontrados = false;
 
-    function eliminarProducto(id) {
-        productos = productos.filter(function (producto) {
-            return producto.id !== id;
-        });
+            document.querySelectorAll('.busqueda').forEach(function (card) {
+                var cardTelefono = card.querySelector('.card-text-telefono').textContent.toLowerCase();
+                var displayStyle = cardTelefono.includes(telefono) ? 'block' : 'none';
+                card.style.display = displayStyle;
 
-        actualizarTabla();
-    }
-
-    function editarCantidad(id) {
-        Swal.fire({
-            title: 'Editar Cantidad',
-            input: 'number',
-            inputValue: productos.find(p => p.id === id).cantidad,
-            showCancelButton: true,
-            confirmButtonText: 'Guardar',
-            cancelButtonText: 'Cancelar',
-            inputValidator: (value) => {
-                if (!value || value <= 0) {
-                    return 'Por favor, ingresa una cantidad válida';
+                if (displayStyle === 'block') {
+                    encontrados = true;
                 }
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var nuevaCantidad = parseInt(result.value);
-                productos.forEach(function (producto) {
-                    if (producto.id === id) {
-                        producto.cantidad = nuevaCantidad;
-                    }
+            });
+
+            // Mostrar una alerta si no se encontraron registros
+            if (!encontrados) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'No se encontraron registros',
+                    text: 'No hay registros que coincidan con la búsqueda.'
                 });
-                actualizarTabla();
             }
         });
-    }
 
-
-    function actualizarSubtotal(id, input, precio) {
-        var nuevaCantidad = parseInt(input.value);
-        productos.forEach(function (producto) {
-            if (producto.id === id) {
-                producto.cantidad = nuevaCantidad;
-                producto.subtotal = nuevaCantidad * precio;
-                input.parentElement.nextElementSibling.innerHTML = producto.subtotal.toFixed(2);
-            }
-        });
-        actualizarTabla();
-    }
-
-    document.getElementById('agregarProducto').addEventListener('click', agregarProducto);
-</script>
-<script>
-    var servicios = [];
-
-    function actualizarTablaservicio() {
-        var tableBody = document.getElementById('serviciosTable').getElementsByTagName('tbody')[0];
-        tableBody.innerHTML = '';
-
-        var total = 0;
-
-        servicios.forEach(function (servicio) {
-            var row = tableBody.insertRow();
-            var cellservicio = row.insertCell(0);
-            var cellCantidad = row.insertCell(1);
-            var cellPrecio = row.insertCell(2);
-            var cellSubtotal = row.insertCell(3);
-            var cellAcciones = row.insertCell(4);
-
-            cellservicio.innerHTML = servicio.nombre;
-            cellCantidad.innerHTML = '<input type="number" class="form-control" value="' + servicio.cantidad + '" onchange="actualizarSubtotales(' + servicio.id + ', this, ' + servicio.precio + ')">';
-            cellPrecio.innerHTML = servicio.precio.toFixed(2);
-            var subtotal = servicio.cantidad * servicio.precio;
-            cellSubtotal.innerHTML = subtotal.toFixed(2);
-            total += subtotal;
-
-            cellAcciones.innerHTML = '<div class="btn-group">' +
-                '<button type="button" class="btn btn-danger btn-sm" onclick="eliminarservicios(' + servicio.id + ')">Eliminar</button>' +
-                '<button type="button" class="btn btn-primary btn-sm" onclick="editarCantidades(' + servicio.id + ')">Editar Cantidad</button>' +
-                '</div>';
-        });
-
-        document.getElementById('totales').value = total.toFixed(2);
-    }
-
-    function agregarServicios() {
-        var servicioSelect = document.getElementById('servicios');
-        var cantidadInput = document.getElementById('cantidadservicios');
-
-        // Validar que la cantidad sea mayor que cero
-        var cantidad = parseInt(cantidadInput.value);
-        if (cantidad > 0) {
-            // Obtener la opción seleccionada
-            var selectedOption = servicioSelect.options[servicioSelect.selectedIndex];
-
-            var servicio = {
-                id: parseInt(selectedOption.value),
-                nombre: selectedOption.text.split(' - C$ ')[0],
-                precio: parseFloat(selectedOption.text.split(' - C$ ')[1]),
-                cantidad: cantidad
-            };
-
-            servicios.push(servicio);
-            actualizarTablaservicio();
-
-            // Limpiar campos
-            servicioSelect.value = '';
-            cantidadInput.value = '';
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'La cantidad debe ser mayor que cero.',
+        // Restaurar la visibilidad de todas las tarjetas al hacer clic en el botón Limpiar
+        document.getElementById('btnLimpiar').addEventListener('click', function () {
+            document.querySelectorAll('.card').forEach(function (card) {
+                card.style.display = 'block';
             });
-        }
-    }
-    function eliminarservicios(id) {
-        servicios = servicios.filter(function (servicio) {
-            return servicio.id !== id;
+            // Limpiar el campo de búsqueda
+            document.getElementById('inputTelefono').value = '';
         });
-
-        actualizarTablaservicio();
-    }
-    function editarCantidades(id) {
-        Swal.fire({
-            title: 'Editar Cantidad del servicios',
-            input: 'number',
-            inputValue: servicios.find(p => p.id === id).cantidad,
-            showCancelButton: true,
-            confirmButtonText: 'Guardar',
-            cancelButtonText: 'Cancelar',
-            inputValidator: (value) => {
-                if (!value || value <= 0) {
-                    return 'Por favor, ingresa una cantidad válida';
-                }
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var nuevaCantidad = parseInt(result.value);
-                servicios.forEach(function (servicio) {
-                    if (servicio.id === id) {
-                        servicio.cantidad = nuevaCantidad;
-                    }
-                });
-                actualizarTablaservicio();
-            }
-        });
-    }
-    function actualizarSubtotales(id, input, precio) {
-        var nuevaCantidad = parseInt(input.value);
-        productos.forEach(function (servicio) {
-            if (servicio.id === id) {
-                servicio.cantidad = nuevaCantidad;
-                servicio.subtotal = nuevaCantidad * precio;
-                input.parentElement.nextElementSibling.innerHTML = servicio.subtotal.toFixed(2);
-            }
-        });
-        actualizarTabla();
-    }
-    document.getElementById('agregarServicios').addEventListener('click', agregarServicios);
-
-</script>
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-
-<script>
-    function enviarVenta() {
-        var tipoVenta = document.getElementById('tipo_venta').value;
-        var total = document.getElementById('total').value;
-        var cliente = document.getElementById('cliente').value;
-
-        // Objeto con los datos a enviar al servidor
-        var data = {
-            cliente: cliente,
-            tipo_venta: tipoVenta,
-            total: total,
-            productos: productos
-        };
-
-        // Realizar la solicitud POST al servidor Flask
-        axios.post('/venta_productos', data)
-            .then(function (response) {
-
-                console.log(response.data);
-
-                Swal.fire('Venta Generada', 'La venta se ha generado exitosamente.', 'success');
-            })
-            .catch(function (error) {
-                // Aquí puedes manejar errores, por ejemplo, mostrar un mensaje de error
-                Swal.fire('Error', 'Ha ocurrido un error al procesar la venta.', 'error');
-            });
-    }
-
-    // Asignar la función enviarVenta al evento click del botón Generar Venta
-    document.getElementById('generarVenta').addEventListener('click', enviarVenta);
-</script>
-<script>
-    function enviarVentaservicios() {
-        var tipoVenta = document.getElementById('tipo_ventas').value;
-        var total = document.getElementById('totales').value;
-        var cliente = document.getElementById('clientes').value;
-
-        // Objeto con los datos a enviar al servidor
-        var data = {
-            cliente: cliente,
-            tipo_venta: tipoVenta,
-            total: total,
-            servicios: servicios
-        };
-
-        // Realizar la solicitud POST al servidor Flask
-        axios.post('/venta_servicios', data)
-            .then(function (response) {
-                console.log(response.data);
-
-
-
-                // Redirigir a la ruta /ventas después de un breve retraso
-                setTimeout(function () {
-                    window.location.href = '/ventas';
-                }, 3000);
-            })
-
-            .catch(function (error) {
-                // Aquí puedes manejar errores, por ejemplo, mostrar un mensaje de error
-                Swal.fire('Error', 'Ha ocurrido un error al procesar la venta.', 'error');
-            });
-    }
-
-    // Asignar la función enviarVenta al evento click del botón Generar Venta
-    document.getElementById('generarVentaservicios').addEventListener('click', enviarVentaservicios);
+    });
 
 </script>
 {% endblock %}
