@@ -1438,6 +1438,7 @@ def crear_producto():
     logo = guardar_imagen(archivo, carpeta_destino)
     insertar_producto(db_session, nombre, descripcion, logo, estado)
     flash("Se ha registrado correctamente el producto","success")
+    generar_pdf_productos(db_session)
     return redirect('/productos')
 
 
@@ -1459,11 +1460,13 @@ def actualizar_productos():
        
         actualizar_producto(db_session, id_producto, nombre, descripcion, logo, estado)
         flash("Se ha actualizado correctamente el producto", "success")
+        generar_pdf_productos(db_session)
         return redirect('/productos')
     else:
             # Si no se proporcionó un archivo o la extensión no es permitida, solo actualizar la información sin cambiar la imagen
         actualizar_producto(db_session, id_producto, nombre, descripcion,logos, estado)
         flash("Se ha actualizado correctamente el producto ", "success")
+        generar_pdf_productos(db_session)
         return redirect('/productos')
   
  
@@ -1475,6 +1478,7 @@ def cambiar_estado_producto():
     id_producto = request.form.get('id')
     nuevo_estado = request.form.get('estado')
     cambiar_estado_productos(db_session, id_producto, nuevo_estado)
+    generar_pdf_productos(db_session)
     flash("Se ha desactivado el producto","success")
     return redirect('/productos')
 
@@ -1527,6 +1531,7 @@ def crearservicios():
     carpeta_destino = 'static/img/servicios'
     logo = guardar_imagen(archivo, carpeta_destino)
     insertar_servicio(db_session,nombre,descripcion,logo,realizacion,estado)
+    generar_pdf_servicios(db_session)
     flash("Se ha registrado correctamente el servicios", "success")
     return redirect('/servicios')
 
@@ -1556,12 +1561,14 @@ def actualizar_servicio(servicio_id):
 
     update_servicio(db_session, servicio_id, nombre, descripcion, logos,realizacion, estado)
     flash("Se ha actualizado correctamente el servicio, recuerda de actualizar el PDF para los usuarios del BOT!", "success")
+    generar_pdf_servicios(db_session)
     return redirect(url_for('servicios'))
 
 @app.route('/eliminar_servicio/<int:servicio_id>', methods=['POST', 'GET'])
 def eliminar_servicio(servicio_id):
     cambiar_estado_servicio(db_session,servicio_id,2)
     flash("se ha desactivado el servicio", "success")
+    generar_pdf_servicios(db_session)
     return redirect("/servicios")
 
 @app.route("/precio_servicios",methods=['GET','POST'])
