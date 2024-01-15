@@ -9,6 +9,7 @@ import uuid
 import os
 import string
 import random
+import arrow
 
 def generar_codigo_cliente(nombre, id_persona, telefono):
     nombre_normalizado = nombre.lower()
@@ -93,3 +94,29 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# Obtener el número del día de la semana por una cadnea de texto por ejemplo 'Lunes 15 de enero de 2024' = 1
+def obtener_numero_dia(cadena):
+    # Convertir la cadena a un objeto de fecha
+    fecha = arrow.get(cadena, 'dddd D [de] MMMM [de] YYYY', locale='es')
+
+    fecha_date = fecha.date()
+    return fecha_date
+
+
+
+
+def estructurarTexto_a_variables(realizacion):
+
+    horas, minutos, segundos = map(int, realizacion.split(':'))
+
+    return horas, minutos, segundos
+
+#Crea una función para convertir un date time que está divido en horas, minutos y segundos al total de minutos
+
+def convertirHoras_a_Minutos(horas, minutos, segundos):
+    total_minutos = (horas * 60) + minutos + (segundos / 60)
+    return total_minutos
+
+def  formatear_fecha(fecha):
+    fecha_formateada = arrow.get(fecha, 'dddd D [de] MMMM [de] YYYY', locale='es')
+    return fecha_formateada
