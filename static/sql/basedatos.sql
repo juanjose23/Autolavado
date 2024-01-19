@@ -118,7 +118,7 @@ CREATE TABLE reservacion(
     id SERIAL PRIMARY KEY,
     idcliente INTEGER REFERENCES clientes(id),
     idservicio INTEGER REFERENCES servicios(id),
-  	idevento_calendar INTEGER,
+  	idevento_calendar VARCHAR(250),
     codigo VARCHAR(50) unique,
     fecha DATE NOT NULL, -- Unificar fecha y hora para hacer un datetime
     hora_inicio TIME NOT NULL,

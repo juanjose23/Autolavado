@@ -77,6 +77,12 @@ def insertar_persona_natural(db_session: Session, id_persona, apellidos, cedula,
                        "fecha_nacimiento": fecha_nacimiento, "genero": genero, "tipo_persona": tipo})
     db_session.commit()
 
+def obtener_id_cliente_por_celular(db_session, numero_celular):
+    query = text("SELECT clientes.id FROM clientes JOIN persona ON clientes.id_persona = persona.id WHERE persona.celular = :celular")
+    result = db_session.execute(query, {"celular": numero_celular})
+    id_cliente = result.fetchone()
+
+    return id_cliente[0] if id_cliente else None
 
 def insertar_cliente(db_session: Session, id_persona, codigo_cliente, tipo, foto):
 
@@ -120,16 +126,24 @@ def cambiar_estado_cliente(db_session: Session, id_persona, nuevo_estado):
 
 
 def generar_codigo_reservacion(db_session):
-    codigo = ''.join(random.choices(
-        string.ascii_uppercase + string.digits, k=8))
+    # Obtener el último ID de la tabla reservacion
+    query_last_id = text("SELECT MAX(id) FROM reservacion")
+    last_id = db_session.execute(query_last_id).fetchone()[0]
+
+    # Calcular el nuevo ID
+    new_id = last_id + 1 if last_id else 1
+
+    # Generar el código R-ID
+    codigo = f"R-{new_id}"
 
     # Verificar que el código no exista ya en la base de datos
     query = text("SELECT COUNT(*) FROM reservacion WHERE codigo = :codigo")
     count = db_session.execute(query, {"codigo": codigo}).fetchone()[0]
 
     while count > 0:
-        codigo = ''.join(random.choices(
-            string.ascii_uppercase + string.digits, k=8))
+        # Si existe, recalcular el nuevo ID y el código
+        new_id += 1
+        codigo = f"R-{new_id}"
         count = db_session.execute(query, {"codigo": codigo}).fetchone()[0]
 
     return codigo
@@ -184,22 +198,69 @@ def cambiar_estado_trabajador(db_session, id_trabajador, nuevo_estado):
     db_session.execute(
         query, {"id_trabajador": id_trabajador, "nuevo_estado": nuevo_estado})
     db_session.commit()
+def obtener_id_y_precio_servicio(db_session, nombre_servicio):
+    try:
+        # Realizar la consulta SQL utilizando text
+        query = text("""
+            SELECT s.id AS id_servicio, ps.precio
+            FROM servicios s
+            JOIN precio_servicios ps ON s.id = ps.id_servicios
+            WHERE s.nombre = :nombre_servicio AND ps.estado = 1
+            ORDER BY ps.fecha_registro DESC
+            LIMIT 1
+        """)
 
+        resultado = db_session.execute(query, {"nombre_servicio": nombre_servicio}).fetchone()
 
-def guardar_reservacion(db_session: Session, id_cliente, id_horario, id_servicio,  tipo_pago, fecha, hora, subtotal, observacion, estado):
-    codigo=generar_codigo_reservacion()
-    query = text("""
-        INSERT INTO reservacion (idcliente, idservicio, idevento_calendar, codigo, fecha, hora_inicio, hora_fin, subtotal, estado)
-        VALUES (:id_cliente, :id_servicio, :idevento_calendar, :codigo, :fecha, :hora_inicio, :hora_fin, :subtotal, :estado)
-        RETURNING id
-    """)
-    result = db_session.execute(query, {"id_cliente": id_cliente,"id_horario": id_horario,"id_servicio": id_servicio,"codigo": codigo,"tipo_pago": tipo_pago,"fecha": fecha,"hora": hora,"subtotal": subtotal,"observacion": observacion,"estado": estado})
-    id_reservacion = result.fetchone()[0]
+        if resultado:
+            # Retornar el id y el precio
+            return {"id_servicio": resultado[0], "precio": float(resultado[1])}
+        else:
+            return None
 
-    db_session.commit()
+    except Exception as e:
+        print(f"Error al obtener el servicio: {e}")
+        return None
 
-    # Devolver el ID de la reservación
-    return codigo
+def insertar_reservacion(db_session,idcliente,idservicio,idevento_calendar,codigo,fecha,hora_inicio,hora_fin,subtotal,estado):
+    try:
+        # Preparar y ejecutar una consulta SQL
+        query = text("""
+            INSERT INTO reservacion 
+            (idcliente, idservicio, idevento_calendar, codigo, fecha, hora_inicio, hora_fin, subtotal, estado) 
+            VALUES 
+            (:idcliente, :idservicio, :idevento_calendar, :codigo, :fecha, :hora_inicio, :hora_fin, :subtotal, :estado) 
+            RETURNING id
+        """)
+        result = db_session.execute(
+            query,
+            {
+                "idcliente": idcliente,
+                "idservicio": idservicio,
+                "idevento_calendar": idevento_calendar,
+                "codigo": codigo,
+                "fecha": fecha,
+                "hora_inicio": hora_inicio,
+                "hora_fin": hora_fin,
+                "subtotal": subtotal,
+                "estado": estado
+            }
+        )
+
+        # Obtener el ID de la nueva reservación
+        id_reservacion = result.fetchone()[0]
+
+        # Hacer commit para persistir la nueva reservación en la base de datos
+        db_session.commit()
+
+        # Retornar el ID de la nueva reservación
+        return id_reservacion
+
+    except Exception as error:
+        # Manejar cualquier error que pueda ocurrir durante la inserción
+        print(f"Error al insertar reservación: {error}")
+        db_session.rollback()
+        return None
 
 
 def insertar_producto(db_session: Session, nombre, descripcion, logo, estado):
@@ -1321,7 +1382,7 @@ def before_request():
     actualizar_estados(db_session)
     actualizar_estados_pasados(db_session)
 
-    print(estadisticas_resultantes)
+  
 
 
 @app.route("/recuperar", methods=['GET', 'POST'])
@@ -1414,8 +1475,9 @@ def insertar_usuarios():
 @login_required
 def index():
 
-    estadisticas_resultantes = actualizar_estado_lotes(db_session)
-
+    actualizar_estado_lotes(db_session)
+    
+  
     return render_template('index.html')
 
 
@@ -2730,7 +2792,35 @@ def api_consultaDatosCliente():
 # Define los alcances de la API de Google Calendar
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
+'''def obtener_servicio():
+    creds = None
+    if os.path.exists('token.pickle'):
+        with open('token.pickle', 'rb') as token:
+            creds = pickle.load(token)
+    
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
 
+        # Guardar el refresh token junto con las credenciales
+        if hasattr(creds, 'refresh_token'):
+            token_info = {
+                'token': creds.token,
+                'refresh_token': creds.refresh_token,
+                'token_uri': creds.token_uri,
+                'client_id': creds.client_id,
+                'client_secret': creds.client_secret,
+                'scopes': creds.scopes
+            }
+            with open('token.pickle', 'wb') as token_file:
+                pickle.dump(token_info, token_file)
+    
+    service = build('calendar', 'v3', credentials=creds)
+    return service'''
 def obtener_servicio():
     creds = None
     if os.path.exists('token.pickle'):
@@ -2748,7 +2838,7 @@ def obtener_servicio():
     service = build('calendar', 'v3', credentials=creds)
     return service
 
-def crear_evento(service, inicio, fin):
+"""def crear_evento(service, inicio, fin):
     evento = {
         'summary': 'AutoLavado',
         'start': {
@@ -2761,7 +2851,53 @@ def crear_evento(service, inicio, fin):
         },
     }
     evento_creado = service.events().insert(calendarId='primary', body=evento).execute()
-    print(f"Evento creado: {evento_creado['htmlLink']}")
+    print(f"Evento creado: {evento_creado['htmlLink']}")"""
+
+def crear_evento(service, fecha_reserva, correo, servicio_realizacion, bloque_horario, nombre_servicio):
+    # Separar las horas de inicio y fin del bloque_horario
+    hora_inicio_str, hora_fin_str = bloque_horario.split(' a ')
+
+    # Convertir las horas a objetos datetime
+    fecha_hora_inicio_str = f'{fecha_reserva} {hora_inicio_str}'
+    fecha_hora_fin_str = f'{fecha_reserva} {hora_fin_str}'
+
+    try:
+        fecha_hora_inicio = parser.parse(fecha_hora_inicio_str)
+        fecha_hora_fin = parser.parse(fecha_hora_fin_str)
+
+        # Crear el evento
+        evento = {
+            'summary': nombre_servicio,
+            'start': {
+                'dateTime': fecha_hora_inicio.isoformat(),
+                'timeZone': 'America/Managua',
+            },
+            'end': {
+                'dateTime': fecha_hora_fin.isoformat(),
+                'timeZone': 'America/Managua',
+            },
+            'description': f'Servicio realizado por {correo}. Duración: {servicio_realizacion}.',
+            'reminders': {
+                'useDefault': False,
+                'overrides': [
+                    {'method': 'popup', 'minutes': 30},
+                    {'method': 'email', 'minutes': 30},
+                ],
+            },
+        }
+
+        # Crear el evento y obtener el ID
+        evento_creado = service.events().insert(calendarId='primary', body=evento).execute()
+        evento_id = evento_creado['id']
+
+        print(f"Evento creado: {evento_id}")
+
+        return evento_id
+
+    except ValueError as e:
+        print(f"Error al convertir la fecha/hora: {e}")
+        return None
+
 
 @app.route('/api_obtener_dias_disponibles/', methods=['GET', 'POST'])
 def api_obtener_dias_disponibles():
@@ -2846,10 +2982,74 @@ def api_obtener_dias_disponibles():
     return jsonify(proximos_dias)
 
 
-@app.route("/reservas", methods=['GET', 'POST'])
+from unidecode import unidecode
+import re
+@cross_origin()
+@app.route("/api_agregar_reserva", methods=['POST'])
 def reservas():
+    try:
+        if request.method == 'POST':
+            # Obtener los datos del cuerpo de la solicitud
+            datos = request.get_json()
 
-    return 'se consultó'
+            # Extraer datos_personales y datos_reserva
+            datos_personales = datos.get('datos_personales', {})
+            datos_reserva = datos.get('datos_reserva', {})
+
+            # Acceder a variables específicas
+            nombre = datos_personales.get('nombre', '')
+            apellidos=datos_personales.get('apellidos','')
+            correo = datos_personales.get('correo', '')
+            celular=datos_personales.get('celular','')
+            tipo=datos_personales.get('tipo','')
+            if not ValidarNumeroCelularExistente(celular):
+                id_persona = insertar_persona(db_session, nombre, correo, "No hay", celular)
+                insertar_persona_natural(db_session, id_persona, apellidos, None, None, None, tipo)
+                codigo = generar_codigo_cliente(nombre, id_persona, celular)
+                insertar_cliente(db_session, id_persona, codigo, "Normal", "No hay")
+            locale.setlocale(locale.LC_TIME, 'es_ES.utf8')
+
+            cadena_fecha = datos_reserva.get('fecha', '')
+            formato = '%d de %B de %Y'
+            # Mapeo de días de la semana en español a inglés
+            cadena_limpiada = re.sub(r'[^a-zA-Z0-9 ]+', '', cadena_fecha)
+            print(cadena_limpiada)
+            fecha_reserva = datetime.strptime(cadena_limpiada, formato)
+          
+           
+
+            print(fecha_reserva)
+                    
+           
+           
+            servicio_realizacion=datos_reserva.get('servicio_realizacion','')
+            bloque_horario=datos_reserva.get('bloque_horario','')
+            nombre_servicio=datos_reserva.get('nombre_servicio','')
+           
+            service=obtener_servicio()
+            horas_inicio, horas_fin = [h.strip() for h in bloque_horario.split(' a ')]
+            # Convertir a formato militar directamente
+            print(fecha_reserva)
+            print(horas_inicio)
+            print(horas_fin)
+            id_evento = crear_evento(service, fecha_reserva, correo, servicio_realizacion, bloque_horario, nombre_servicio)
+            codigo_reserva=generar_codigo_reservacion(db_session)
+            resultado=obtener_id_y_precio_servicio(db_session,nombre_servicio)
+            id_cliente= obtener_id_cliente_por_celular(db_session,celular)
+
+            insertar_reservacion(db_session,id_cliente,resultado['id_servicio'],id_evento,codigo_reserva,fecha_reserva,horas_inicio,horas_fin,resultado['precio'],1)
+
+            # Puedes hacer lo que necesites con estas variables
+
+            return jsonify({'message': 'Datos recibidos correctamente','codigo_cliente': codigo_reserva}), 200
+        else:
+            return jsonify({'error': 'Método no permitido'}), 405
+
+    except Exception as e:
+        print(e)
+        return jsonify({'error': str(e)}), 500
+
+
 
 # Esta API es para obtener del bot el la duración del servicio seleccionado
 # ademas de su dia
