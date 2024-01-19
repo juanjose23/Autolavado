@@ -2750,7 +2750,7 @@ def obtener_servicio():
 
 def crear_evento(service, inicio, fin):
     evento = {
-        'summary': nombre_reserva,
+        'summary': 'AutoLavado',
         'start': {
             'dateTime': inicio.isoformat(),
             'timeZone': 'America/Managua',
