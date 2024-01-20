@@ -2770,7 +2770,74 @@ WHERE
 
     return datosCliente
 
+def guardar_reservacion(db_session: Session, id_cliente, id_servicio, idevento_calendar, fecha, hora_inicio, hora_final, subtotal, estado):
+    codigo=generar_codigo_reservacion(db_session)
+    query = text("""
+        INSERT INTO reservacion (idcliente, idservicio, idevento_calendar, codigo, fecha, hora_inicio, hora_fin, subtotal, estado)
+        VALUES (:id_cliente, :id_servicio, :idevento_calendar, :codigo, :fecha, :hora_inicio, :hora_fin, :subtotal, :estado)
+        RETURNING id
+    """)
+    result = db_session.execute(query, {"id_cliente": id_cliente,"id_servicio": id_servicio,"idevento_calendar":idevento_calendar,"codigo": codigo,"fecha": fecha,"hora_inicio": hora_inicio, "hora_fin":hora_final, "subtotal": subtotal,"estado": estado})
+    id_reservacion = result.fetchone()[0]
 
+    db_session.commit()
+
+    return codigo
+
+    # Devolver el ID de la reservación
+
+def recuperar_id_cliente(db_session, codigo_cliente):
+    query = text("""
+        SELECT id
+        FROM clientes
+        WHERE codigo = :codigo_cliente
+    """)
+
+    id_cliente = db_session.execute(query, {'codigo_cliente': codigo_cliente}).scalar()
+
+    return id_cliente
+
+def recuperar_id_servicio(db_session, nombre_servicio):
+    query = text("""
+        SELECT id
+        FROM servicios
+        WHERE nombre = :nombre_servicio
+    """)
+
+    id_servicio = db_session.execute(query, {'nombre_servicio': nombre_servicio}).scalar()
+
+    return id_servicio
+
+def procesamiento_hora_string(bloque):
+    # Separando las cadenas de tiempo
+    inicio_reserva_str, final_reserva_str = [s.strip() for s in bloque.split('a')]
+
+    # Convierte las cadenas a objetos datetime.time
+    hora_inicio_reserva = arrow.get(inicio_reserva_str, 'h:mm A').time()
+    hora_final_reserva = arrow.get(final_reserva_str, 'h:mm A').time()
+
+    return hora_inicio_reserva, hora_final_reserva
+
+def procesamiento_fecha_hora_string(fecha, bloque):
+    # Convierte la fecha string a datetime
+    fecha_formateada = formatear_fecha(fecha)
+    print(fecha_formateada)
+
+    # Separando las cadenas de tiempo
+    inicio_reserva_str, final_reserva_str = [s.strip() for s in bloque.split('a')]
+            
+    #Convierte las cadenas a objetos datetime.time
+    hora_inicio_reserva = arrow.get(inicio_reserva_str, 'h:mm A').time()
+    hora_final_reserva = arrow.get(final_reserva_str, 'h:mm A').time()
+
+    # Convierto el objeto arrow a datetime
+    fecha_formateada = fecha_formateada.date()
+
+    fechaHora_IncioReserva = datetime.combine(fecha_formateada, hora_inicio_reserva)
+    fechaHora_FinalReserva = datetime.combine(fecha_formateada, hora_final_reserva)
+
+    return fechaHora_IncioReserva, fechaHora_FinalReserva
+    
 
 @cross_origin()
 @app.route('/api_consultaDatosCliente', methods=['POST'])
@@ -2821,7 +2888,7 @@ SCOPES = ['https://www.googleapis.com/auth/calendar']
     
     service = build('calendar', 'v3', credentials=creds)
     return service'''
-def obtener_servicio():
+def obtener_APIKEY_GCALENDAR():
     creds = None
     if os.path.exists('token.pickle'):
         with open('token.pickle', 'rb') as token:
@@ -2853,27 +2920,19 @@ def obtener_servicio():
     evento_creado = service.events().insert(calendarId='primary', body=evento).execute()
     print(f"Evento creado: {evento_creado['htmlLink']}")"""
 
-def crear_evento(service, fecha_reserva, correo, servicio_realizacion, bloque_horario, nombre_servicio):
-    # Separar las horas de inicio y fin del bloque_horario
-    hora_inicio_str, hora_fin_str = bloque_horario.split(' a ')
+def crear_evento(service, correo, nombre_servicio, servicio_realizacion, inicio, fin):
 
-    # Convertir las horas a objetos datetime
-    fecha_hora_inicio_str = f'{fecha_reserva} {hora_inicio_str}'
-    fecha_hora_fin_str = f'{fecha_reserva} {hora_fin_str}'
 
     try:
-        fecha_hora_inicio = parser.parse(fecha_hora_inicio_str)
-        fecha_hora_fin = parser.parse(fecha_hora_fin_str)
-
         # Crear el evento
         evento = {
             'summary': nombre_servicio,
             'start': {
-                'dateTime': fecha_hora_inicio.isoformat(),
+                'dateTime': inicio.isoformat(),
                 'timeZone': 'America/Managua',
             },
             'end': {
-                'dateTime': fecha_hora_fin.isoformat(),
+                'dateTime': fin.isoformat(),
                 'timeZone': 'America/Managua',
             },
             'description': f'Servicio realizado por {correo}. Duración: {servicio_realizacion}.',
@@ -2982,72 +3041,92 @@ def api_obtener_dias_disponibles():
     return jsonify(proximos_dias)
 
 
-from unidecode import unidecode
-import re
+
 @cross_origin()
-@app.route("/api_agregar_reserva", methods=['POST'])
-def reservas():
+@app.route('/api_agregar_reserva', methods=['POST'])
+def api_agregar_reserva():
     try:
-        if request.method == 'POST':
-            # Obtener los datos del cuerpo de la solicitud
-            datos = request.get_json()
+        data = request.get_json()
+        print(data)
 
-            # Extraer datos_personales y datos_reserva
-            datos_personales = datos.get('datos_personales', {})
-            datos_reserva = datos.get('datos_reserva', {})
+        # Obteniendo los datos del cliente
+        id_cliente = data['datos_personales']['id_cliente']
+        codigo_cliente = data['datos_personales']['codigo_cliente']
+        id_persona = data['datos_personales']['id_persona']
+        nombre = data['datos_personales']['nombre']
+        apellidos = data['datos_personales']['apellidos']
+        correo = data['datos_personales']['correo']
+        celular = data['datos_personales']['celular']
+        tipo_persona = data['datos_personales']['tipo']
 
-            # Acceder a variables específicas
-            nombre = datos_personales.get('nombre', '')
-            apellidos=datos_personales.get('apellidos','')
-            correo = datos_personales.get('correo', '')
-            celular=datos_personales.get('celular','')
-            tipo=datos_personales.get('tipo','')
-            if not ValidarNumeroCelularExistente(celular):
-                id_persona = insertar_persona(db_session, nombre, correo, "No hay", celular)
-                insertar_persona_natural(db_session, id_persona, apellidos, None, None, None, tipo)
-                codigo = generar_codigo_cliente(nombre, id_persona, celular)
-                insertar_cliente(db_session, id_persona, codigo, "Normal", "No hay")
-            locale.setlocale(locale.LC_TIME, 'es_ES.utf8')
+        # Obteniendo los datos de la reserva
+        fecha = data['datos_reserva']['fecha']
+        nombre_servicio = data['datos_reserva']['nombre_servicio']
+        servicio_realizacion = data['datos_reserva']['servicio_realizacion']
+        bloque_horario = data['datos_reserva']['bloque_horario']
 
-            cadena_fecha = datos_reserva.get('fecha', '')
-            formato = '%d de %B de %Y'
-            # Mapeo de días de la semana en español a inglés
-            cadena_limpiada = re.sub(r'[^a-zA-Z0-9 ]+', '', cadena_fecha)
-            print(cadena_limpiada)
-            fecha_reserva = datetime.strptime(cadena_limpiada, formato)
-          
-           
+        # Si no hay codigo cliente, ni id persona por lo tanto en este petición de creación de reserva
+        # Se da a entender que el cliente es nuevo y se hace el procedimiento de creación del cliente
+        # y se obtiene el codigo del cliente
+        if not codigo_cliente or not id_persona or not id_cliente:
+            # Aquí puedes hacer algo si codigo_cliente o id_persona son nulos
+            print('en definitiva no se proporcionó el código del cliente o el ID de la persona')
+            codigo_cliente = api_InsertarCliente(nombre, apellidos, correo, celular, tipo_persona)
+        
+        print(codigo_cliente)
+        
+        
+        # Procesamos los strings recibidos del bot para convertirlos a datetime en variables separadas
+        fechaHora_IncioReserva, fechaHora_FinalReserva = procesamiento_fecha_hora_string(fecha, bloque_horario)
 
-            print(fecha_reserva)
-                    
-           
-           
-            servicio_realizacion=datos_reserva.get('servicio_realizacion','')
-            bloque_horario=datos_reserva.get('bloque_horario','')
-            nombre_servicio=datos_reserva.get('nombre_servicio','')
-           
-            service=obtener_servicio()
-            horas_inicio, horas_fin = [h.strip() for h in bloque_horario.split(' a ')]
-            # Convertir a formato militar directamente
-            print(fecha_reserva)
-            print(horas_inicio)
-            print(horas_fin)
-            id_evento = crear_evento(service, fecha_reserva, correo, servicio_realizacion, bloque_horario, nombre_servicio)
-            codigo_reserva=generar_codigo_reservacion(db_session)
-            resultado=obtener_id_y_precio_servicio(db_session,nombre_servicio)
-            id_cliente= obtener_id_cliente_por_celular(db_session,celular)
+        nombre_reserva = 'Reserva de lavado para:  ' + nombre + ' ' + apellidos
+        service = obtener_APIKEY_GCALENDAR() # Obtiene el servicio de Google Calendar TOKEN
 
-            insertar_reservacion(db_session,id_cliente,resultado['id_servicio'],id_evento,codigo_reserva,fecha_reserva,horas_inicio,horas_fin,resultado['precio'],1)
+        # Crar una función para recuperar el idservicio
 
-            # Puedes hacer lo que necesites con estas variables
 
-            return jsonify({'message': 'Datos recibidos correctamente','codigo_cliente': codigo_reserva}), 200
+        #crear una función para recuperar el idcliente
+
+        #
+
+        # Crea el evento en Google Calendar
+        id_evento = crear_evento(service, correo, nombre_servicio, servicio_realizacion, fechaHora_IncioReserva, fechaHora_FinalReserva)
+
+        if id_evento:
+            try:
+                #Transforma el string de la fecha a un objeto datetime en especifico a un día de la semana
+                fecha_formateada = obtener_numero_dia(fecha)
+
+                # id_horario = dia_semana # El id del horario es el día de la semana
+                
+                # Obtiene el id_cliente con el codigo_cliente
+                id_cliente = recuperar_id_cliente(db_session, codigo_cliente)
+
+                id_servicio = recuperar_id_servicio(db_session, nombre_servicio)
+
+
+                hora_inicio_reserva, hora_final_reserva = procesamiento_hora_string(bloque_horario)
+
+                subtotal = '50.00'
+
+                # Inserta la reserva en la base de datos
+                codigo_reservacion = guardar_reservacion(db_session, id_cliente, id_servicio, id_evento, fecha_formateada, hora_inicio_reserva, hora_final_reserva, subtotal, '1')
+
+                print(codigo_reservacion)
+
+                return jsonify({'sucess': True, 'codigo_reservacion': codigo_reservacion, 'message': 'Se ha agregado la reserva correctamente'})
+
+            except Exception as e:
+                print(e)
+                return jsonify({'success': False, 'message': 'Ocurrió un error al guardar la reserva en la base de datos'})
+
         else:
-            return jsonify({'error': 'Método no permitido'}), 405
+            return jsonify({'success': False, 'message': 'Ocurrió un error al crear el evento en Google Calendar'})
 
+        
     except Exception as e:
         print(e)
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'message': 'Ocurrió un error'})   
 
 
 
@@ -3108,7 +3187,7 @@ def api_duracionLavado_dia():
             hora_apertura_formateada = hora_apertura.time()  # Extrae solo la hora de apertura
             hora_cierre_formateada = hora_cierre.time()  # Extrae solo la hora de cierre
 
-            service = obtener_servicio()  # Obtiene el servicio de Google Calendar TOKEN
+            service = obtener_APIKEY_GCALENDAR()  # Obtiene el servicio de Google Calendar TOKEN
             print(dia_semana)
             print(hora_apertura_formateada)
             print(hora_cierre_formateada)
@@ -3192,12 +3271,6 @@ def api_duracionLavado_dia():
             bloques_disponibles = consultar_horarios_disponibles_googleCalendar(dia_semana, total_minutos, eventos_existentes)
 
 
-
-            
-
-           
-            
-
             return jsonify(bloques_disponibles)
         except Exception as e:
             print(e)
@@ -3206,11 +3279,6 @@ def api_duracionLavado_dia():
 
     return jsonify({'success': True})
 
-
-@app.route('/consultaGooglePrueba', methods=['GET', 'POST'])
-def consultaGooglePrueba():
-
-    return 'se consultó'
 
 
 def consultar_horarios_disponibles_googleCalendar(dia_disponible, duracion_evento, eventos_existentes):
@@ -3287,6 +3355,19 @@ def convertir_a_12_horas(hora):
         else:
             hora_str = '{:02d}:{:02d} PM'.format(hora.hour, hora.minute)
     return hora_str
+
+# Esa ruta debe de usarse si y solamente si el token de la API de Google Calendar expira
+# O es primara instalación
+# @app.route('/generar_API_KEY_CALENDAR', methods=['GET', 'POST'])
+# def generar_API_KEY_CALENDAR():
+#     try:
+#         obtener_APIKEY_GCALENDAR()
+#         return 'Se ha generado la API KEY de Google Calendar'
+#     except Exception as e:
+#         print(e)
+#         return 'No se puedo generar la API KEY!'
+
+
 
 if __name__ == '__main__':
 
