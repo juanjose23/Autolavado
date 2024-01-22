@@ -3071,7 +3071,14 @@ def api_agregar_reserva():
         if not codigo_cliente or not id_persona or not id_cliente:
             # Aquí puedes hacer algo si codigo_cliente o id_persona son nulos
             print('en definitiva no se proporcionó el código del cliente o el ID de la persona')
-            codigo_cliente = api_InsertarCliente(nombre, apellidos, correo, celular, tipo_persona)
+            id_persona = insertar_persona(db_session, nombre, correo,"En direccion", celular)
+            print(id_persona)
+            insertar_persona_natural(db_session, id_persona, apellidos, None, None, None, tipo_persona)
+            codigo = generar_codigo_cliente(nombre,id_persona,celular)
+            print(codigo)
+            codigo_cliente=insertar_cliente(db_session, id_persona,codigo,"Normal","No hay")
+            print(codigo_cliente)
+           
         
         print(codigo_cliente)
         
