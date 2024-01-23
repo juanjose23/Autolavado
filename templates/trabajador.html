@@ -17,7 +17,7 @@
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1>Trabajadores</h1>
+                <h1>Colaboradores</h1>
             </div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
@@ -35,11 +35,11 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Lista de colaboradres</h3>
+                        <h3 class="card-title">Lista de colaboradores</h3>
                         <div class="align-content-end text-right">
                             <button type="button" class="btn btn-secondary"
                                 data-toggle="modal" data-target="#modal-default">Agregar
-                                Trabajador</button>
+                                colaborador</button>
                         </div>
 
                     </div>
@@ -51,14 +51,13 @@
                                 <tr>
                                     <th>Nombre</th>
                                     <th>Apellido</th>
-                                    <th>Cedula</th>
-                                    <th>Direccion</th>
+                                    <th>Identificación</th>
+                                    <th>Dirección</th>
                                     <th>Celular</th>
                                     <th>Genero</th>
                                     <th>Estado</th>
                                     <th>Foto</th>
-                                   
-                                    <th>Action</th>
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -138,7 +137,7 @@
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label>Cedula: </label>
+                                    <label>Identificación: </label>
                                     <input type="text"
                                         name="cedula"
                                         class="form-control"
@@ -175,7 +174,7 @@
                             </div>
                             <div class="col-md-12">
                                 <div class="form-group">
-                                    <label>Direccion: </label>
+                                    <label>Dirección: </label>
                                     <textarea name="direccion"
                                         class="form-control"
                                         required></textarea>
@@ -217,9 +216,9 @@
                         <input type="button" class="btn
                 btn-default"
                             data-dismiss="modal"
-                            value="Cancel">
+                            value="Cancelar">
                         <input type="submit" class="btn
-                btn-success" value="Add">
+                btn-success" value="Registrar">
                     </div>
                 </form>
             </div>
@@ -264,7 +263,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label>Cedula: </label>
+                                        <label>Identificación: </label>
                                         <input type="text"
                                             name="cedula"
                                             class="form-control" value="{{productos.cedula}}"
@@ -355,9 +354,9 @@
                         <input type="button" class="btn
                 btn-default"
                             data-dismiss="modal"
-                            value="Cancel">
+                            value="Cancelar">
                         <input type="submit" class="btn
-                btn-info" value="Save">
+                btn-info" value="Actualizar">
                     </div>
                 </form>
             </div>
@@ -374,7 +373,7 @@
                 <form action="/eliminar_trabajador/{{productos.trabajador_id}}" method="post">
                     <div class="modal-header">
                         <h4 class="modal-title">Eliminar
-                            Trabajador</h4>
+                            Colaborador</h4>
 
                         <button type="button" class="close"
                             data-dismiss="modal"
@@ -384,17 +383,17 @@
                         <input type="number" name="id"
                             value="{{ productos.trabajador_id}}" hidden>
 
-                        <p>estas seguro de eliminar este trabajador?</p>
+                        <p>¿Estas seguro de eliminar este trabajador?</p>
                         
                     </div>
                     <div class="modal-footer">
                         <input type="button" class="btn
                 btn-default"
                             data-dismiss="modal"
-                            value="Cancel">
+                            value="Cancelar">
                         <input type="submit" class="btn
                 btn-danger"
-                            value="Delete">
+                            value="Desactivar">
                     </div>
                 </form>
             </div>

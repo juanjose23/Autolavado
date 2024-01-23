@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %} || Precios productos{% endblock %}
+{% block title %} || Horarios{% endblock %}
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='plugins/select2/css/select2.min.css') }}">
 <link rel="stylesheet"
@@ -16,7 +16,7 @@
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1>Horarios de atencion</h1>
+                <h1>Horarios de atención</h1>
             </div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
@@ -42,11 +42,11 @@
                         <table id="example1" class="table table-bordered table-striped">
                             <thead>
                                 <tr>
-                                    <th>Dia</th>
+                                    <th>Día</th>
                                     <th>Hora de apertura </th>
                                     <th>Hora de cierre </th>
                                     <th>Estado</th>
-                                    <th>Action</th>
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>

@@ -2312,10 +2312,22 @@ def insertar_lote():
         fecha_vencimiento_str = request.form.get('fecha_vencimiento')
         cantidad = request.form.get('cantidad')
         estado = int(request.form.get('estado'))
+        query_max_id = text("""
+    SELECT COALESCE(MAX(id), 0) FROM lote_producto;
+""")
+        print(id_producto)
 
+        # Ejecutar la consulta
+      
+
+        # Obtener el resultado
+        resultado = db_session.execute(query_max_id).fetchone()
+
+        # Obtener el valor máximo y establecer 1 si no hay registros
+        maximo_id = max(resultado[0], 1)
         # Generar número de lote
-        numero_lote = generar_numero_lote()
-
+        numero_lote = generar_numero_lote(maximo_id)
+    
         # Convertir la cadena de fecha de vencimiento a objeto datetime
         fecha_vencimiento = None
         if fecha_vencimiento_str:
@@ -2808,6 +2820,17 @@ def recuperar_id_servicio(db_session, nombre_servicio):
 
     return id_servicio
 
+def recuperar_precio_servicio(db_session, id):
+    query = text("""
+        SELECT precio
+        FROM precio_servicios
+        WHERE id_servicio = :id AND estado = 1
+    """)
+
+    id_servicio = db_session.execute(query, {'id': id}).scalar()
+
+    return id_servicio
+
 def procesamiento_hora_string(bloque):
     # Separando las cadenas de tiempo
     inicio_reserva_str, final_reserva_str = [s.strip() for s in bloque.split('a')]
@@ -3048,8 +3071,6 @@ def api_agregar_reserva():
     try:
         data = request.get_json()
         print(data)
-
-        # Obteniendo los datos del cliente
         id_cliente = data['datos_personales']['id_cliente']
         codigo_cliente = data['datos_personales']['codigo_cliente']
         id_persona = data['datos_personales']['id_persona']
@@ -3058,65 +3079,38 @@ def api_agregar_reserva():
         correo = data['datos_personales']['correo']
         celular = data['datos_personales']['celular']
         tipo_persona = data['datos_personales']['tipo']
-
-        # Obteniendo los datos de la reserva
         fecha = data['datos_reserva']['fecha']
         nombre_servicio = data['datos_reserva']['nombre_servicio']
         servicio_realizacion = data['datos_reserva']['servicio_realizacion']
         bloque_horario = data['datos_reserva']['bloque_horario']
 
-        # Si no hay codigo cliente, ni id persona por lo tanto en este petición de creación de reserva
-        # Se da a entender que el cliente es nuevo y se hace el procedimiento de creación del cliente
-        # y se obtiene el codigo del cliente
         if not codigo_cliente or not id_persona or not id_cliente:
-            # Aquí puedes hacer algo si codigo_cliente o id_persona son nulos
-            print('en definitiva no se proporcionó el código del cliente o el ID de la persona')
             id_persona = insertar_persona(db_session, nombre, correo,"En direccion", celular)
-            print(id_persona)
+            
             insertar_persona_natural(db_session, id_persona, apellidos, None, None, None, tipo_persona)
             codigo = generar_codigo_cliente(nombre,id_persona,celular)
-            print(codigo)
+          
             codigo_cliente=insertar_cliente(db_session, id_persona,codigo,"Normal","No hay")
-            print(codigo_cliente)
-           
-        
-        print(codigo_cliente)
-        
-        
-        # Procesamos los strings recibidos del bot para convertirlos a datetime en variables separadas
+    
         fechaHora_IncioReserva, fechaHora_FinalReserva = procesamiento_fecha_hora_string(fecha, bloque_horario)
 
         nombre_reserva = 'Reserva de lavado para:  ' + nombre + ' ' + apellidos
-        service = obtener_APIKEY_GCALENDAR() # Obtiene el servicio de Google Calendar TOKEN
+        service = obtener_APIKEY_GCALENDAR() 
 
-        # Crar una función para recuperar el idservicio
-
-
-        #crear una función para recuperar el idcliente
-
-        #
-
-        # Crea el evento en Google Calendar
         id_evento = crear_evento(service, correo, nombre_servicio, servicio_realizacion, fechaHora_IncioReserva, fechaHora_FinalReserva)
 
         if id_evento:
             try:
-                #Transforma el string de la fecha a un objeto datetime en especifico a un día de la semana
+              
                 fecha_formateada = obtener_numero_dia(fecha)
 
-                # id_horario = dia_semana # El id del horario es el día de la semana
-                
-                # Obtiene el id_cliente con el codigo_cliente
                 id_cliente = recuperar_id_cliente(db_session, codigo_cliente)
 
                 id_servicio = recuperar_id_servicio(db_session, nombre_servicio)
 
 
                 hora_inicio_reserva, hora_final_reserva = procesamiento_hora_string(bloque_horario)
-
-                subtotal = '50.00'
-
-                # Inserta la reserva en la base de datos
+                subtotal = recuperar_precio_servicio(db_session, id_servicio)
                 codigo_reservacion = guardar_reservacion(db_session, id_cliente, id_servicio, id_evento, fecha_formateada, hora_inicio_reserva, hora_final_reserva, subtotal, '1')
 
                 print(codigo_reservacion)

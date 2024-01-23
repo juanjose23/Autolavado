@@ -69,17 +69,18 @@ def generar_nombre_usuario(nombre, apellido, id_persona):
 
     return nombre_usuario
 
-def generar_numero_lote():
-    # Genera un UUID (por ejemplo, 'c5a0f3c8-03d8-4f9b-8c25-2a5117d7d1e6')
-    uuid_str = str(uuid.uuid4())
-
-    # Elimina guiones y toma los primeros 10 caracteres del UUID
-    numero_lote = uuid_str.replace('-', '')[:10]
+def generar_numero_lote(id_lote):
+    now = datetime.now()
+    
+    # Obtiene el año actual (por ejemplo, '2024')
+    año_actual = now.strftime("%Y")
+    
+    # Combina el año y el ID de lote para formar el número de lote
+    numero_lote = f"{año_actual}{id_lote}"
 
     return numero_lote
 
-# Ejemplo de uso
-nuevo_numero_lote = generar_numero_lote()
+
 
 def login_required(f):
     """

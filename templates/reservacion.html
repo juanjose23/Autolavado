@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %} || Reservacion {% endblock %}
+{% block title %} || Reservación {% endblock %}
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='plugins/select2/css/select2.min.css') }}">
 <link rel="stylesheet"
@@ -21,20 +21,21 @@
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
                     <li class="breadcrumb-item"><a href="#">Gestion de reservacion</a></li>
-                    <li class="breadcrumb-item active">Reservacion</li>
+                    <li class="breadcrumb-item active">Reservación</li>
                 </ol>
             </div>
         </div>
     </div>
 </section>
 <section class="content">
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-12">
+    <div class="container-fluid slider-container">
+        <div class="row slider" id="slider">
+         
+            <div class="col-md-12 slide">
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Reservaciones de citas</h3>
-                        
+                        <h3 class="card-title">Lista de reservaciones</h3>
+
                     </div>
 
                     <!-- /.card-header -->
@@ -44,14 +45,13 @@
                                 <tr>
                                     <th>Codigo</th>
                                     <th>Cliente</th>
-                                    <th>Telefono</th>
+                                    <th>Celular</th>
                                     <th>Fecha</th>
                                     <th>Hora inicio</th>
-                                    <th>Hora de finalizacion</th>
+                                    <th>Hora de finalización</th>
                                     <th>Servicio</th>
                                     <th>Valor</th>
                                     <th>Estado</th>
-                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -83,13 +83,8 @@
                                     </td>
 
 
-                                    
-                                    <td>
-                                        <a href="#modal-default{{ reservacion.id }}" data-toggle="modal">
-                                            <i class="fas fa-pencil-alt"></i>
-                                        </a>
 
-                                    </td>
+
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -97,49 +92,88 @@
 
                     </div>
                 </div>
+                <div class="col-md-12 slide">
 
+                    <div class="card">
+                        <div class="embed-responsive embed-responsive-16by9">
+                            <iframe class="embed-responsive-item"
+                                src="https://calendar.google.com/calendar/embed?height=600&wkst=1&bgcolor=%23ffffff&ctz=America%2FManagua&showNav=1&showCalendars=0&showTabs=1&showDate=1&showTz=0&src=aW5nc29mdHdhcjEyM0BnbWFpbC5jb20&color=%23039BE5"
+                                frameborder="0" scrolling="no"></iframe>
+                        </div>
+
+
+                    </div>
+
+
+                </div>
             </div>
+
         </div>
     </div>
- 
+    <style>
+        /* Añade estilo a los botones */
+        .embed-responsive .btn {
+            background-color: #007bff;
+            /* Color de fondo del botón */
+            color: #fff;
+            /* Color del texto del botón */
+            border: 1px solid #007bff;
+            /* Borde del botón */
+        }
 
+        /* Cambia el estilo del encabezado del calendario */
+        .embed-responsive .card-header {
+            background-color: #007bff;
+            /* Color de fondo del encabezado de la tarjeta */
+            color: #fff;
+            /* Color del texto del encabezado de la tarjeta */
+        }
 
-  
-    {% for productos in horario %}
-    <div id="modal-danger{{productos.id}}" class="modal fade">
-        <div class="modal-dialog">
-            <div class="modal-content bg-danger">
-                <form action="/Cambiarhorarioestado/{{productos.id}}" method="post">
-                    <div class="modal-header">
-                        <h4 class="modal-title">Eliminar precio producto</h4>
+        /* Cambia el estilo del cuerpo de la tarjeta */
+        .embed-responsive .card-body {
+            background-color: #f8f9fa;
+            /* Color de fondo del cuerpo de la tarjeta */
+        }
 
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="number" name="id" value="{{ productos.id }}" hidden>
-                        <input type="numbre" name="estado" value="2" hidden>
-                        <p>Estas seguro que quieres dar de baja a este dia</p>
+        /* Cambia el estilo de la tabla dentro de la tarjeta */
+        .embed-responsive .table {
+            background-color: #fff;
+            /* Color de fondo de la tabla */
+            color: #495057;
+            /* Color del texto de la tabla */
+        }
 
-                    </div>
-                    <div class="modal-footer">
-                        <input type="button" class="btn
-                                btn-default" data-dismiss="modal" value="Cancel">
-                        <button type="submit" class="btn btn-outline-light">Aceptar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
+        /* Cambia el estilo de las celdas de la tabla */
+        .embed-responsive .table th,
+        .embed-responsive .table td {
+            border: 1px solid #dee2e6;
+            /* Borde de las celdas de la tabla */
+        }
+
+        /* Añade un sombreado sutil a la tarjeta */
+        .embed-responsive .card {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            /* Sombra de la tarjeta */
+        }
+    </style>
     <!-- CALENDARIO DE GOOGLE CALENDAR -->
-    <div class="container">
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const slider = document.getElementById('slider');
 
-        <iframe src="https://calendar.google.com/calendar/embed?height=600&wkst=1&bgcolor=%23ffffff&ctz=America%2FManagua&showNav=1&showCalendars=0&showTabs=1&showDate=1&showTz=0&src=aW5nc29mdHdhcjEyM0BnbWFpbC5jb20&color=%23039BE5" style="border:solid 1px #777" width="1000" height="600" frameborder="0" scrolling="no"></iframe>
+        function changeSlide(direction) {
+            currentSlide += direction;
 
-    </div>
+            if (currentSlide < 0) {
+                currentSlide = slides.length - 1;
+            } else if (currentSlide >= slides.length) {
+                currentSlide = 0;
+            }
 
-   
-  
-
+            const translateValue = -currentSlide * 100 + '%';
+            slider.style.transform = 'translateX(' + translateValue + ')';
+        }
+    </script>
 </section>
 {% endblock %}

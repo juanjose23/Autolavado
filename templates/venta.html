@@ -157,11 +157,12 @@
                                             <div class="card-body">
                                                 <h5 class="card-title">Reservación #{{ reserva.id }}</h5>
                                                 <p class="card-text">Cliente: {{ reserva.cliente }}</p>
-                                                <p class="card-text card-text-telefono">Telefono: {{ reserva.celular }}
+                                                <p class="card-text card-text-telefono">Celular: {{ reserva.celular }}
                                                 </p>
                                                 <p class="card-text">Hora inicio: {{ reserva.hora_inicio }}</p>
                                                 <p class="card-text">Hora fin: {{ reserva.hora_fin }}</p>
                                                 <p class="card-text">Total: ${{ reserva.subtotal }}</p>
+                                                <p class="card-text">Estado:</p>
                                                 <button type="button" class="btn btn-info" data-toggle="modal"
                                                     data-target="#myModal{{ reserva.id }}">
                                                     Generar venta

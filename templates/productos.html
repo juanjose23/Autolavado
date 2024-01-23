@@ -46,22 +46,22 @@
                         <table id="example1" class="table table-bordered table-striped">
                             <thead>
                                 <tr>
-                                    
+
                                     <th>Producto</th>
-                                    <th>Descripcion</th>
-                                   
+                                    <th>Descripción</th>
+
                                     <th>Logo</th>
                                     <th>Estado</th>
-                                    <th>Action</th>
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for productos in productos %}
                                 <tr>
-                        
+
                                     <td>{{ productos.nombre }}</td>
                                     <td>{{ productos.descripcion }}</td>
-                                  
+
                                     <th> <img src="{{productos.logo}}" alt width="50"></th>
                                     <td>
                                         {% if productos.estado == 1 %}
@@ -100,30 +100,34 @@
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                     </div>
                     <div class="modal-body">
-                        
+
                         <div class="form-group">
                             <label>Nombre</label>
                             <input type="text" name="nombre" class="form-control" required>
                         </div>
                         <div class="form-group">
-                            <label>descripcion</label>
+                            <label>Descripción</label>
                             <textarea name="descripcion" class="form-control" required></textarea>
                         </div>
-                        
+
                         <div class="form-group">
                             <label>Foto</label>
                             <input type="file" name="logo" class="form-control" required accept="image/*">
                         </div>
-                        <select name="estado" id class="form-control">
-                            <option value="1">Activo</option>
-                            <option value="2">Inactivo</option>
-                        </select>
+                        <div class="form-group">
+                            <label>Estado</label>
+                            <select name="estado" id class="form-control select2bs4">
+                                <option value="1">Activo</option>
+                                <option value="2">Inactivo</option>
+                                <option value="3">Uso interno</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <input type="button" class="btn
-                                btn-default" data-dismiss="modal" value="Cancel">
+                                btn-default" data-dismiss="modal" value="Cancelar">
                         <input type="submit" class="btn
-                                btn-success" value="Add">
+                                btn-success" value="Registrar">
                     </div>
                 </form>
             </div>
@@ -140,7 +144,7 @@
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                     </div>
                     <div class="modal-body">
-                        
+
 
                         <div class="form-group">
                             <input type="text" name="id" value="{{productos.id}}" hidden>
@@ -148,11 +152,11 @@
                             <input type="text" name="nombre" class="form-control" required value="{{productos.nombre}}">
                         </div>
                         <div class="form-group">
-                            <label>descripcion</label>
+                            <label>Descripción</label>
                             <textarea name="descripcion" class="form-control"
                                 required>{{productos.descripcion}}</textarea>
                         </div>
-                       
+
                         <div class="form-group">
 
                             {% if productos.logo %}
@@ -163,20 +167,21 @@
                             <input type="text" name="logos" value="{{ productos.logo
                             }}" hidden>
                             <label>Foto nueva</label>
-                            <input type="file" name="logo" class="form-control"
-                                value="{{productos.logo}}">
+                            <input type="file" name="logo" class="form-control" value="{{productos.logo}}">
                         </div>
                         <div class="form-group">
-                            <select name="estado" id class="form-control">
+                            <label>Estado</label>
+                            <select name="estado " class="form-control select2bs4">
                                 <option value="1" {% if productos.estado==1 %}selected{% endif %}>Activo</option>
                                 <option value="2" {% if productos.estado==2 %}selected{% endif %}>Inactivo</option>
+                                <option value="3" {% if productos.estado==3 %}selected{% endif %}>Uso Interno</option>
                             </select>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <input type="button" class="btn
-                                btn-default" data-dismiss="modal" value="Cancel">
-                        <button type="submit" class="btn btn-outline-light">Aceptar</button>
+                                btn-default" data-dismiss="modal" value="Cancelar">
+                        <button type="submit" class="btn btn-outline-light">Actualizar</button>
                     </div>
                 </form>
             </div>
@@ -202,8 +207,8 @@
                     </div>
                     <div class="modal-footer">
                         <input type="button" class="btn
-                                btn-default" data-dismiss="modal" value="Cancel">
-                        <button type="submit" class="btn btn-outline-light">Aceptar</button>
+                                btn-default" data-dismiss="modal" value="Cancelar">
+                        <button type="submit" class="btn btn-outline-light">Confirmar</button>
                     </div>
                 </form>
             </div>

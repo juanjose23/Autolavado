@@ -50,12 +50,12 @@
                                     <th>Nombre</th>
                                     <th>Apellido</th>
                                     <th>Tipo cliente</th>
-                                    <th>Identificacion</th>
-                                    <th>Direccion</th>
+                                    <th>Identificación</th>
+                                    <th>Dirección</th>
                                     <th>Celular</th>
                                     <th>Foto</th>
                                     <th>Estado</th>
-                                    <th>Action</th>
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -103,8 +103,7 @@
             <div class="modal-content">
                 <form action="/crear_cliente" method="post" enctype="multipart/form-data">
                     <div class="modal-header">
-                        <h4 class="modal-title">Crear
-                            Colaborador</h4>
+                        <h4 class="modal-title">Crear Clientes</h4>
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                     </div>
                     <div class="modal-body">
@@ -125,7 +124,7 @@
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label>Cedula: </label>
+                                    <label>Identificación: </label>
                                     <input type="text" name="cedula" class="form-control" required>
                                 </div>
                             </div>
@@ -150,7 +149,7 @@
                             </div>
                             <div class="col-md-12">
                                 <div class="form-group">
-                                    <label>Direccion: </label>
+                                    <label>Dirección: </label>
                                     <textarea name="direccion" class="form-control" required></textarea>
                                 </div>
                             </div>
@@ -224,7 +223,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label>Cedula: </label>
+                                        <label>Identificación: </label>
                                         <input type="text" name="cedula" class="form-control"
                                             value="{{productos.cedula}}" required>
                                     </div>
@@ -253,7 +252,7 @@
                                 </div>
                                 <div class="col-md-12">
                                     <div class="form-group">
-                                        <label>Direccion: </label>
+                                        <label>Dirección: </label>
                                         <textarea name="direccion" class="form-control"
                                             required>{{productos.direccion}}</textarea>
                                     </div>
@@ -281,7 +280,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label>Tipo de clientes</label>
+                                        <label>Tipo de cliente</label>
                                         <select name="tipo" id class="form-control">
                                             <option value="Normal" {% if productos.tipo_cliente=="Normal" %}selected{%
                                                 endif %}>Normal</option>
@@ -309,9 +308,9 @@
                     </div>
                     <div class="modal-footer">
                         <input type="button" class="btn
-                btn-default" data-dismiss="modal" value="Cancel">
+                btn-default" data-dismiss="modal" value="Cancelar">
                         <input type="submit" class="btn
-                btn-info" value="Save">
+                btn-info" value="Actualizar">
                     </div>
                 </form>
             </div>
@@ -334,21 +333,21 @@
                     <div class="modal-body">
                         <input type="number" name="id" value="{{ productos.id }}" hidden>
 
-                        <p>estas seguro de eliminar este trabajador?</p>
+                        <p>¿Estas seguro de dar de baja a este cliente?</p>
 
                     </div>
                     <div class="modal-footer">
                         <input type="button" class="btn
-                btn-default" data-dismiss="modal" value="Cancel">
+                btn-default" data-dismiss="modal" value="Cancelar">
                         <input type="submit" class="btn
-                btn-danger" value="Delete">
+                btn-danger" value="Desactivar">
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    </div>
+
     {% endfor %}
 </section>
 {% endblock %}
