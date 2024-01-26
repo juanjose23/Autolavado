@@ -49,7 +49,7 @@
 
                                     <th>Producto</th>
                                     <th>Descripción</th>
-
+                                    <th>Tipo</th>
                                     <th>Logo</th>
                                     <th>Estado</th>
                                     <th>Acciones</th>
@@ -61,6 +61,15 @@
 
                                     <td>{{ productos.nombre }}</td>
                                     <td>{{ productos.descripcion }}</td>
+                                    <td>
+                                        {% if productos.tipo == 1 %}
+                                        <span class="badge bg-success">Para vender</span>
+                                        {% elif productos.tipo == 2 %}
+                                        <span class="badge bg-blue">Uso interno</span>
+                                        {% elif productos.tipo == 3 %}
+                                        <span class="badge bg-gradient-fuchsia">Uso interno y para vender</span>
+                                        {% endif %}
+                                    </td>
 
                                     <th> <img src="{{productos.logo}}" alt width="50"></th>
                                     <td>
@@ -68,6 +77,7 @@
                                         <span class="badge bg-success">Activo</span>
                                         {% elif productos.estado == 2 %}
                                         <span class="badge bg-danger">Inactivo</span>
+                                      
                                         {% endif %}
                                     </td>
                                     <td>
@@ -109,7 +119,14 @@
                             <label>Descripción</label>
                             <textarea name="descripcion" class="form-control" required></textarea>
                         </div>
-
+                        <div class="form-group">
+                            <label>Tipo</label>
+                            <select name="uso" id class="form-control select2bs4">
+                                <option value="1">Para venta</option>
+                                <option value="2">Uso interno</option>
+                                <option value="3">Uso interno y ventas</option>
+                            </select>
+                        </div>
                         <div class="form-group">
                             <label>Foto</label>
                             <input type="file" name="logo" class="form-control" required accept="image/*">
@@ -119,7 +136,7 @@
                             <select name="estado" id class="form-control select2bs4">
                                 <option value="1">Activo</option>
                                 <option value="2">Inactivo</option>
-                                <option value="3">Uso interno</option>
+                              
                             </select>
                         </div>
                     </div>
@@ -156,7 +173,14 @@
                             <textarea name="descripcion" class="form-control"
                                 required>{{productos.descripcion}}</textarea>
                         </div>
-
+                        <div class="form-group">
+                            <label>Tipo</label>
+                            <select name="uso" class="form-control select2bs4">
+                                <option value=1 {% if productos.estado==1 %}selected{% endif %}>Para ventas</option>
+                                <option value=2 {% if productos.estado==2 %}selected{% endif %}>Uso interno</option>
+                                <option value=3 {% if productos.estado==3 %}selected{% endif %}>Uso Interno y ventas</option>
+                            </select>
+                        </div>
                         <div class="form-group">
 
                             {% if productos.logo %}
@@ -171,10 +195,10 @@
                         </div>
                         <div class="form-group">
                             <label>Estado</label>
-                            <select name="estado " class="form-control select2bs4">
-                                <option value="1" {% if productos.estado==1 %}selected{% endif %}>Activo</option>
-                                <option value="2" {% if productos.estado==2 %}selected{% endif %}>Inactivo</option>
-                                <option value="3" {% if productos.estado==3 %}selected{% endif %}>Uso Interno</option>
+                            <select name="estado" class="form-control select2bs4">
+                                <option value=1 {% if productos.estado==1 %}selected{% endif %}>Activo</option>
+                                <option value=2 {% if productos.estado==2 %}selected{% endif %}>Inactivo</option>
+                                <option value=3 {% if productos.estado==3 %}selected{% endif %}>Uso Interno</option>
                             </select>
                         </div>
                     </div>
