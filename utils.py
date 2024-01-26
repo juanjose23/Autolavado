@@ -2,7 +2,7 @@
 from werkzeug.security import *
 from werkzeug.utils import secure_filename
 from datetime import datetime
-
+from flask import abort
 from flask import redirect,session
 from functools import wraps
 import uuid
@@ -94,6 +94,17 @@ def login_required(f):
             return redirect("/login")
         return f(*args, **kwargs)
     return decorated_function
+
+def role_required(required_roles):
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(*args, **kwargs):
+            if session.get("rol") not in required_roles:
+                abort(403)  # 403 Forbidden
+            return view_func(*args, **kwargs)
+        return wrapper
+    return decorator
+
 
 # Obtener el número del día de la semana por una cadnea de texto por ejemplo 'Lunes 15 de enero de 2024' = 1
 def obtener_numero_dia(cadena):

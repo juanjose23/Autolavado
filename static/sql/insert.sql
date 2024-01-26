@@ -51,7 +51,7 @@ VALUES (1, 'Perez', '123456789', '1990-01-01', 'M', 'Natural');
 
 -- Insertar datos en la tabla trabajador
 INSERT INTO trabajador (id_persona, codigo, foto, estado) 
-VALUES (1, 'T123', 'url_foto.jpg', 1);
+VALUES (1, 'T123', '/static/img/Logo.png', 1);
 
 
 -- Insertar datos en la tabla usuario

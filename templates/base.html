@@ -90,6 +90,7 @@
                         data-accordion="false">
 
 
+                        {% if session['rol'] in [1, 2] %}
 
                         <li class="nav-item">
                             <a href="#" class="nav-link">
@@ -117,6 +118,8 @@
 
                             </ul>
                         </li>
+                      
+
                         <li class="nav-item">
                             <a href class="nav-link">
                                 <i class="nav-icon fas fa-clipboard-list"></i>
@@ -141,6 +144,8 @@
 
                             </ul>
                         </li>
+                        {% endif %}
+                        {% if session['rol'] in [1] %}
                         <li class="nav-item">
                             <a href="#" class="nav-link">
                                 <i class="nav-icon fas fa-user-tie"></i>
@@ -158,6 +163,8 @@
                                 </li>
                             </ul>
                         </li>
+                        {% endif %}
+                        {% if session['rol'] in [1, 2,3] %}
                         <li class="nav-item">
                             <a href="#" class="nav-link">
                                 <i class="nav-icon fas fa-receipt"></i>
@@ -174,6 +181,7 @@
                                     </a>
                                 </li>
                             </ul>
+                            {% if session['rol'] in [1, 2] %}
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
                                     <a href="/horario" class="nav-link">
@@ -182,7 +190,10 @@
                                     </a>
                                 </li>
                             </ul>
+                            {% endif %}
                         </li>
+                        {% endif %}
+                        {% if session['rol'] in [1, 2] %}
                         <li class="nav-item">
                             <a href="#" class="nav-link">
                                 <i class="nav-icon fas fa-shopping-cart"></i>
@@ -198,14 +209,18 @@
                                         <p>Ventas </p>
                                     </a>
                                 </li>
+                                {% if session['rol'] in [1] %}
                                 <li class="nav-item">
                                     <a href="/clientes" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>Clientes</p>
                                     </a>
                                 </li>
+                                {% endif %}
                             </ul>
                         </li>
+                        {% endif %}
+                        {% if session['rol'] in [1] %}
                         <li class="nav-item">
                             <a href="#" class="nav-link">
                                 <i class="nav-icon fas fa-users"></i>
@@ -223,6 +238,8 @@
                                 </li>
                             </ul>
                         </li>
+                        {% endif %}
+                        {% if session['rol'] in [1, 2,3] %}
                         <li class="nav-item">
                             <a href="#" class="nav-link">
                                 <i class="nav-icon fas fa-box"></i>
@@ -239,13 +256,23 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
+                                    <a href="/solicitudes" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Solicitudes</p>
+                                    </a>
+                                </li>
+                                {% if session['rol'] in [1] %}
+                                <li class="nav-item">
                                     <a href="/movimientos" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>Movimientos</p>
                                     </a>
                                 </li>
+                                {% endif %}
                             </ul>
                         </li>
+                        {% endif %}
+                        {% if session['rol'] in [1] %}
                         <li class="nav-item">
                             <a href="#" class="nav-link">
                                 <i class="nav-icon fas fa-business-time"></i>
@@ -265,6 +292,7 @@
 
                             </ul>
                         </li>
+                        {% endif %}
                     </ul>
                 </nav>
                 <!-- /.sidebar-menu -->

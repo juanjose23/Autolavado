@@ -17,6 +17,9 @@ from flask import session
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pytz import timezone
+import matplotlib.backends.backend_pdf
+import matplotlib.pyplot as plt
+from io import BytesIO
 from dateutil import parser
 import requests
 import json
@@ -263,28 +266,29 @@ def insertar_reservacion(db_session,idcliente,idservicio,idevento_calendar,codig
         return None
 
 
-def insertar_producto(db_session: Session, nombre, descripcion, logo, estado):
+def insertar_producto(db_session: Session, nombre, descripcion, logo, tipo, estado):
     query = text("""
-        INSERT INTO producto (nombre, descripcion, logo, estado)
-        VALUES (:nombre, :descripcion, :logo, :estado)
+        INSERT INTO producto (nombre, descripcion, logo, tipo, estado)
+        VALUES (:nombre, :descripcion, :logo, :tipo, :estado)
     """)
 
     db_session.execute(query, {
-                       "nombre": nombre, "descripcion": descripcion, "logo": logo, "estado": estado})
+        "nombre": nombre, "descripcion": descripcion, "logo": logo, "tipo": tipo, "estado": estado
+    })
     db_session.commit()
 
 # Actualizar producto
-
-
-def actualizar_producto(db_session: Session, id_producto, nombre, descripcion, logo, estado):
+def actualizar_producto(db_session: Session, id_producto, nombre, descripcion, logo, tipo, estado):
     query = text("""
         UPDATE producto
-        SET nombre = :nombre, descripcion = :descripcion, logo = :logo, estado = :estado
+        SET nombre = :nombre, descripcion = :descripcion, logo = :logo, tipo = :tipo, estado = :estado
         WHERE id = :id_producto
     """)
 
-    db_session.execute(query, {"id_producto": id_producto, "nombre": nombre,
-                       "descripcion": descripcion, "logo": logo, "estado": estado})
+    db_session.execute(query, {
+        "id_producto": id_producto, "nombre": nombre, "descripcion": descripcion, 
+        "logo": logo, "tipo": tipo, "estado": estado
+    })
     db_session.commit()
 
 # Cambiar estado del producto
@@ -672,16 +676,25 @@ def restar_cantidad_lote(db_session: Session, id_lote, cantidad_restar):
     db_session.commit()
 
 
-def insertar_usuario(db_session: Session, id_persona, usuario, contraseña, estado):
+def insertar_usuario(db_session: Session, id_persona,rol, usuario, contraseña, estado):
     query = text("""
-        INSERT INTO usuario ( id_persona, usuario, contraseña, estado)
-        VALUES (:id_persona, :usuario, :contraseña, :estado)
+        INSERT INTO usuario ( id_persona,rol, usuario, contraseña, estado)
+        VALUES (:id_persona,:rol, :usuario, :contraseña, :estado)
     """)
 
-    db_session.execute(query, {"id_persona": id_persona,
+    db_session.execute(query, {"id_persona": id_persona,"rol":rol,
                        "usuario": usuario, "contraseña": contraseña, "estado": estado})
     db_session.commit()
 
+def cambiar_rol_usuario_por_id(db_session: Session, id_usuario, nuevo_rol):
+    query = text("""
+        UPDATE usuario
+        SET rol = :nuevo_rol
+        WHERE id = :id_usuario
+    """)
+
+    db_session.execute(query, {"id_usuario": id_usuario, "nuevo_rol": nuevo_rol})
+    db_session.commit()
 
 def actualizar_contraseña(db_session: Session, id_usuario, nueva_contraseña):
     query = text("""
@@ -739,7 +752,7 @@ def consultar_servicios(db_session: Session, filtro_id=None):
 
 
 def obtener_productos(db_session):
-    query = text("SELECT * FROM producto")
+    query = text("SELECT * FROM producto WHERE estado = 1 AND tipo IN(1,3)")
     productos = db_session.execute(query).fetchall()
     return productos
 
@@ -1237,32 +1250,46 @@ def ajustar_cupos_con_reserva(horario, hora_reserva):
     # Ajusta los cupos disponibles restando 1
     horario["cupos_disponibles"] -= 1
 
+def generar_pdf(nombre, nombre_usuario, contraseña):
+    # Configurar el tamaño del gráfico y el fondo
+    fig, ax = plt.subplots(figsize=(8, 6))
+    fig.patch.set_facecolor('#e6f7ff')  # Color de fondo
 
-def enviar_correo_con_contraseña(nombre, nombre_usuario, correo_destino, contraseña):
-    cuerpo = f'''
+    # Desactivar ejes y bordes
+    ax.axis('off')
+    ax.set_frame_on(False)
+
+    # Agregar texto al gráfico con estilo
+    contenido_pdf = f'''
     Estimado(a) {nombre},
 
     Aquí tienes las credenciales para acceder a tu cuenta:
-    Usuarios:{nombre_usuario}
-    Contraseña: {contraseña}
+
+    +--------------------------------+
+    | Usuario:    {nombre_usuario}   |
+    | Contraseña: {contraseña}       |
+    +--------------------------------+
 
     Por favor, asegúrate de cambiar tu contraseña una vez que hayas iniciado sesión en tu cuenta.
 
     Si tienes alguna pregunta o necesitas asistencia adicional, no dudes en contactarnos.
 
     ¡Gracias y ten un excelente día!
-
-    Atentamente,
-    Lavacar ASOCATIE
     '''
 
-    asunto = 'Asignación de credenciales - Acceso a cuenta'
-    remitente = 'ingsoftwar123@gmail.com'
-    destinatario = [correo_destino]
+    ax.text(0.5, 0.5, contenido_pdf, ha='center', va='center', fontsize=12, color='#333333', fontweight='bold')
 
-    msg = Message(asunto, sender=remitente, recipients=destinatario)
-    msg.body = cuerpo
-    mail.send(msg)
+    # Crear un buffer para almacenar el PDF
+    pdf_buffer = BytesIO()
+
+    # Guardar el gráfico como PDF en el buffer
+    with matplotlib.backends.backend_pdf.PdfPages(pdf_buffer, keep_empty=False) as pdf:
+        pdf.savefig(fig, bbox_inches='tight')
+    
+    pdf_buffer.seek(0)
+    plt.close(fig)
+
+    return pdf_buffer.getvalue()
 
 
 def enviar_correo_con_codigo(nombre, correo_destino, contraseña):
@@ -1330,14 +1357,23 @@ def BuscarPorIdPersona(db_session: Session, id):
 
 def obtener_info_lotes_valor():
     query = text("""
-        SELECT p.id, p.nombre, lp.id AS lote, lp.numero_lote, lp.fecha_vencimiento,
-               lp.cantidad, lp.estado AS estado_lote,
-               pr.precio,
-               lp.cantidad * pr.precio AS valor_lote
-        FROM producto p
-        JOIN lote_producto lp ON p.id = lp.id_producto
-        JOIN precio pr ON p.id = pr.id_producto 
-                 WHERE pr.estado = 1 
+       SELECT 
+    p.id, 
+    p.nombre, 
+    lp.id AS lote, 
+    lp.numero_lote, 
+    lp.fecha_vencimiento,
+    lp.cantidad, 
+    COALESCE(lp.estado, 0) AS estado_lote,
+    COALESCE(pr.precio, 0) AS precio,
+    COALESCE(lp.cantidad * pr.precio, 0) AS valor_lote
+FROM 
+    producto p
+LEFT JOIN 
+    lote_producto lp ON p.id = lp.id_producto
+LEFT JOIN 
+    precio pr ON p.id = pr.id_producto AND pr.estado = 1;
+
     """)
 
     results = db_session.execute(query).fetchall()
@@ -1387,7 +1423,6 @@ def before_request():
 
 @app.route("/recuperar", methods=['GET', 'POST'])
 def recuperar_contraseña():
-
     return render_template("recuperar.html")
 
 
@@ -1474,10 +1509,7 @@ def insertar_usuarios():
 @app.route('/')
 @login_required
 def index():
-
     actualizar_estado_lotes(db_session)
-    
-  
     return render_template('index.html')
 
 
@@ -1663,6 +1695,7 @@ def inicio():
 
 @app.route('/productos', methods=['GET', 'POST'])
 @login_required
+@role_required([1,2])
 def productos():
     productos = obtener_productos(db_session)
 
@@ -1673,45 +1706,55 @@ def productos():
 def crear_producto():
     nombre = request.form.get('nombre')
     descripcion = request.form.get('descripcion')
+    tipo=request.form.get('uso')
     estado = request.form.get('estado')
     archivo = request.files['logo']
     carpeta_destino = 'static/img/productos'
     logo = guardar_imagen(archivo, carpeta_destino)
-    insertar_producto(db_session, nombre, descripcion, logo, estado)
+    insertar_producto(db_session, nombre, descripcion, logo,tipo, estado)
     flash("Se ha registrado correctamente el producto", "success")
     generar_pdf_productos(db_session)
     return redirect('/productos')
 
 
-@app.route('/ActualizarProducto', methods=['POST'])
+@app.route('/ActualizarProducto', methods=['POST', 'GET'])
 def actualizar_productos():
+    print("Productos")
     id_producto = request.form.get('id')
     nombre = request.form.get('nombre')
     descripcion = request.form.get('descripcion')
+    tipo=request.form.get('uso')
     estado = request.form.get('estado')
     archivo = request.files['logo']
     logos = request.form.get('logos')
-    if archivo:
-        carpeta_destino = 'static/img/productos'
-        logo = guardar_imagen(archivo, carpeta_destino)
-        try:
-            os.remove(logos)
-        except Exception as e:
-            print(f"No se pudo eliminar la imagen anterior: {e}")
+    print(id_producto)
+    print(estado)
 
-        actualizar_producto(db_session, id_producto,
-                            nombre, descripcion, logo, estado)
+    try:
+        if archivo:
+            carpeta_destino = 'static/img/productos'
+            logo = guardar_imagen(archivo, carpeta_destino)
+            try:
+                os.remove(logos)
+            except FileNotFoundError:
+                print(f"La imagen anterior no existe: {logos}")
+            except Exception as e:
+                print(f"No se pudo eliminar la imagen anterior: {e}")
+
+            actualizar_producto(db_session, id_producto, nombre, descripcion, logo,tipo, estado)
+        else:
+            # Si no se proporcionó un archivo, solo actualizar la información sin cambiar la imagen
+            actualizar_producto(db_session, id_producto, nombre, descripcion, logos,tipo, estado)
+
+        # Mensaje de éxito y generación del PDF (se ejecuta en ambos casos)
         flash("Se ha actualizado correctamente el producto", "success")
         generar_pdf_productos(db_session)
         return redirect('/productos')
-    else:
-        # Si no se proporcionó un archivo o la extensión no es permitida, solo actualizar la información sin cambiar la imagen
-        actualizar_producto(db_session, id_producto, nombre,
-                            descripcion, logos, estado)
-        flash("Se ha actualizado correctamente el producto ", "success")
-        generar_pdf_productos(db_session)
-        return redirect('/productos')
 
+    except Exception as e:
+        print(f"Error en la actualización del producto: {e}")
+        flash("Ha ocurrido un error durante la actualización del producto", "error")
+        return redirect('/productos')
 
 @app.route('/CambiarEstadoProducto', methods=['POST'])
 def cambiar_estado_producto():
@@ -1724,6 +1767,7 @@ def cambiar_estado_producto():
 
 
 @app.route('/precioproducto', methods=['GET', 'POST'])
+@role_required([1,2])
 @login_required
 def precioproducto():
     Precios = obtener_precioproductos(db_session)
@@ -1762,6 +1806,7 @@ def cambiaprecioproductoestado(id):
 
 @app.route('/servicios')
 @login_required
+@role_required([1,2])
 def servicios():
     servicios = obtener_serviciossistema(db_session)
     return render_template("servicios.html", servicios=servicios)
@@ -1823,6 +1868,8 @@ def eliminar_servicio(servicio_id):
 
 
 @app.route("/precio_servicios", methods=['GET', 'POST'])
+@login_required
+@role_required([1,2])
 def preciosservicios():
     servicios = obtener_servicios_sin_precio(db_session)
     Preciosservicios = obtener_precios_servicios(db_session)
@@ -1862,6 +1909,7 @@ def cambiaprecioproductoestadoservcios(id):
 
 @app.route('/trabajador', methods=['GET', 'POST'])
 @login_required
+@role_required([1])
 def trabajador():
     trabajadores = ObtenerTrabajadores(db_session)
     return render_template("trabajador.html", trabajadores=trabajadores)
@@ -1938,9 +1986,14 @@ def page_not_found(e):
     # note that we set the 404 status explicitly
     return render_template('404.html'), 404
 
+@app.errorhandler(403)
+def page_not_found(e):
+    # note that we set the 404 status explicitly
+    return render_template('403.html'), 403
 
 @app.route("/usuarios", methods=['GET', 'POST'])
 @login_required
+@role_required([1])
 def usuarios():
     trabajador = ObtenerEmpleadoSinUsuario(db_session)
     usuarios = obtenerusuarios(db_session)
@@ -1950,6 +2003,7 @@ def usuarios():
 @app.route("/crearusuarios", methods=['GET', 'POST'])
 def crear_usuario():
     id = request.form.get('idpersona')
+    rol = request.form.get('rol')
     contraseña = generar_contraseña()
     hashed_password = generate_password_hash(contraseña)
     persona = BuscarPorIdPersona(db_session, id)
@@ -1958,13 +2012,24 @@ def crear_usuario():
         nombre, apellido, correo = persona
         nombres = nombre + ' ' + apellido
         usuario = generar_nombre_usuario(nombre, apellido, id)
-        enviar_correo_con_contraseña(nombres, usuario, correo, contraseña)
-        insertar_usuario(db_session, id, usuario, hashed_password, 0)
+        pdf_content = generar_pdf(nombres, usuario, contraseña)
+        insertar_usuario(db_session, id, rol, usuario, hashed_password, 0)
 
         flash("Se ha agregado correctamente el usuario!", "success")
-        flash("Se ha enviado un correo correctamente con la contraseña para su acceso a la plataforma", "info")
-        return redirect('/usuarios')
+
+        # Devolver el PDF como respuesta HTTP
+        pdf_file = BytesIO(pdf_content)
+        pdf_file.seek(0)  # Asegurar que el cursor esté al principio del archivo
+
+        return send_file(
+            pdf_file,
+            download_name="credenciales.pdf",
+            as_attachment=True,
+            mimetype="application/pdf"
+        )
+
     else:
+        flash("No se encontró la persona", "error")
         return redirect('/usuarios')
 
 
@@ -2002,12 +2067,13 @@ def validar():
         )
         usuario_db = result.fetchone()
 
-        if usuario_db and check_password_hash(usuario_db[3], contraseña):
+        if usuario_db and check_password_hash(usuario_db[4], contraseña):
             # Contraseña válida, iniciar sesión
 
             session['usuario_id'] = usuario_db[0]
             datos = obtener_info_persona(usuario_db[1])
             nombre, apellido, foto = datos
+            session['rol']=usuario_db[2]
             session['nombre'] = nombre
             session['apellido'] = apellido
             session['foto'] = foto
@@ -2052,6 +2118,7 @@ def logout():
 
 @app.route("/horario", methods=['GET', 'POST'])
 @login_required
+@role_required([1,2])
 def horario():
     horario = horariosistema(db_session)
     return render_template("horario.html", horario=horario)
@@ -2087,6 +2154,7 @@ def cambiar_horarios(horario_id):
 
 @app.route("/lotes", methods=['GET', 'POST'])
 @login_required
+@role_required([1,2,3])
 def lotes():
     productos = obtener_productos(db_session)
     lotes = obtener_info_lotes_valor()
@@ -2096,6 +2164,7 @@ def lotes():
 
 @app.route("/sucursales", methods=['GET', 'POST'])
 @login_required
+@role_required([1])
 def sucursales():
 
     surcursales = obtener_sucursales(db_session)
@@ -2315,7 +2384,7 @@ def insertar_lote():
         query_max_id = text("""
     SELECT COALESCE(MAX(id), 0) FROM lote_producto;
 """)
-        print(id_producto)
+       
 
         # Ejecutar la consulta
       
@@ -2428,12 +2497,15 @@ def editar_lote(lote_id):
 
 
 @app.route("/movimientos", methods=['GET', 'POST'])
+@login_required
+@role_required([1])
 def movimientos():
     movimientos = obtener_movimientos_por_lote(db_session)
     return render_template("movimientos.html", movimientos=movimientos)
 
 
 @app.route("/clientes", methods=['GET', 'POST'])
+@role_required([1,2])
 def clientes():
     clientes = mostra_clientes(db_session)
     return render_template("clientes.html", clientes=clientes)
@@ -2512,6 +2584,7 @@ def cambiarestadocliente(cliente_id):
 
 @app.route("/citas", methods=['GET', 'POST'])
 @login_required
+@role_required([1,2,3])
 def reserva():
     reservaciones = obtener_reservacion(db_session)
     return render_template("reservacion.html", reservaciones=reservaciones)
@@ -2519,6 +2592,7 @@ def reserva():
 
 @app.route("/ventas", methods=['GET'])
 @login_required
+@role_required([1,2])
 def venta():
     ventas = obtener_ventas(db_session)
 
@@ -2546,6 +2620,7 @@ def ventacitas():
 
 @app.route("/ventasproductos", methods=['GET', 'POST'])
 @login_required
+@role_required([1,2])
 def ventasproductos():
     productos = obtener_productos_ventas(db_session)
     clientes = mostra_clientes(db_session)
@@ -2554,6 +2629,7 @@ def ventasproductos():
 
 
 @app.route("/ventaservicios", methods=['GET', 'POST'])
+@role_required([1,2])
 def ventaservicios():
     clientes = mostra_clientes(db_session)
     tipos = obtener_tipo_venta(db_session)
