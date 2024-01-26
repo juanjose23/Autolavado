@@ -53,6 +53,7 @@ CREATE TABLE producto
     nombre VARCHAR(120) NOT NULL,
     descripcion varchar(250) NOT NULL,
     logo VARCHAR(250),
+    tipo INTEGER,
     estado INTEGER
 );
 CREATE TABLE precio(
@@ -62,7 +63,6 @@ CREATE TABLE precio(
     fecha_registro DATE NOT NUll,
     estado INTEGER
 );
-
 
 CREATE TABLE lote_producto
 (
@@ -75,7 +75,28 @@ CREATE TABLE lote_producto
     estado INTEGER
 );
 
+CREATE TABLE consumible(
+    id SERIAL PRIMARY KEY,
+    id_lote_producto INTEGER REFERENCES lote_producto(id),
+    usado BOOLEAN DEFAULT FALSE,
+    fecha_uso DATE,
+    estado INTEGER
+);
 
+CREATE TABLE solicitud_producto(
+    id serial PRIMARY KEY,
+    id_trabajador INTEGER REFERENCES trabajador(id),
+    fecha_solicitud DATE,
+    motivo VARCHAR(5000),
+    estado INTEGER
+);
+
+CREATE TABLE detalle_solicitud(
+    id SERIAL PRIMARY KEY,
+    id_solicitud INTEGER REFERENCES solicitud_producto(id),
+    id_producto INTEGER REFERENCES producto(id),
+    Cantidad INTEGER NOT NULL
+);
 
 CREATE TABLE movimiento_inventario
 (
@@ -183,6 +204,7 @@ CREATE TABLE usuario
 (
     id SERIAL PRIMARY KEY,
     id_persona INTEGER REFERENCES persona(id),
+    rol INTEGER,
     usuario VARCHAR(200) NOT NULL,
     contraseña VARCHAR(250) NOT NULL,
     estado INTEGER 
