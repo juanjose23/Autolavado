@@ -1,0 +1,501 @@
+{% extends "base.html" %}
+{% block title %} || Inventario {% endblock %}
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='plugins/select2/css/select2.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+<link rel="stylesheet"
+    href="{{ url_for('static', filename='plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
+{% endblock %}
+{% block main %}
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Solicitudes de productos consumibles</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="#">Gestion de inventario</a></li>
+                    <li class="breadcrumb-item active">Solicitudes</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            {% if session['rol'] in [2,3] %}
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Mis Solicitudes</h3>
+                        <div class="align-content-end text-right">
+                            <button type="button" class="btn btn-primary" data-toggle="modal"
+                                data-target="#modal-insertar">
+                                Crear solicitud
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- /.card-header -->
+                    <div class="card-body">
+                        <table id="example1" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+
+                                    <th>#</th>
+                                    <th>Trabajador</th>
+                                  
+                                    <th>Fecha</th>
+                                    <th>Motivo</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for solicitudes in solicitudes %}
+                                <tr>
+
+                                    <td>{{ solicitudes.solicitud_id }}</td>
+                                    <td>{{ solicitudes.trabajador_nombre }}</td>
+                                    <td>
+                                       
+                                        {{ solicitudes.fecha_solicitud
+                                        }}
+                                      
+                                    </td>
+                                    <td>{{ solicitudes.motivo }}</td>
+                                    <td>
+
+                                        {% if solicitudes.estado == 1 %}
+                                        <span class="badge bg-success">Activo</span>
+                                        {% elif solicitudes.estado == 2 %}
+                                        <span class="badge bg-danger">Rechazada</span>
+                                        {% elif solicitudes.estado == 3 %}
+                                        <span class="badge bg-gradient-indigo">Aceptada</span>
+                                        
+                                        {% endif %}
+                                    </td>
+
+
+                                 
+                                    <td>
+                                        <a href="#" class="btn btn-info" onclick="mostrarDetalles('{{ solicitudes.solicitud_id }}')">
+                                            <i class="fas fa-eye"></i> Ver Detalles
+                                        </a>
+                                        
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                    </div>
+                </div>
+
+            </div>
+            {% endif %}
+            {% if session['rol'] in [1] %}
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Nuevas solicitudes</h3>
+
+                    </div>
+
+                    <!-- /.card-header -->
+                    <div class="card-body">
+                        <table id="example1" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+
+                                    <th>#</th>
+                                    <th>Trabajador</th>
+                                  
+                                    <th>Fecha</th>
+                                    <th>Motivo</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for solicitudes in solicitud %}
+                                <tr>
+
+                                    <td>{{ solicitudes.solicitud_id }}</td>
+                                    <td>{{ solicitudes.trabajador_nombre }}</td>
+                                    <td>
+                                       
+                                        {{ solicitudes.fecha_solicitud
+                                        }}
+                                      
+                                    </td>
+                                    <td>{{ solicitudes.motivo }}</td>
+                                    <td>
+
+                                        {% if solicitudes.estado == 1 %}
+                                        <span class="badge bg-success">Activo</span>
+                                        {% elif solicitudes.estado == 2 %}
+                                        <span class="badge bg-danger">Rechazada</span>
+                                        {% elif solicitudes.estado == 3 %}
+                                        <span class="badge bg-gradient-indigo">Aceptada</span>
+                                        
+                                        {% endif %}
+                                    </td>
+
+
+                                 
+                                    <td>
+                                        <a href="#" class="btn btn-info" onclick="mostrarDetalles('{{ solicitudes.solicitud_id }}')">
+                                            <i class="fas fa-eye"></i> Ver Detalles
+                                        </a>
+                                        <a href="#" class="btn btn-success" data-toggle="modal" data-target="#aceptarModal{{ solicitudes.solicitud_id }}">
+                                            <i class="fas fa-check"></i> Aceptar
+                                        </a>
+                                        <a href="#" class="btn btn-danger" data-toggle="modal" data-target="#eliminarModal{{ solicitudes.solicitud_id }}">
+                                            <i class="fas fa-trash"></i> Eliminar
+                                        </a>
+                                        
+                                        <!-- Botón para aceptar -->
+                                       
+                                        
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                    </div>
+                </div>
+
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Insert Modal HTML -->
+    <div id="modal-insertar" class="modal fade">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form id="formularioproductos" method="post" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Crear solicitud</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <input type="text" id="trabajador" value="{{session['id_trabajador']}}" hidden>
+                        <div class="form-group">
+                            <label for="producto">Producto:</label>
+                            <select class="form-control select2bs4" id="producto">
+                                {% for productos in productos %}
+                                <option value="{{ productos.id }}">{{
+                                    productos.nombre
+                                    }} </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="cantidad">Cantidad:</label>
+                            <input type="number" class="form-control" id="cantidad" name="cantidad">
+                        </div>
+                        <div class="form-group">
+                            <label for="">Motivo:</label>
+                            <textarea name="motivo" id="motivo" cols="10" rows="4" class="form-control"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <button type="button" class="btn btn-success btn-block" id="agregarProducto">Agregar
+                                Producto</button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table" id="productosTable">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Cantidad</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                               
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                        <button type="submit"class="btn btn-primary">Realizar solicitud</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="modalDetalles" class="modal fade">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Detalles de la Solicitud</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                </div>
+                <div class="modal-body" id="detallesBody">
+                    <!-- Aquí se mostrarán los detalles de la solicitud -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% for solicitudes in solicitud %}
+    
+
+    <div class="modal fade" id="eliminarModal{{ solicitudes.solicitud_id }}" tabindex="-1" role="dialog" aria-labelledby="eliminarModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="eliminarModalLabel">Eliminar Solicitud</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas eliminar esta solicitud?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <form id="eliminarForm{{ solicitudes.solicitud_id }}" action="/cambiar_estado_solicitud" method="post">
+                        <input type="hidden" name="solicitud_id" value="{{ solicitudes.solicitud_id }}" hidden>
+                        <input type="text" name="estado" value="3" hidden>
+                        <button type="submit" class="btn btn-danger">Eliminar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para aceptar -->
+    <div class="modal fade" id="aceptarModal{{ solicitudes.solicitud_id }}" tabindex="-1" role="dialog" aria-labelledby="aceptarModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="aceptarModalLabel">Aceptar Solicitud</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas aceptar esta solicitud?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <form id="aceptarForm{{ solicitudes.solicitud_id }}" action="/cambiar_estado_solicitud" method="post">
+                        <input type="hidden" name="solicitud_id" value="{{ solicitudes.solicitud_id }}" hidden>
+                        <input type="text" name="estado" value="3" hidden>
+                        <!-- Otros campos del formulario, si es necesario -->
+                        <button type="submit" class="btn btn-success">Aceptar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</section>
+<script>
+    var productos = [];
+
+    function actualizarTabla() {
+        var tableBody = document.getElementById('productosTable').getElementsByTagName('tbody')[0];
+        tableBody.innerHTML = '';
+
+        var total = 0;
+
+        productos.forEach(function (producto) {
+            var row = tableBody.insertRow();
+            var cellProducto = row.insertCell(0);
+            var cellCantidad = row.insertCell(1);
+            var cellAcciones = row.insertCell(2);
+
+            cellProducto.innerHTML = producto.nombre;
+            cellCantidad.innerHTML = '<input type="number" class="form-control" value="' + producto.cantidad + '" onchange="actualizarSubtotal(' + producto.id + ', this, ' + producto.precio + ')">';
+         
+         
+
+            cellAcciones.innerHTML = '<div class="btn-group">' +
+                '<button type="button" class="btn btn-danger btn-sm" onclick="eliminarProducto(' + producto.id + ')">Eliminar</button>' +
+                '<button type="button" class="btn btn-primary btn-sm" onclick="editarCantidad(' + producto.id + ')">Editar Cantidad</button>' +
+                '</div>';
+
+        });
+
+      
+    }
+
+    function agregarProducto() {
+        var productoSelect = document.getElementById('producto');
+        var cantidadInput = document.getElementById('cantidad');
+
+        // Validar que la cantidad sea mayor que cero
+        var cantidad = parseInt(cantidadInput.value);
+        if (cantidad > 0) {
+            // Obtener la opción seleccionada
+            var selectedOption = productoSelect.options[productoSelect.selectedIndex];
+            // Verificar si la cantidad es menor o igual a la cantidad máxima
+            var producto = {
+                id: parseInt(selectedOption.value),
+                nombre: selectedOption.text.split(' - C$ ')[0],
+                cantidad: cantidad
+            };
+            productos.push(producto);
+            actualizarTabla();
+            // Limpiar campos
+            productoSelect.value = '';
+            cantidadInput.value = '';
+
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'La cantidad debe ser mayor que cero.',
+            });
+        }
+    }
+
+    function eliminarProducto(id) {
+        productos = productos.filter(function (producto) {
+            return producto.id !== id;
+        });
+
+        actualizarTabla();
+    }
+
+    function editarCantidad(id) {
+        Swal.fire({
+            title: 'Editar Cantidad',
+            input: 'number',
+            inputValue: productos.find(p => p.id === id).cantidad,
+            showCancelButton: true,
+            confirmButtonText: 'Guardar',
+            cancelButtonText: 'Cancelar',
+            inputValidator: (value) => {
+                if (!value || value <= 0) {
+                    return 'Por favor, ingresa una cantidad válida';
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                var nuevaCantidad = parseInt(result.value);
+                productos.forEach(function (producto) {
+                    if (producto.id === id) {
+                        producto.cantidad = nuevaCantidad;
+                    }
+                });
+                actualizarTabla();
+            }
+        });
+    }
+
+
+    function actualizarSubtotal(id, input, precio) {
+        var nuevaCantidad = parseInt(input.value);
+        productos.forEach(function (producto) {
+            if (producto.id === id) {
+                producto.cantidad = nuevaCantidad;
+                producto.subtotal = nuevaCantidad * precio;
+                input.parentElement.nextElementSibling.innerHTML = producto.subtotal.toFixed(2);
+            }
+        });
+        actualizarTabla();
+    }
+
+    document.getElementById('agregarProducto').addEventListener('click', agregarProducto);
+</script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+<script>
+    async function enviarVenta(event) {
+        try {
+            // Evitar que el formulario se envíe automáticamente
+            event.preventDefault();
+
+         
+          
+            var cliente = document.getElementById('trabajador').value;
+            var motivo=document.getElementById('motivo').value;            // Objeto con los datos a enviar al servidor
+            var data = {
+                trabajador: cliente,
+                motivo:motivo,
+                productos: productos
+            };
+            if (productos.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Tiene que agregar productos',
+                });
+            }
+            else {
+                // Realizar la solicitud al servidor usando axios y esperar la respuesta
+                const res = await axios.post('/crearsolicitudes', data);
+                console.log(`Estado: ${res.status}`);
+                console.log('Cuerpo: ', res.data);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Exito',
+                    text: 'Se ha registrado la venta',
+                });
+                setTimeout(() => {
+                    window.location = "/solicitudes";
+                }, 2000);
+            }
+
+
+        } catch (err) {
+            console.error(err);
+        } finally {
+
+        }
+    }
+
+    // Asignar la función enviarVenta al evento submit del formulario
+    document.getElementById('formularioproductos').addEventListener('submit', enviarVenta);
+
+</script>
+<script>
+    function mostrarDetalles(idSolicitud) {
+        // Realizar la solicitud AJAX para obtener los detalles de la solicitud
+        axios.get(`/detalles_solicitud/${idSolicitud}`)
+            .then(response => {
+                // Mostrar los detalles en el modal
+                const detallesBody = document.getElementById('detallesBody');
+                detallesBody.innerHTML = '';
+
+                response.data.forEach(detalle => {
+    detallesBody.innerHTML += `
+        <div class="card mb-2">
+            <div class="card-body">
+                <h5 class="card-title">${detalle.nombre_producto}</h5>
+                <p class="card-text">Cantidad: ${detalle.cantidad}</p>
+            </div>
+        </div>`;
+});
+
+                // Mostrar el modal
+                $('#modalDetalles').modal('show');
+            })
+            .catch(error => {
+                console.error('Error al obtener detalles:', error);
+            });
+    }
+</script>
+{% endblock %}
