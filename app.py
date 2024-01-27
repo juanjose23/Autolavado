@@ -755,6 +755,10 @@ def obtener_productos(db_session):
     query = text("SELECT * FROM producto WHERE estado = 1 AND tipo IN(1,3)")
     productos = db_session.execute(query).fetchall()
     return productos
+def obtener_todos_productos(db_session):
+    query = text("SELECT * FROM producto ")
+    productos = db_session.execute(query).fetchall()
+    return productos
 
 
 def obtener_precioproductos(db_session):
@@ -1008,7 +1012,7 @@ def ObtenerEmpleadoSinUsuario(db_session: session):
 def obtener_info_persona(id_persona):
     # Declarar la consulta SQL como texto
     consulta_sql = text(
-        'SELECT p.nombre, pn.apellido, t.foto FROM persona p JOIN persona_natural pn ON p.id = pn.id_persona JOIN trabajador t ON p.id = t.id_persona WHERE p.id = :id_persona')
+        'SELECT p.nombre, pn.apellido,t.id AS id_trabajador, t.foto FROM persona p JOIN persona_natural pn ON p.id = pn.id_persona JOIN trabajador t ON p.id = t.id_persona WHERE p.id = :id_persona')
 
     # Ejecutar la consulta
     result = db_session.execute(consulta_sql, {'id_persona': id_persona})
@@ -1359,7 +1363,8 @@ def obtener_info_lotes_valor():
     query = text("""
        SELECT 
     p.id, 
-    p.nombre, 
+    p.nombre,
+    p.tipo, 
     lp.id AS lote, 
     lp.numero_lote, 
     lp.fecha_vencimiento,
@@ -1369,7 +1374,7 @@ def obtener_info_lotes_valor():
     COALESCE(lp.cantidad * pr.precio, 0) AS valor_lote
 FROM 
     producto p
-LEFT JOIN 
+INNER JOIN 
     lote_producto lp ON p.id = lp.id_producto
 LEFT JOIN 
     precio pr ON p.id = pr.id_producto AND pr.estado = 1;
@@ -1697,8 +1702,8 @@ def inicio():
 @login_required
 @role_required([1,2])
 def productos():
-    productos = obtener_productos(db_session)
-
+    productos = obtener_todos_productos(db_session)
+    print(productos)
     return render_template('productos.html', productos=productos)
 
 
@@ -2072,10 +2077,11 @@ def validar():
 
             session['usuario_id'] = usuario_db[0]
             datos = obtener_info_persona(usuario_db[1])
-            nombre, apellido, foto = datos
+            nombre, apellido,idtrabajador, foto = datos
             session['rol']=usuario_db[2]
             session['nombre'] = nombre
             session['apellido'] = apellido
+            session['id_trabajador']=idtrabajador
             session['foto'] = foto
             flash('Inicio de sesión exitoso', 'success')
             return redirect(url_for('inicio'))
@@ -2161,6 +2167,164 @@ def lotes():
 
     return render_template("lote.html", productos=productos, lotes=lotes)
 
+def insertar_solicitud_producto(db_session, id_trabajador, fecha_solicitud, motivo):
+    query = text("""
+    INSERT INTO solicitud_producto (id_trabajador, fecha_solicitud, motivo, estado)
+    VALUES (:id_trabajador, :fecha_solicitud, :motivo, 1)
+    RETURNING id;
+    """)
+    result = db_session.execute(query, {'id_trabajador': id_trabajador, 'fecha_solicitud': fecha_solicitud, 'motivo': motivo})
+    id_solicitud = result.fetchone()[0]
+    db_session.commit()
+    return id_solicitud
+
+def actualizar_solicitud_producto(db_session, id_solicitud, id_trabajador, fecha_solicitud, motivo):
+    query = text("""
+    UPDATE solicitud_producto
+    SET id_trabajador = :id_trabajador, fecha_solicitud = :fecha_solicitud, motivo = :motivo
+    WHERE id = :id_solicitud;
+    """)
+    db_session.execute(query, {'id_trabajador': id_trabajador, 'fecha_solicitud': fecha_solicitud, 'motivo': motivo, 'id_solicitud': id_solicitud})
+    db_session.commit()
+
+def cambiar_estado_solicitud(db_session, id_solicitud, nuevo_estado):
+    query = text("""
+    UPDATE solicitud_producto
+    SET estado = :nuevo_estado
+    WHERE id = :id_solicitud;
+    """)
+    db_session.execute(query, {'nuevo_estado': nuevo_estado, 'id_solicitud': id_solicitud})
+    db_session.commit()
+def obtener_productos_consumibles(db_session):
+    query = text("""
+    SELECT id, nombre, descripcion, logo, tipo, estado
+    FROM producto
+    WHERE tipo IN (2, 3);
+    """)
+    result = db_session.execute(query)
+    productos_consumibles = result.fetchall()
+    return productos_consumibles
+def obtener_solicitudes_con_trabajador(db_session):
+    query = text("""
+        SELECT sp.id AS solicitud_id, 
+               t.codigo AS trabajador_codigo,
+               p.nombre AS trabajador_nombre,
+               sp.fecha_solicitud,
+               sp.motivo,
+               sp.estado
+        FROM solicitud_producto sp
+        JOIN trabajador t ON sp.id_trabajador = t.id
+        JOIN persona p ON t.id_persona = p.id;
+    """)
+    result = db_session.execute(query)
+    solicitudes_con_trabajador = result.fetchall()
+    return solicitudes_con_trabajador
+def obtener_solicitudes_(db_session):
+    query = text("""
+        SELECT sp.id AS solicitud_id, 
+               t.codigo AS trabajador_codigo,
+               p.nombre AS trabajador_nombre,
+               sp.fecha_solicitud,
+               sp.motivo,
+               sp.estado
+        FROM solicitud_producto sp
+        JOIN trabajador t ON sp.id_trabajador = t.id
+        JOIN persona p ON t.id_persona = p.id WHERE sp.estado = 1;
+    """)
+    result = db_session.execute(query)
+    solicitudes_con_trabajador = result.fetchall()
+    return solicitudes_con_trabajador
+def insertar_detalle_solicitud(db_session, id_solicitud, id_producto, cantidad):
+    query = text("""
+        INSERT INTO detalle_solicitud (id_solicitud, id_producto, cantidad)
+        VALUES (:id_solicitud, :id_producto, :cantidad)
+        RETURNING id;
+    """)
+    result = db_session.execute(query, {'id_solicitud': id_solicitud, 'id_producto': id_producto, 'cantidad': cantidad})
+    id_detalle_solicitud = result.fetchone()[0]
+    db_session.commit()
+    return id_detalle_solicitud
+@app.route("/solicitudes",methods=['GET','POST'])
+@login_required
+@role_required([1,2,3])
+def solicitudes():
+    productos=obtener_productos_consumibles(db_session)
+    solicitudes=obtener_solicitudes_con_trabajador(db_session)
+    solicitud= obtener_solicitudes_(db_session)
+    return render_template("solicitudes.html",productos=productos,solicitudes=solicitudes,solicitud=solicitud)
+
+def obtener_detalles_solicitud(db_session, id_solicitud):
+    query = text("""
+    SELECT d.id, p.nombre AS nombre_producto, d.cantidad
+    FROM detalle_solicitud d
+    JOIN producto p ON d.id_producto = p.id
+    WHERE d.id_solicitud = :id_solicitud;
+    """)
+    result = db_session.execute(query, {'id_solicitud': id_solicitud})
+    
+    # Convertir manualmente los resultados a una lista de diccionarios
+    detalles = []
+    for row in result:
+        detalles.append({'id': row.id, 'nombre_producto': row.nombre_producto, 'cantidad': row.cantidad})
+
+    return detalles
+
+@app.route('/detalles_solicitud/<int:id_solicitud>')
+def detalles_solicitud(id_solicitud):
+    detalles = obtener_detalles_solicitud(db_session, id_solicitud)
+    print(detalles)
+    
+    return jsonify(detalles)
+@app.route("/crearsolicitudes", methods=['POST'])
+def crearsolicitudes():
+    if request.method == "POST":
+        data = request.json
+        id_trabajador = data.get('trabajador')
+        motivo = data.get('motivo')
+        productos = data.get('productos', [])
+
+        # Obtener la fecha y hora actual
+        fecha_actual = datetime.now()
+
+        # Formatear la fecha como una cadena con el formato para PostgreSQL
+        fecha = fecha_actual.strftime('%Y-%m-%d %H:%M:%S')
+
+        # Insertar la solicitud de producto
+        idsolicitud = insertar_solicitud_producto(db_session, id_trabajador, fecha, motivo)
+
+        # Insertar detalles de solicitud para cada producto
+        detalles_insertados = []
+        for producto in productos:
+            solicitud = insertar_detalle_solicitud(db_session, idsolicitud, producto.get('id'), producto.get('cantidad'))
+            detalles_insertados.append(solicitud)
+
+        # Devolver una respuesta JSON con estado 200
+        response_data = {
+            'message': 'Se ha creado correctamente la solicitud'
+        }
+
+        return jsonify(response_data), 200
+    
+@app.route('/cambiar_estado_solicitud', methods=['POST'])
+def cambiar_estado_endpoint():
+    try:
+        # Obtener datos del formulario
+        id_solicitud = request.form.get('solicitud_id')
+        nuevo_estado = request.form.get('estado')
+
+        # Convertir el ID a entero
+        id_solicitud = int(id_solicitud)
+
+        # Llamar a la función para cambiar el estado
+        cambiar_estado_solicitud(db_session, id_solicitud, nuevo_estado)
+
+        # Devolver respuesta exitosa
+        flash("Se ha realizado la operación correctamente","success")
+        return redirect('/solicitudes')
+
+    except Exception as e:
+        # Devolver respuesta de error en caso de fallo
+        return jsonify({'error': str(e)}), 500
 
 @app.route("/sucursales", methods=['GET', 'POST'])
 @login_required
@@ -2599,7 +2763,7 @@ def venta():
     reservaciones = obtener_reservacion_hoy(db_session)
     tipos = obtener_tipo_venta(db_session)
     cantidad = obtener_cantidad_reservaciones_hoy(db_session)
-    print(cantidad)
+  
     return render_template("venta.html", ventas=ventas, reservaciones=reservaciones, tipos=tipos, cantidad=cantidad)
 
 
