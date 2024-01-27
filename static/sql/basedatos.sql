@@ -75,13 +75,7 @@ CREATE TABLE lote_producto
     estado INTEGER
 );
 
-CREATE TABLE consumible(
-    id SERIAL PRIMARY KEY,
-    id_lote_producto INTEGER REFERENCES lote_producto(id),
-    usado BOOLEAN DEFAULT FALSE,
-    fecha_uso DATE,
-    estado INTEGER
-);
+
 
 CREATE TABLE solicitud_producto(
     id serial PRIMARY KEY,

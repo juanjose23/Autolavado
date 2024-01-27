@@ -774,7 +774,7 @@ def obtener_productos_ventas(db_session):
         FROM producto p
         INNER JOIN precio pp ON p.id = pp.id_producto
         INNER JOIN lote_producto l ON p.id = l.id_producto
-        WHERE l.cantidad > 0 AND  (l.estado = 1 OR l.estado = 3)
+        WHERE l.cantidad > 0 AND  (l.estado = 1 OR l.estado = 3) AND p.tipo IN(1,3)
         GROUP BY p.id, p.nombre, pp.precio
     """)
 
@@ -787,6 +787,33 @@ def obtener_productos_ventas(db_session):
         productos_agrupados[producto.producto_id].append({
             'nombre': producto.producto_nombre,
             'precio': producto.precio,
+            'cantidad_total': producto.cantidad_total
+        })
+
+    # Convertimos la estructura en una lista de tuplas para mantener la estructura original
+    productos_resultado = [
+        (producto_id, producto_info)
+        for producto_id, producto_info in productos_agrupados.items()
+    ]
+
+    return productos_resultado
+def obtener_productos_consumibless(db_session):
+    query = text("""
+        SELECT p.id AS producto_id, p.nombre AS producto_nombre, SUM(l.cantidad) AS cantidad_total
+        FROM producto p
+        INNER JOIN lote_producto l ON p.id = l.id_producto
+        WHERE l.cantidad > 0 AND  (l.estado = 1 OR l.estado = 3)AND p.tipo IN(2,3)
+        GROUP BY p.id, p.nombre
+    """)
+
+    productos = db_session.execute(query).fetchall()
+
+    # Utilizamos un diccionario para almacenar la información de cada producto
+    productos_agrupados = defaultdict(list)
+
+    for producto in productos:
+        productos_agrupados[producto.producto_id].append({
+            'nombre': producto.producto_nombre,
             'cantidad_total': producto.cantidad_total
         })
 
@@ -885,7 +912,39 @@ def obtener_reservacion_hoy(db_session: sessionmaker):
         INNER JOIN clientes c ON c.id = r.idcliente
         INNER JOIN servicios s ON s.id = r.idservicio
         LEFT JOIN persona p ON c.id_persona = p.id
+        WHERE r.estado IN(1,5) AND r.fecha = :fecha_actual    ORDER BY r.hora_inicio
+    """)
+
+    result = db_session.execute(
+        query, {"fecha_actual": fecha_actual}).fetchall()
+    return result
+def obtener_reservacion_hoy_admin(db_session: sessionmaker):
+    # Obtener la fecha actual
+    fecha_actual = datetime.now().date()
+
+    query = text("""
+        SELECT r.*, p.nombre AS cliente, s.nombre AS servicio, p.celular
+        FROM reservacion r
+        INNER JOIN clientes c ON c.id = r.idcliente
+        INNER JOIN servicios s ON s.id = r.idservicio
+        LEFT JOIN persona p ON c.id_persona = p.id
         WHERE r.estado = 1 AND r.fecha = :fecha_actual    ORDER BY r.hora_inicio
+    """)
+
+    result = db_session.execute(
+        query, {"fecha_actual": fecha_actual}).fetchall()
+    return result
+def obtener_reservacion_hoy_admin_estado(db_session: sessionmaker):
+    # Obtener la fecha actual
+    fecha_actual = datetime.now().date()
+
+    query = text("""
+        SELECT r.*, p.nombre AS cliente, s.nombre AS servicio, p.celular
+        FROM reservacion r
+        INNER JOIN clientes c ON c.id = r.idcliente
+        INNER JOIN servicios s ON s.id = r.idservicio
+        LEFT JOIN persona p ON c.id_persona = p.id
+        WHERE r.estado = 5    ORDER BY r.hora_inicio
     """)
 
     result = db_session.execute(
@@ -900,7 +959,7 @@ def obtener_cantidad_reservaciones_hoy(db_session):
             SELECT COUNT(*) AS cantidad_reservaciones
             FROM reservacion
             WHERE fecha = CURRENT_DATE
-                AND estado = 1;
+                AND estado IN(1,5);
         """)
 
         # Ejecutar la consulta y obtener el resultado
@@ -1385,11 +1444,12 @@ LEFT JOIN
 
     lotes = []
     for result in results:
-        id_producto, nombre_producto, lote, numero_lote, fecha_vencimiento, cantidad_lote, estado_lote, precio, valor_lote = result
+        id_producto, nombre_producto,tipo, lote, numero_lote, fecha_vencimiento, cantidad_lote, estado_lote, precio, valor_lote = result
 
         lote = {
             'id_producto': id_producto,
             'nombre_producto': nombre_producto,
+            'tipo':tipo,
             'lote': lote,
             'numero_lote': numero_lote,
             'fecha_vencimiento': fecha_vencimiento,
@@ -1496,6 +1556,7 @@ def insertar_usuarios():
 
         request_data = request.get_json()
         nombre = request_data['nombre']
+        print(nombre)
         celular = request_data['celular']
         id_persona = insertar_persona(db_session, nombre,"No hay","En direccion", celular)
         fecha_hoy = datetime.now()
@@ -2658,14 +2719,116 @@ def editar_lote(lote_id):
 
         flash('Se ha actualizado el lote', 'success')
     return redirect(url_for('lotes'))
+@app.route('/editar_lotes/<int:lote_id>', methods=['POST'])
+def editar_lotees(lote_id):
+    if request.method == 'POST':
+        nueva_cantidad = int(request.form['cantidad'])  # Convertir a entero
 
+        # Convertir la cadena de fecha de vencimiento a objeto datetime
+        query_cantidad_actual = text(
+            "SELECT cantidad FROM lote_producto WHERE id = :lote_id")
+        cantidad_actual = db_session.execute(
+            query_cantidad_actual, {'lote_id': lote_id}).scalar()
+
+        if nueva_cantidad != cantidad_actual:
+            # Realiza la actualización en la base de datos
+            query_actualizacion = text("""
+                UPDATE lote_producto
+                SET 
+                   
+                    cantidad = :cantidad
+                WHERE id = :lote_id
+            """)
+            db_session.execute(query_actualizacion, {
+               
+                'cantidad': nueva_cantidad,
+                'lote_id': lote_id
+            })
+
+            db_session.commit()
+            # Determinar el tipo de movimiento
+            tipo_movimiento = "Para uso interno" if nueva_cantidad > cantidad_actual else "Uso interno"
+
+            # Calcular la cantidad de cambio en el inventario
+            cantidad_cambio = abs(nueva_cantidad - cantidad_actual)
+
+            # Registrar el movimiento en el inventario
+            insertar_movimiento_inventario(
+                db_session, lote_id, tipo_movimiento, cantidad_cambio)
+       
+            db_session.commit()
+
+        flash('Se ha actualizado el lote', 'success')
+    return redirect(url_for('lotes'))
 
 @app.route("/movimientos", methods=['GET', 'POST'])
 @login_required
 @role_required([1])
 def movimientos():
     movimientos = obtener_movimientos_por_lote(db_session)
-    return render_template("movimientos.html", movimientos=movimientos)
+    productos=obtener_productos_consumibless(db_session)
+    
+
+
+   
+    return render_template("movimientos.html", movimientos=movimientos,productos=productos)
+@app.route("/consumibles_productos", methods=['POST'])
+def consumibles():
+    if request.method == 'POST':
+        try:
+            data = request.json
+            productos = data.get('productos', [])
+          
+
+            for producto_info in productos:
+                producto_id = producto_info.get('id')
+               
+                cantidad_venta = producto_info.get('cantidad', 0)
+               
+                result = obtener_info_lote_mas_antiguo(db_session, producto_id)
+
+                if result and result["cantidad"] > 0:
+                    id_lote = int(result["id_lote"])
+                    cantidad_lote = int(result["cantidad"])
+
+                    while cantidad_venta > 0:
+                        # Determinar la cantidad a restar en este lote
+                        cantidad_a_restar_lote = min(
+                            cantidad_venta, cantidad_lote)
+
+                        # Restar la cantidad del lote
+                        restar_cantidad_lote(
+                            db_session, id_lote, cantidad_a_restar_lote)
+
+                        # Restar la cantidad vendida del inventario
+                        insertar_movimiento_inventario(
+                            db_session, id_lote, "Consumo", cantidad_a_restar_lote)
+
+                        # Restar la cantidad restante
+                        cantidad_venta -= cantidad_a_restar_lote
+
+                        # Insertar detalles de venta
+                       
+
+                        # Obtener la información del lote más antiguo para la siguiente iteración
+                        result = obtener_info_lote_mas_antiguo(
+                            db_session, producto_id)
+
+                        if result and result["cantidad"] > 0:
+                            id_lote = int(result["id_lote"])
+                            cantidad_lote = int(result["cantidad"])
+                        else:
+                            print(
+                                "No hay más lotes disponibles para restar la cantidad vendida.")
+                            break
+
+                db_session.commit()
+
+            return jsonify({"mensaje": "Success"}), 200
+        except Exception as e:
+            print(f"Error: {e}")
+            return jsonify({"mensaje": "Error interno del servidor"}), 500
+    return 'null', 400
 
 
 @app.route("/clientes", methods=['GET', 'POST'])
@@ -3064,7 +3227,7 @@ def recuperar_precio_servicio(db_session, id):
     query = text("""
         SELECT precio
         FROM precio_servicios
-        WHERE id_servicio = :id AND estado = 1
+        WHERE id_servicios = :id AND estado = 1
     """)
 
     id_servicio = db_session.execute(query, {'id': id}).scalar()
@@ -3597,6 +3760,204 @@ def convertir_a_12_horas(hora):
             hora_str = '{:02d}:{:02d} PM'.format(hora.hour, hora.minute)
     return hora_str
 
+
+@cross_origin()
+@app.route('/obtener_reservaciones_estado_1/<telefono>', methods=['GET'])
+def obtener_reservaciones_estado_1(telefono):
+    # Query para obtener reservaciones en estado 1 filtradas por número de teléfono
+    query = text("""
+        SELECT r.codigo, r.fecha
+        FROM reservacion r
+        JOIN clientes c ON r.idcliente = c.id
+        JOIN persona p ON c.id_persona = p.id
+        WHERE r.estado = 1 AND p.celular = :telefono;
+    """)
+
+    reservaciones = db_session.execute(query, {"telefono": telefono}).fetchall()
+
+    # Procesar los resultados según tu necesidad
+    reservaciones_resultado = [
+        {"codigo": reserva.codigo, "fecha": reserva.fecha}
+        for reserva in reservaciones
+    ]
+
+    return jsonify(reservaciones_resultado)
+def eliminar_evento_google_calendar(service, evento_id):
+    # Eliminar el evento
+    service.events().delete(
+        calendarId='primary',
+        eventId=evento_id
+    ).execute()
+@app.route('/cancelar_reserva/<codigo_reserva>', methods=['POST'])
+def cancelar_reserva(codigo_reserva):
+    try:
+        # Realizar la actualización en la base de datos para cambiar el estado de la reserva
+        query = text("UPDATE reservacion SET estado = 2 WHERE codigo = :codigo_reserva AND estado = 1")
+        result = db_session.execute(query, {"codigo_reserva": codigo_reserva})
+        db_session.commit()
+
+        # Verificar si la reserva fue cancelada
+        if result.rowcount > 0:
+            # Obtener el idevento_calendar asociado a la reserva cancelada
+            query_id_evento = text("SELECT idevento_calendar FROM reservacion WHERE codigo = :codigo_reserva")
+            resultado_id_evento = db_session.execute(query_id_evento, {"codigo_reserva": codigo_reserva}).fetchone()
+            print(resultado_id_evento)
+
+            # Verifica si hay un resultado antes de intentar acceder a sus elementos
+            if resultado_id_evento and len(resultado_id_evento) > 0:
+                idevento_calendar = resultado_id_evento[0]
+                
+                # Obtener el servicio de Google Calendar
+                service = obtener_APIKEY_GCALENDAR()
+
+                # Llamar a la función para eliminar el evento de Google Calendar
+                eliminar_evento_google_calendar(service, idevento_calendar)
+
+      
+                        
+
+            return jsonify({"mensaje": "Reserva cancelada exitosamente."}), 200
+        else:
+            return jsonify({"mensaje": "No se pudo cancelar la reserva. Verifica el código de reserva o el estado actual."}), 404
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+@cross_origin()
+@app.route('/reservaciones_hoy_admin', methods=['GET'])
+def obtener_reservaciones_hoy_admin():
+    try:
+        # Obtener las reservaciones de hoy para el administrador
+        reservaciones = obtener_reservacion_hoy_admin(db_session)
+        print(reservaciones)
+        # Procesar los resultados según tu necesidad
+        reservaciones_resultado = [
+            {
+                "id": reserva.id,
+                "codigo":reserva.codigo,
+                "cliente": reserva.cliente,
+                "servicio": reserva.servicio,
+                "fecha": reserva.fecha.strftime("%Y-%m-%d"),
+                "hora_inicio": str(reserva.hora_inicio),  # Convertir time a cadena
+                "hora_fin": str(reserva.hora_fin),  # Convertir time a cadena
+                "celular": reserva.celular
+            }
+            for reserva in reservaciones
+        ]
+
+        return jsonify(reservaciones_resultado)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+@cross_origin()
+@app.route('/reservaciones_hoy_admin_estado', methods=['GET'])
+def obtener_reservaciones_hoy_admin_estado():
+    try:
+        # Obtener las reservaciones de hoy para el administrador
+        reservaciones =obtener_reservacion_hoy_admin_estado(db_session)
+        print(reservaciones)
+        # Procesar los resultados según tu necesidad
+        reservaciones_resultado = [
+            {
+                "id": reserva.id,
+                "codigo":reserva.codigo,
+                "idcliente":reserva.idcliente,
+                "cliente": reserva.cliente,
+                "servicio": reserva.servicio,
+                "subtotal":reserva.subtotal,
+                "fecha": reserva.fecha.strftime("%Y-%m-%d"),
+                "hora_inicio": str(reserva.hora_inicio),  # Convertir time a cadena
+                "hora_fin": str(reserva.hora_fin),  # Convertir time a cadena
+                "celular": reserva.celular
+            }
+            for reserva in reservaciones
+        ]
+
+        return jsonify(reservaciones_resultado)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  
+    
+@cross_origin()
+@app.route('/metododepago', methods=['GET'])
+def metododepago():
+    try:
+        # Obtener las reservaciones de hoy para el administrador
+        tipos = obtener_tipo_venta(db_session)
+        print(tipos)
+        # Procesar los resultados según tu necesidad
+        reservaciones_resultado = [
+            {
+                "id": reserva.id,
+                "nombre":reserva.nombre
+            }
+            for reserva in tipos
+        ]
+
+        return jsonify(reservaciones_resultado)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  
+@cross_origin()
+@app.route('/cambiar_estado_reserva', methods=['POST'])
+def cambiar_estado_reserva():
+    try:
+        # Obtener el código de reserva del cuerpo de la solicitud
+        codigo_reserva = request.json.get("codigo_reserva")
+
+        # Validar si se proporcionó el código de reserva
+        if not codigo_reserva:
+            return jsonify({"error": "Se requiere el código de reserva"}), 400
+
+        # Realizar la actualización en la base de datos para cambiar el estado de la reserva a 5
+        query = text("UPDATE reservacion SET estado = 5 WHERE codigo = :codigo_reserva AND estado = 1")
+        result = db_session.execute(query, {"codigo_reserva": codigo_reserva})
+        db_session.commit()
+
+        # Verificar si la reserva fue actualizada
+        if result.rowcount > 0:
+            return jsonify({"mensaje": "Estado de la reserva cambiado a 5 exitosamente."}), 200
+        else:
+            return jsonify({"mensaje": "No se pudo cambiar el estado de la reserva. Verifica el código de reserva o el estado actual."}), 404
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+def obtener_informacion_venta_por_codigo(db_session, codigo):
+    # Lógica para obtener información necesaria para la venta usando el código
+    query = text("SELECT idcliente, subtotal, id FROM reservacion WHERE codigo = :codigo")
+    result = db_session.execute(query, {"codigo": codigo}).fetchone()
+
+    return result
+@cross_origin()
+@app.route('/realizar_venta', methods=['POST'])
+def realizar_venta():
+    data = request.json
+
+    # Obtener código de la solicitud
+    codigo= data['codigo']
+    tipo_venta=data['metodo']
+    # Obtener información de la venta desde la base de datos usando el código
+    info_venta = obtener_informacion_venta_por_codigo(db_session, codigo)
+
+    if not info_venta:
+        return jsonify({'error': 'Código de venta no válido'}), 400
+
+    id_cliente, subtotal, id_reserva = info_venta
+
+    # Generar código de venta
+    codigo_venta = generar_codigo_venta(db_session)
+
+    # Insertar venta en la base de datos
+    id_venta = insertar_venta(db_session, tipo_venta, id_cliente, codigo_venta, 0,subtotal, 1)
+
+    # Insertar detalle de venta de cita en la base de datos
+    insertar_detalle_venta_cita(db_session, id_venta, id_reserva, subtotal, subtotal)
+
+    # Cambiar estado de la reservación
+    cambiar_estado_reservacion(db_session, id_reserva, 4)
+
+    db_session.commit()
+    return jsonify({'message': 'Venta realizada exitosamente', 'id_venta': id_venta}), 200
 # Esa ruta debe de usarse si y solamente si el token de la API de Google Calendar expira
 # O es primara instalación
 # @app.route('/generar_API_KEY_CALENDAR', methods=['GET', 'POST'])

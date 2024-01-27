@@ -77,6 +77,8 @@
                                         <span class="badge bg-danger">Cancelado</span>
                                         {% elif reservacion.estado == 3 %}
                                         <span class="badge bg-gradient-indigo">Vencido</span>
+                                        {% elif reservacion.estado == 5 %}
+                                        <span class="badge bg-gradient-fuchsia">En proceso</span>
                                         {% elif reservacion.estado == 4 %}
                                         <span class="badge bg-gradient-lightblue">Realizado</span>
                                         {% endif %}

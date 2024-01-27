@@ -50,6 +50,7 @@
 
                                     <th>Nombre Producto</th>
                                     <th>Número de Lote</th>
+                                    <th>Tipo de lote</th>
                                     <th>Fecha de Vencimiento</th>
                                     <th>Cantidad</th>
                                     <th>Estado</th>
@@ -65,6 +66,17 @@
 
                                     <td>{{ lote.nombre_producto }}</td>
                                     <td>{{ lote.numero_lote }}</td>
+                                    <td>
+                                        
+                                        {% if lote.tipo == 1 %}
+                                        <span class="badge bg-success">Para venta</span>
+                                        {% elif lote.tipo == 2 %}
+                                        <span class="badge bg-danger">Para consumo interno</span>
+                                        {% elif lote.tipo == 3 %}
+                                        <span class="badge bg-gradient-indigo">Para consumo interno o para venta</span>
+                                        
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         {% if lote.fecha_vencimiento %}
                                             {{ lote.fecha_vencimiento }}

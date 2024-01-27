@@ -30,11 +30,16 @@
 <section class="content">
     <div class="container-fluid">
         <div class="row">
-            <div class="col-12">
+            <div class="col-md-12 col-sm-12">
                 <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h3 class="card-title">Lotes</h3>
-
+                    <div class="card-header">
+                        <h3 class="card-title">Movimientos</h3>
+                         <div class="align-content-end text-right">
+                            <button type="button" class="btn btn-primary" data-toggle="modal"
+                                data-target="#modal-insertar">
+                                Registrar movimientos
+                            </button>
+                        </div>
 
                     </div>
 
@@ -80,7 +85,234 @@
             </div>
         </div>
     </div>
+ <!-- Insert Modal HTML -->
+ <div id="modal-insertar" class="modal fade">
+    <div class="modal-dialog modal-lg modal-sm">
+        <div class="modal-content">
+            <form action="" id="formularioproductos"method="post" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h4 class="modal-title">Registro de movimientos</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <label for="">Productos</label>
+                    <select name="productos" id="producto" class="form-control select2bs4">
+                        {% for producto_id, producto_info in productos %}
+                        {% for info in producto_info %}
+                        <option value="{{ producto_id }}" data-cantidad-maxima="{{ info.cantidad_total }}">{{
+                            info.nombre
+                            }}</option>
+                        {% endfor %}
+                        {% endfor %}
+                    </select>
+                   
+                    <div class="form-group">
+                        <label>Cantidad:</label>
+                        <input type="number" name="cantidad" id="cantidad"class="form-control" >
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="btn btn-success btn-block" id="agregarProducto">Agregar
+                            Producto</button>
+                    </div>
 
+                    <div class="table-responsive">
+                        <table class="table" id="productosTable">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Cantidad</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                           
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Registrar movimientos</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 </section>
+<script>
+    var productos = [];
+
+    function actualizarTabla() {
+        var tableBody = document.getElementById('productosTable').getElementsByTagName('tbody')[0];
+        tableBody.innerHTML = '';
+
+        var total = 0;
+
+        productos.forEach(function (producto) {
+            var row = tableBody.insertRow();
+            var cellProducto = row.insertCell(0);
+            var cellCantidad = row.insertCell(1);
+        
+            var cellAcciones = row.insertCell(2);
+
+            cellProducto.innerHTML = producto.nombre;
+            cellCantidad.innerHTML = '<input type="number" class="form-control" value="' + producto.cantidad + '">';
+            console.log("Script cargado correctamente");
+
+
+            cellAcciones.innerHTML = '<div class="btn-group">' +
+                '<button type="button" class="btn btn-danger btn-sm" onclick="eliminarProducto(' + producto.id + ')">Eliminar</button>' +
+                '<button type="button" class="btn btn-primary btn-sm" onclick="editarCantidad(' + producto.id + ')">Editar Cantidad</button>' +
+                '</div>';
+
+        });
+
+       
+    }
+
+    function agregarProducto() {
+        var productoSelect = document.getElementById('producto');
+        var cantidadInput = document.getElementById('cantidad');
+        console.log("Script cargado correctamente");
+
+        // Validar que la cantidad sea mayor que cero
+        var cantidad = parseInt(cantidadInput.value);
+        if (cantidad > 0) {
+            // Obtener la opción seleccionada
+            var selectedOption = productoSelect.options[productoSelect.selectedIndex];
+
+            // Obtener el atributo de cantidad máxima permitida
+            var cantidadMaxima = parseInt(selectedOption.getAttribute('data-cantidad-maxima'));
+
+            // Verificar si la cantidad es menor o igual a la cantidad máxima
+            if (cantidad <= cantidadMaxima) {
+                var producto = {
+                    id: parseInt(selectedOption.value),
+                    nombre: selectedOption.text.split(' - C$ ')[0],
+                    precio: parseFloat(selectedOption.text.split(' - C$ ')[1]),
+                    cantidad: cantidad
+                };
+
+                productos.push(producto);
+                actualizarTabla();
+
+                // Limpiar campos
+                productoSelect.value = '';
+                cantidadInput.value = '';
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'La cantidad debe ser menor o igual a ' + cantidadMaxima + '.',
+                });
+            }
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'La cantidad debe ser mayor que cero.',
+            });
+        }
+    }
+
+    function eliminarProducto(id) {
+        productos = productos.filter(function (producto) {
+            return producto.id !== id;
+        });
+
+        actualizarTabla();
+    }
+
+    function editarCantidad(id) {
+        Swal.fire({
+            title: 'Editar Cantidad',
+            input: 'number',
+            inputValue: productos.find(p => p.id === id).cantidad,
+            showCancelButton: true,
+            confirmButtonText: 'Guardar',
+            cancelButtonText: 'Cancelar',
+            inputValidator: (value) => {
+                if (!value || value <= 0) {
+                    return 'Por favor, ingresa una cantidad válida';
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                var nuevaCantidad = parseInt(result.value);
+                productos.forEach(function (producto) {
+                    if (producto.id === id) {
+                        producto.cantidad = nuevaCantidad;
+                    }
+                });
+                actualizarTabla();
+            }
+        });
+    }
+
+
+    function actualizarSubtotal(id, input, precio) {
+        var nuevaCantidad = parseInt(input.value);
+        productos.forEach(function (producto) {
+            if (producto.id === id) {
+                producto.cantidad = nuevaCantidad;
+                producto.subtotal = nuevaCantidad * precio;
+                input.parentElement.nextElementSibling.innerHTML = producto.subtotal.toFixed(2);
+            }
+        });
+        actualizarTabla();
+    }
+
+    document.getElementById('agregarProducto').addEventListener('click', agregarProducto);
+</script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+<script>
+    async function enviarVenta(event) {
+        try {
+            // Evitar que el formulario se envíe automáticamente
+            event.preventDefault();
+
+           
+
+            // Objeto con los datos a enviar al servidor
+            var data = {
+                productos: productos
+            };
+            if (productos.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Tiene que agregar productos',
+                });
+            }
+            else {
+                // Realizar la solicitud al servidor usando axios y esperar la respuesta
+                const res = await axios.post('/consumibles_productos', data);
+                console.log(`Estado: ${res.status}`);
+                console.log('Cuerpo: ', res.data);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Exito',
+                    text: 'Se ha registrado el movimiento',
+                });
+                setTimeout(() => {
+                    window.location = "/movimientos";
+                }, 2000);
+            }
+
+
+        } catch (err) {
+            console.error(err);
+        } finally {
+
+        }
+    }
+
+    // Asignar la función enviarVenta al evento submit del formulario
+    document.getElementById('formularioproductos').addEventListener('submit', enviarVenta);
+
+</script>
+
 {% endblock %}
