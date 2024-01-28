@@ -1,6 +1,6 @@
 -- Insertar datos en la tabla sucursal
 INSERT INTO sucursal (nombre, razon_social, ubicacion_escrita, ubicacion_googleMaps,telefono, estado,  logo) 
-VALUES ('AUTOCAR ASOCATIE', ' S.A.', 'ACTUALIZAR INFORMACION DESDE EL SISTEMA', 'https://maps.app.goo.gl/rWHyYHcpwVUeAdbQ7', '123456789', '1', 'logo.jpg');
+VALUES ('LAVACAR ASOCATIE', ' S.A.', 'ACTUALIZAR INFORMACION DESDE EL SISTEMA', 'https://maps.app.goo.gl/rWHyYHcpwVUeAdbQ7', '123456789', '1', '/static/img/Logo.png');
 
 -- Insertar datos en la tabla sucursal
 
@@ -55,7 +55,7 @@ VALUES (1, 'T123', '/static/img/Logo.png', 1);
 
 
 -- Insertar datos en la tabla usuario
-INSERT INTO usuario (id_persona, usuario, contraseña, estado) 
-VALUES (1, 'juanperez', 'scrypt:32768:8:1$CmhEfUqnWfYuB28Q$c0a8a7840b1d97d63c380647f27d8963be262ed25e080edc1343403488cea251cbce57aebbe7591da559616f4ad41f7b5b0ea14db61c377e3f6a5fc974126d9b', 1);
+INSERT INTO usuario (id_persona,rol, usuario, contraseña, estado) 
+VALUES (1, 1,'juanperez', 'scrypt:32768:8:1$CmhEfUqnWfYuB28Q$c0a8a7840b1d97d63c380647f27d8963be262ed25e080edc1343403488cea251cbce57aebbe7591da559616f4ad41f7b5b0ea14db61c377e3f6a5fc974126d9b', 1);
 -----Contraseña: 12345678
 
