@@ -81,6 +81,7 @@
                                             <th>Total</th>
                                             <th>Tipo de pago</th>
                                             <th>Estado</th>
+                                            <th>Acciones</th>
 
                                         </tr>
                                     </thead>
@@ -123,12 +124,54 @@
                                             <td>{{ venta.tipo_venta_nombre }}</td>
                                             <td>
                                                 {% if venta.venta_estado == 1 %}
-                                                <span class="badge bg-success">Activo</span>
+                                                <span class="badge bg-primary">No cancelada</span>
                                                 {% elif venta.venta_estado == 2 %}
-                                                <span class="badge bg-danger">Inactivo</span>
+                                                <span class="badge bg-danger">Anulada</span>
+                                                {% elif venta.venta_estado == 3 %}
+                                                <span class="badge bg-success">Cancelada</span>
                                                 {% endif %}
                                             </td>
+                                            <td>
+                                                {% if venta.venta_estado == 1 %}
+                                                
+                                                <a href="" data-toggle="modal"
+                                                data-target="#myModals{{ venta.venta_id }}"><i class=" fas fa-edit"
+                                                    aria-hidden="true"></i></a>
+                                            
+                                                {% endif %}
+
+                                             
+                                            </td>
                                         </tr>
+                                        <div class="modal fade" id="myModals{{ venta.venta_id }}" tabindex="-1"
+                                            role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                            <div class="modal-dialog" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Saldar venta</h5>
+                                                        <button type="button" class="close" data-dismiss="modal"
+                                                            aria-label="Close">
+                                                            <span aria-hidden="true">&times;</span>
+                                                        </button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <form id="{{ venta.venta_id }}" action="/cambiarestadoventa"
+                                                            method="POST">
+                                                            <div class="form-group">
+                                                                <input type="text" class="form-control" name="id"
+                                                                    value="{{ venta.venta_id }}" hidden>
+                                                            </div>
+                                                            <p></p>
+                                                            <div class="text-center">
+                                                                <button type="submit" class="btn btn-success">Saldar
+                                                                    venta</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         {% endfor %}
 
                                     </tbody>
@@ -212,8 +255,10 @@
                                                             <select class="form-control select2bs4" id="tipo_venta"
                                                                 name="tipo_venta" required>
                                                                 {% for tipo in tipos %}
-                                                                <option value="{{ tipo.id }}"  {% if reserva.id_metodo_pago ==  tipo.id
-                                                                    %}selected{% endif %}>{{ tipo.nombre }}</option>
+                                                                <option value="{{ tipo.id }}" {% if
+                                                                    reserva.id_metodo_pago==tipo.id %}selected{% endif
+                                                                    %}>{{
+                                                                    tipo.nombre }}</option>
                                                                 {% endfor %}
                                                             </select>
                                                         </div>
