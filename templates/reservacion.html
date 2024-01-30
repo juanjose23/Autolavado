@@ -51,6 +51,7 @@
                                     <th>Hora de finalización</th>
                                     <th>Servicio</th>
                                     <th>Valor</th>
+                                    <th>Método de pago</th>
                                     <th>Estado</th>
                                 </tr>
                             </thead>
@@ -69,6 +70,7 @@
                                     <td>{{ reservacion.hora_fin }}</td>
                                     <td>{{ reservacion.servicio }}</td>
                                     <td>{{ reservacion.subtotal }}</td>
+                                    <td>{{reservacion.metodo}}</td>
                                     <td>
 
                                         {% if reservacion.estado == 1 %}

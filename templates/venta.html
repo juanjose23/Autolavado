@@ -212,7 +212,8 @@
                                                             <select class="form-control select2bs4" id="tipo_venta"
                                                                 name="tipo_venta" required>
                                                                 {% for tipo in tipos %}
-                                                                <option value="{{ tipo.id }}">{{ tipo.nombre }}</option>
+                                                                <option value="{{ tipo.id }}"  {% if reserva.id_metodo_pago ==  tipo.id
+                                                                    %}selected{% endif %}>{{ tipo.nombre }}</option>
                                                                 {% endfor %}
                                                             </select>
                                                         </div>
