@@ -892,10 +892,11 @@ ORDER BY
 
 
 def obtener_reservacion(db_session: session):
-    query = text("""SELECT r.*, p.nombre AS cliente,s.nombre AS servicio, p.celular
+    query = text("""SELECT r.*, p.nombre AS cliente,s.nombre AS servicio, p.celular,tv.nombre AS metodo
 FROM reservacion r
 INNER JOIN clientes c ON c.id = r.idcliente
 INNER JOIN servicios s ON s.id = r.idservicio
+INNER JOIN tipo_venta tv ON tv.id=r.id_metodo_pago
 LEFT JOIN persona p ON c.id_persona = p.id
 """)
     result = db_session.execute(query).fetchall()
@@ -907,7 +908,7 @@ def obtener_reservacion_hoy(db_session: sessionmaker):
     fecha_actual = datetime.now().date()
 
     query = text("""
-        SELECT r.*, p.nombre AS cliente, s.nombre AS servicio, p.celular
+        SELECT r.*, p.nombre AS cliente, s.nombre AS servicio, p.celular,id_metodo_pago
         FROM reservacion r
         INNER JOIN clientes c ON c.id = r.idcliente
         INNER JOIN servicios s ON s.id = r.idservicio
@@ -3185,14 +3186,14 @@ WHERE
 
     return datosCliente
 
-def guardar_reservacion(db_session: Session, id_cliente, id_servicio, idevento_calendar, fecha, hora_inicio, hora_final, subtotal, estado):
+def guardar_reservacion(db_session: Session, id_cliente, id_servicio, idevento_calendar, fecha, hora_inicio, hora_final, subtotal, estado,id_metodo_pago):
     codigo=generar_codigo_reservacion(db_session)
     query = text("""
-        INSERT INTO reservacion (idcliente, idservicio, idevento_calendar, codigo, fecha, hora_inicio, hora_fin, subtotal, estado)
-        VALUES (:id_cliente, :id_servicio, :idevento_calendar, :codigo, :fecha, :hora_inicio, :hora_fin, :subtotal, :estado)
+        INSERT INTO reservacion (idcliente, idservicio, idevento_calendar, codigo, fecha, hora_inicio, hora_fin, subtotal, estado,id_metodo_pago)
+        VALUES (:id_cliente, :id_servicio, :idevento_calendar, :codigo, :fecha, :hora_inicio, :hora_fin, :subtotal, :estado,:id_metodo_pago)
         RETURNING id
     """)
-    result = db_session.execute(query, {"id_cliente": id_cliente,"id_servicio": id_servicio,"idevento_calendar":idevento_calendar,"codigo": codigo,"fecha": fecha,"hora_inicio": hora_inicio, "hora_fin":hora_final, "subtotal": subtotal,"estado": estado})
+    result = db_session.execute(query, {"id_cliente": id_cliente,"id_servicio": id_servicio,"idevento_calendar":idevento_calendar,"codigo": codigo,"fecha": fecha,"hora_inicio": hora_inicio, "hora_fin":hora_final, "subtotal": subtotal,"estado": estado,"id_metodo_pago":id_metodo_pago})
     id_reservacion = result.fetchone()[0]
 
     db_session.commit()
@@ -3481,16 +3482,16 @@ def api_agregar_reserva():
         apellidos = data['datos_personales']['apellidos']
         correo = data['datos_personales']['correo']
         celular = data['datos_personales']['celular']
-        tipo_persona = data['datos_personales']['tipo']
         fecha = data['datos_reserva']['fecha']
         nombre_servicio = data['datos_reserva']['nombre_servicio']
         servicio_realizacion = data['datos_reserva']['servicio_realizacion']
         bloque_horario = data['datos_reserva']['bloque_horario']
+        id_metodo_pago=data['datos_reserva']['metodo']
 
         if not codigo_cliente or not id_persona or not id_cliente:
             id_persona = insertar_persona(db_session, nombre, correo,"En direccion", celular)
             
-            insertar_persona_natural(db_session, id_persona, apellidos, None, None, None, tipo_persona)
+            insertar_persona_natural(db_session, id_persona, apellidos, None, None, None,"Natural")
             codigo = generar_codigo_cliente(nombre,id_persona,celular)
           
             codigo_cliente=insertar_cliente(db_session, id_persona,codigo,"Normal","No hay")
@@ -3514,7 +3515,7 @@ def api_agregar_reserva():
 
                 hora_inicio_reserva, hora_final_reserva = procesamiento_hora_string(bloque_horario)
                 subtotal = recuperar_precio_servicio(db_session, id_servicio)
-                codigo_reservacion = guardar_reservacion(db_session, id_cliente, id_servicio, id_evento, fecha_formateada, hora_inicio_reserva, hora_final_reserva, subtotal, '1')
+                codigo_reservacion = guardar_reservacion(db_session, id_cliente, id_servicio, id_evento, fecha_formateada, hora_inicio_reserva, hora_final_reserva, subtotal, '1',id_metodo_pago)
 
                 print(codigo_reservacion)
 
@@ -3924,7 +3925,7 @@ def cambiar_estado_reserva():
     
 def obtener_informacion_venta_por_codigo(db_session, codigo):
     # Lógica para obtener información necesaria para la venta usando el código
-    query = text("SELECT idcliente, subtotal, id FROM reservacion WHERE codigo = :codigo")
+    query = text("SELECT idcliente, subtotal, id,id_metodo_pago FROM reservacion WHERE codigo = :codigo")
     result = db_session.execute(query, {"codigo": codigo}).fetchone()
 
     return result
@@ -3935,20 +3936,19 @@ def realizar_venta():
 
     # Obtener código de la solicitud
     codigo= data['codigo']
-    tipo_venta=data['metodo']
     # Obtener información de la venta desde la base de datos usando el código
     info_venta = obtener_informacion_venta_por_codigo(db_session, codigo)
 
     if not info_venta:
         return jsonify({'error': 'Código de venta no válido'}), 400
 
-    id_cliente, subtotal, id_reserva = info_venta
+    id_cliente, subtotal, id_reserva,id_metodo_pago = info_venta
 
     # Generar código de venta
     codigo_venta = generar_codigo_venta(db_session)
 
     # Insertar venta en la base de datos
-    id_venta = insertar_venta(db_session, tipo_venta, id_cliente, codigo_venta, 0,subtotal, 1)
+    id_venta = insertar_venta(db_session,id_metodo_pago, id_cliente, codigo_venta, 0,subtotal, 1)
 
     # Insertar detalle de venta de cita en la base de datos
     insertar_detalle_venta_cita(db_session, id_venta, id_reserva, subtotal, subtotal)
