@@ -128,26 +128,27 @@ CREATE TABLE precio_servicios(
     fecha_registro DATE NOT NUll,
     estado INTEGER
 );
-
-CREATE TABLE reservacion(
-    id SERIAL PRIMARY KEY,
-    idcliente INTEGER REFERENCES clientes(id),
-    idservicio INTEGER REFERENCES servicios(id),
-  	idevento_calendar VARCHAR(250),
-    codigo VARCHAR(50) unique,
-    fecha DATE NOT NULL, -- Unificar fecha y hora para hacer un datetime
-    hora_inicio TIME NOT NULL,
-  	hora_fin TIME,
-    subtotal DECIMAL(10,2),
-    estado INTEGER 
-);
-
 CREATE TABLE tipo_venta (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(250) NOT NUll,
     descripcion VARCHAR(250),
     estado INTEGER
 );
+
+CREATE TABLE reservacion(
+    id SERIAL PRIMARY KEY,
+    idcliente INTEGER REFERENCES clientes(id),
+    idservicio INTEGER REFERENCES servicios(id),
+    idevento_calendar VARCHAR(250),
+    codigo VARCHAR(50) UNIQUE,
+    fecha DATE NOT NULL,
+    hora_inicio TIME NOT NULL,
+    hora_fin TIME,
+    subtotal DECIMAL(10,2),
+    estado INTEGER,
+    id_metodo_pago INTEGER REFERENCES tipo_venta(id) -- Nueva columna
+);
+
 
 CREATE TABLE venta(
     id SERIAL PRIMARY KEY,
