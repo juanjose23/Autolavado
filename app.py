@@ -2934,15 +2934,27 @@ def venta():
 @app.route('/ventacitas', methods=['POST'])
 def ventacitas():
     tipo_venta = request.form['tipo_venta']
+    if tipo_venta ==  '3': #Todas las ventas
+        estado = 3
+    else:
+        estado = 1
     cliente = request.form['idcliente']
     total = request.form['subtotal']
     id_reserva = request.form['id']
     codigo = generar_codigo_venta(db_session)
     id_venta = insertar_venta(db_session, tipo_venta,
-                              cliente, codigo, 0, total, 1)
+                              cliente, codigo, 0, total, estado)
     insertar_detalle_venta_cita(db_session, id_venta, id_reserva, total, total)
     cambiar_estado_reservacion(db_session, id_reserva, 4)
     flash("Se ha realizado la venta con exito", "success")
+    return redirect('/ventas')
+
+@app.route('/cambiarestadoventa', methods=['POST'])
+def cambiarestadoventa():
+    id_venta = request.form['id']
+    #cambiar_estado_reservacion(db_session, id_reserva, 4)
+    cambiar_estado_venta(db_session,id_venta,3)
+    flash("Se ha saldado la venta correctamente", "success")
     return redirect('/ventas')
 
 
