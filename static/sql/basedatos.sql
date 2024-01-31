@@ -205,4 +205,9 @@ CREATE TABLE usuario
     estado INTEGER 
 );
 
-
+CREATE TABLE notificarproducto(
+    id SERIAL PRIMARY KEY,
+    id_producto INTEGER REFERENCES producto(id),
+    telefono VARCHAR(50),
+    estado INTEGER 
+);
