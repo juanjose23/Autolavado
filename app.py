@@ -1476,6 +1476,12 @@ def obtener_datos_sucursal():
 def agregar_datos_sucursal():
     return dict(datos_sucursal=obtener_datos_sucursal())
 
+@app.context_processor
+def agregar_notificaciones():
+    return dict(notificaciones=obtener_notificaciones(db_session))
+@app.context_processor
+def agregar_notificacion():
+    return dict(numero=contar_notificaciones_estado_1(db_session))
 
 @app.before_request
 def before_request():
@@ -3970,6 +3976,65 @@ def realizar_venta():
 
     db_session.commit()
     return jsonify({'message': 'Venta realizada exitosamente', 'id_venta': id_venta}), 200
+
+@cross_origin()
+@app.route("/cotizacionproducto", methods=['GET', 'POST'])
+def cotizacionproducto():
+    if request.method == 'GET':
+        productos = obtener_productos(db_session)
+        productos_as_dicts = [
+            {
+                "index":index+1,
+                "id": reserva.id,
+                "nombre":reserva.nombre
+            }
+            for index, reserva in enumerate(productos)
+        ]
+     
+        return jsonify(productos_as_dicts), 200
+    elif request.method == 'POST':
+        # Aquí puedes manejar la lógica para el método POST si es necesario
+        data = request.json
+        codigo=data.get('codigoProducto')
+        telefono=data.get('numero')
+        insertar_notificacion(db_session,codigo,telefono,1)
+        return jsonify({'message': 'Se ha consultado'}), 200
+    else:
+        return jsonify({'error': 'Método no permitido'}), 405
+    
+@cross_origin()
+@app.route("/cambiarcotizacionproducto/<int:id>", methods=['GET', 'POST'])
+def cambiarcotizacionproducto(id):
+    if request.method == 'GET':
+        cambiar_estado_notificacion(db_session, id, 2)
+        return redirect("/")
+    else:
+        return jsonify({'error': 'Método no permitido'}), 405
+
+
+def insertar_notificacion(db_session, id_producto, telefono, estado):
+    query = text("INSERT INTO notificarproducto (id_producto, telefono, estado) VALUES (:id_producto, :telefono, :estado)")
+    db_session.execute(query, {"id_producto": id_producto, "telefono": telefono, "estado": estado})
+    db_session.commit()
+
+def cambiar_estado_notificacion(db_session, id_notificacion, nuevo_estado):
+    query = text("UPDATE notificarproducto SET estado = :nuevo_estado WHERE id = :id_notificacion")
+    db_session.execute(query, {"nuevo_estado": nuevo_estado, "id_notificacion": id_notificacion})
+    db_session.commit()
+
+def obtener_notificaciones(db_session):
+    query = text("SELECT np.*, p.nombre AS nombre_producto, p.logo AS logo_producto FROM notificarproducto np "
+                 "JOIN producto p ON np.id_producto = p.id WHERE np.estado = 1")
+    result = db_session.execute(query)
+    notificaciones = result.fetchall()
+    return notificaciones
+
+def contar_notificaciones_estado_1(db_session):
+    query = text("SELECT COUNT(*) FROM notificarproducto WHERE estado = 1")
+    result = db_session.execute(query)
+    numero_notificaciones_estado_1 = result.scalar()
+    return numero_notificaciones_estado_1
+
 # Esa ruta debe de usarse si y solamente si el token de la API de Google Calendar expira
 # O es primara instalación
 # @app.route('/generar_API_KEY_CALENDAR', methods=['GET', 'POST'])
