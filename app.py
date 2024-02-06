@@ -896,7 +896,7 @@ def obtener_reservacion(db_session: session):
 FROM reservacion r
 INNER JOIN clientes c ON c.id = r.idcliente
 INNER JOIN servicios s ON s.id = r.idservicio
-INNER JOIN tipo_venta tv ON tv.id=r.id_metodo_pago
+LEFT JOIN tipo_venta tv ON tv.id=r.id_metodo_pago
 LEFT JOIN persona p ON c.id_persona = p.id
 """)
     result = db_session.execute(query).fetchall()
