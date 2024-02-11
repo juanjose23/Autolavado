@@ -20,9 +20,6 @@ from pytz import timezone
 import matplotlib.backends.backend_pdf
 import matplotlib.pyplot as plt
 from io import BytesIO
-from dateutil import parser
-import requests
-import json
 import pdfkit
 import random
 import string
@@ -69,6 +66,7 @@ def insertar_persona(db_session: Session, nombre, correo, direccion, celular):
 
     # Hacer commit para persistir la nueva persona en la base de datos
     db_session.commit()
+    db_session.close() 
 
     # Retornar el ID de la nueva persona
     return id_persona
@@ -79,12 +77,13 @@ def insertar_persona_natural(db_session: Session, id_persona, apellidos, cedula,
     db_session.execute(query, {"id_persona": id_persona, "apellido": apellidos, "cedula": cedula,
                        "fecha_nacimiento": fecha_nacimiento, "genero": genero, "tipo_persona": tipo})
     db_session.commit()
+    db_session.close() 
 
 def obtener_id_cliente_por_celular(db_session, numero_celular):
     query = text("SELECT clientes.id FROM clientes JOIN persona ON clientes.id_persona = persona.id WHERE persona.celular = :celular")
     result = db_session.execute(query, {"celular": numero_celular})
     id_cliente = result.fetchone()
-
+    db_session.close() 
     return id_cliente[0] if id_cliente else None
 
 def insertar_cliente(db_session: Session, id_persona, codigo_cliente, tipo, foto):
@@ -93,6 +92,7 @@ def insertar_cliente(db_session: Session, id_persona, codigo_cliente, tipo, foto
     db_session.execute(query, {"id_persona": id_persona, "codigo": codigo_cliente,
                        "tipo_cliente": tipo, "foto": foto, "estado": '1'})
     db_session.commit()
+    db_session.close() 
     return codigo_cliente
 
 
@@ -102,6 +102,7 @@ def update_persona(db_session: Session, id_persona, nombre, correo, celular, dir
     db_session.execute(query, {"id_persona": id_persona, "nombre": nombre,
                        "correo": correo, "direccion": direccion, "celular": celular})
     db_session.commit()
+    db_session.close() 
 
 
 def update_persona_natural(db_session: Session, id_persona, apellidos, tipo):
@@ -110,6 +111,7 @@ def update_persona_natural(db_session: Session, id_persona, apellidos, tipo):
     db_session.execute(
         query, {"id_persona": id_persona, "apellidos": apellidos, "tipo": tipo})
     db_session.commit()
+    db_session.close() 
 
 
 def update_cliente(db_session: Session, id_persona, tipo, foto, estado):
@@ -118,7 +120,7 @@ def update_cliente(db_session: Session, id_persona, tipo, foto, estado):
     db_session.execute(
         query, {"id_persona": id_persona, "tipo": tipo, "foto": foto, "estado": estado})
     db_session.commit()
-
+    db_session.close() 
 
 def cambiar_estado_cliente(db_session: Session, id_persona, nuevo_estado):
     query = text(
@@ -126,6 +128,7 @@ def cambiar_estado_cliente(db_session: Session, id_persona, nuevo_estado):
     db_session.execute(
         query, {"id_persona": id_persona, "nuevo_estado": nuevo_estado})
     db_session.commit()
+    db_session.close() 
 
 
 def generar_codigo_reservacion(db_session):
@@ -148,7 +151,7 @@ def generar_codigo_reservacion(db_session):
         new_id += 1
         codigo = f"R-{new_id}"
         count = db_session.execute(query, {"codigo": codigo}).fetchone()[0]
-
+    db_session.close() 
     return codigo
 
 
@@ -164,7 +167,7 @@ def generar_codigo_trabajador(db_session: Session):
         codigo = ''.join(random.choices(
             string.ascii_uppercase + string.digits, k=8))
         count = db_session.execute(query, {"codigo": codigo}).fetchone()[0]
-
+    db_session.close()     
     return codigo
 
 
@@ -177,6 +180,7 @@ def insertar_trabajador(db_session, id_persona, codigo, foto, estado):
     db_session.execute(query, {"id_persona": id_persona,
                        "codigo": codigo, "foto": foto, "estado": estado})
     db_session.commit()
+    db_session.close() 
 
 
 def actualizar_trabajador(db_session, id_trabajador, foto, estado):
@@ -189,6 +193,7 @@ def actualizar_trabajador(db_session, id_trabajador, foto, estado):
     db_session.execute(
         query, {"id_trabajador": id_trabajador, "foto": foto, "estado": estado})
     db_session.commit()
+    db_session.close() 
 
 
 def cambiar_estado_trabajador(db_session, id_trabajador, nuevo_estado):
@@ -201,6 +206,7 @@ def cambiar_estado_trabajador(db_session, id_trabajador, nuevo_estado):
     db_session.execute(
         query, {"id_trabajador": id_trabajador, "nuevo_estado": nuevo_estado})
     db_session.commit()
+    db_session.close() 
 def obtener_id_y_precio_servicio(db_session, nombre_servicio):
     try:
         # Realizar la consulta SQL utilizando text
@@ -214,7 +220,7 @@ def obtener_id_y_precio_servicio(db_session, nombre_servicio):
         """)
 
         resultado = db_session.execute(query, {"nombre_servicio": nombre_servicio}).fetchone()
-
+        db_session.close() 
         if resultado:
             # Retornar el id y el precio
             return {"id_servicio": resultado[0], "precio": float(resultado[1])}
@@ -255,6 +261,7 @@ def insertar_reservacion(db_session,idcliente,idservicio,idevento_calendar,codig
 
         # Hacer commit para persistir la nueva reservación en la base de datos
         db_session.commit()
+        db_session.close() 
 
         # Retornar el ID de la nueva reservación
         return id_reservacion
@@ -263,6 +270,7 @@ def insertar_reservacion(db_session,idcliente,idservicio,idevento_calendar,codig
         # Manejar cualquier error que pueda ocurrir durante la inserción
         print(f"Error al insertar reservación: {error}")
         db_session.rollback()
+        db_session.close()
         return None
 
 
@@ -276,6 +284,7 @@ def insertar_producto(db_session: Session, nombre, descripcion, logo, tipo, esta
         "nombre": nombre, "descripcion": descripcion, "logo": logo, "tipo": tipo, "estado": estado
     })
     db_session.commit()
+    db_session.close() 
 
 # Actualizar producto
 def actualizar_producto(db_session: Session, id_producto, nombre, descripcion, logo, tipo, estado):
@@ -290,6 +299,7 @@ def actualizar_producto(db_session: Session, id_producto, nombre, descripcion, l
         "logo": logo, "tipo": tipo, "estado": estado
     })
     db_session.commit()
+    db_session.close() 
 
 # Cambiar estado del producto
 
@@ -301,6 +311,7 @@ def cambiar_estado_productos(db_session, id_producto, nuevo_estado):
     db_session.execute(
         query, {"id_producto": id_producto, "nuevo_estado": nuevo_estado})
     db_session.commit()
+    db_session.close() 
     # Puedes retornar algo si es necesario
     return "Estado del producto cambiado exitosamente"
 
@@ -315,6 +326,7 @@ def insertar_precio(db_session: Session, id_producto, precio, estado):
     db_session.execute(query, {"id_producto": id_producto, "precio": precio,
                        "fecha_registro": fecha_actual, "estado": estado})
     db_session.commit()
+    db_session.close() 
 
 
 def cambiar_estado_precio(db_session: Session, id_precio, nuevo_estado):
@@ -327,6 +339,7 @@ def cambiar_estado_precio(db_session: Session, id_precio, nuevo_estado):
     db_session.execute(
         query, {"id_precio": id_precio, "nuevo_estado": nuevo_estado})
     db_session.commit()
+    db_session.close() 
 
 
 def insertar_horario(db_session: Session, dia, hora_apertura, hora_cierre, estado):
@@ -338,6 +351,7 @@ def insertar_horario(db_session: Session, dia, hora_apertura, hora_cierre, estad
     db_session.execute(query, {"dia": dia, "hora_apertura": hora_apertura,
                        "hora_cierre": hora_cierre, "estado": estado})
     db_session.commit()
+    db_session.close() 
 
 
 def update_horario(db_session: Session, id_horario, dia, hora_apertura, hora_cierre, estado):
@@ -350,7 +364,7 @@ def update_horario(db_session: Session, id_horario, dia, hora_apertura, hora_cie
     db_session.execute(query, {"id_horario": id_horario, "dia": dia,
                        "hora_apertura": hora_apertura, "hora_cierre": hora_cierre, "estado": estado})
     db_session.commit()
-
+    db_session.close()
 
 def cambiar_estado_horario(db_session: Session, id_horario, nuevo_estado):
     query = text("""
@@ -362,6 +376,7 @@ def cambiar_estado_horario(db_session: Session, id_horario, nuevo_estado):
     db_session.execute(
         query, {"id_horario": id_horario, "nuevo_estado": nuevo_estado})
     db_session.commit()
+    db_session.close()
 
 
 def insertar_servicio(db_session: Session, nombre, descripcion, foto, realizacion, estado):
@@ -373,6 +388,7 @@ def insertar_servicio(db_session: Session, nombre, descripcion, foto, realizacio
     db_session.execute(query, {"nombre": nombre, "descripcion": descripcion,
                        "foto": foto, "realizacion": realizacion, "estado": estado})
     db_session.commit()
+    db_session.close() 
 
 
 def update_servicio(db_session: Session, id_servicio, nombre, descripcion, foto, realizacion, estado):
@@ -385,6 +401,7 @@ def update_servicio(db_session: Session, id_servicio, nombre, descripcion, foto,
     db_session.execute(query, {"id_servicio": id_servicio, "nombre": nombre,
                        "descripcion": descripcion, "foto": foto, "realizacion": realizacion, "estado": estado})
     db_session.commit()
+    db_session.close() 
 
 
 def cambiar_estado_servicio(db_session: Session, id_servicio, nuevo_estado):
@@ -397,6 +414,7 @@ def cambiar_estado_servicio(db_session: Session, id_servicio, nuevo_estado):
     db_session.execute(
         query, {"id_servicio": id_servicio, "nuevo_estado": nuevo_estado})
     db_session.commit()
+    db_session.close() 
 
 
 def insertar_precio_servicio(db_session: Session, id_servicio, precio, estado):
@@ -409,6 +427,7 @@ def insertar_precio_servicio(db_session: Session, id_servicio, precio, estado):
     db_session.execute(query, {"id_servicio": id_servicio, "precio": precio,
                        "fecha_registro": fecha_actual, "estado": estado})
     db_session.commit()
+    db_session.close() 
 
 
 def update_precio_servicio(db_session: Session, id_precio_servicio, id_servicio, precio, estado):
@@ -421,6 +440,7 @@ def update_precio_servicio(db_session: Session, id_precio_servicio, id_servicio,
     db_session.execute(query, {"id_precio_servicio": id_precio_servicio,
                        "id_servicio": id_servicio, "precio": precio, "estado": estado})
     db_session.commit()
+    db_session.close() 
 
 
 def cambiar_estado_precio_servicio(db_session: Session, id_precio_servicio, nuevo_estado):
@@ -433,6 +453,7 @@ def cambiar_estado_precio_servicio(db_session: Session, id_precio_servicio, nuev
     db_session.execute(
         query, {"id_precio_servicio": id_precio_servicio, "nuevo_estado": nuevo_estado})
     db_session.commit()
+    db_session.close() 
 
 
 def insertar_movimiento_inventario(db_session, id_lote, tipo_movimiento, cantidad):
@@ -455,6 +476,7 @@ def insertar_movimiento_inventario(db_session, id_lote, tipo_movimiento, cantida
 
     # Commit los cambios en la sesión
     db_session.commit()
+    db_session.close() 
 
 
 def obtener_movimientos_por_lote(db_session):
@@ -465,7 +487,7 @@ def obtener_movimientos_por_lote(db_session):
     """)
 
     result = db_session.execute(query).fetchall()
-
+    db_session.close() 
     return result
 
 
@@ -525,7 +547,7 @@ def actualizar_estado_lotes(db_session: Session):
     result_sin_cantidad = db_session.execute(query_sin_cantidad)
     db_session.commit()
     estadisticas['sin_cantidad'] = result_sin_cantidad.rowcount
-
+    db_session.close() 
     return estadisticas
 
 
@@ -533,7 +555,7 @@ def generar_codigo_venta(db_session: Session):
     # Obtener el último ID de venta desde la base de datos
     query = text("SELECT MAX(id) FROM venta")
     resultado = db_session.execute(query).scalar()
-
+    db_session.close() 
     # Generar el código de venta basado en el último ID
     nuevo_id_venta = resultado + 1 if resultado else 1
     codigo_venta = f'V-{nuevo_id_venta}'
@@ -562,6 +584,7 @@ def insertar_venta(db_session, id_tipo, id_cliente, codigo, descuento, total, es
     # Recuperar el ID de la venta recién insertada
     id_venta = result.fetchone()[0]
     db_session.commit()
+    db_session.close() 
 
     return id_venta
 
@@ -575,6 +598,7 @@ def insertar_venta_producto(db_session: Session, id_venta, id_producto, precio, 
     db_session.execute(query, {"id_venta": id_venta, "id_producto": id_producto,
                        "precio_unitario": precio, "cantidad": cantidad, "subtotal": subtotal})
     db_session.commit()
+    db_session.close() 
 
 
 def insertar_detalle_venta(db_session: Session, id_venta, id_servicio, precio_unitario, cantidad, subtotal):
@@ -586,7 +610,7 @@ def insertar_detalle_venta(db_session: Session, id_venta, id_servicio, precio_un
     db_session.execute(query, {"id_venta": id_venta, "id_servicio": id_servicio,
                        "precio_unitario": precio_unitario, "cantidad": cantidad, "subtotal": subtotal})
     db_session.commit()
-
+    db_session.close() 
 
 def insertar_detalle_venta_cita(db_session, id_venta, id_reserva, precio_unitario, subtotal):
     try:
@@ -606,7 +630,7 @@ def insertar_detalle_venta_cita(db_session, id_venta, id_reserva, precio_unitari
 
         # Confirmar la transacción
         db_session.commit()
-
+        db_session.close()
     except Exception as e:
         print(f"Error al insertar en la tabla detalle_venta_cita: {e}")
 
@@ -628,7 +652,7 @@ def cambiar_estado_reservacion(db_session: Session, id_reservacion: int, nuevo_e
         db_session.commit()
 
         # Cerrar la sesión (si se va a cerrar, depende del contexto de la aplicación)
-        # db_session.close()
+        db_session.close()
 
     except Exception as e:
         print(f'Error al cambiar el estado de la reservación: {str(e)}')
@@ -644,6 +668,7 @@ def cambiar_estado_venta(db_session: Session, id_venta, nuevo_estado):
     db_session.execute(query, {"id_venta": id_venta,
                        "nuevo_estado": nuevo_estado})
     db_session.commit()
+    db_session.close()
 
 
 def obtener_info_lote_mas_antiguo(db_session: Session, id_producto):
@@ -659,6 +684,7 @@ def obtener_info_lote_mas_antiguo(db_session: Session, id_producto):
 
     if result:
         id_lote, cantidad = result
+        db_session.close()
         return {"id_lote": id_lote, "cantidad": int(cantidad)}
     else:
         return None
@@ -674,6 +700,7 @@ def restar_cantidad_lote(db_session: Session, id_lote, cantidad_restar):
     db_session.execute(
         query, {"id_lote": id_lote, "cantidad_restar": cantidad_restar})
     db_session.commit()
+    db_session.close()
 
 
 def insertar_usuario(db_session: Session, id_persona,rol, usuario, contraseña, estado):
@@ -685,6 +712,7 @@ def insertar_usuario(db_session: Session, id_persona,rol, usuario, contraseña, 
     db_session.execute(query, {"id_persona": id_persona,"rol":rol,
                        "usuario": usuario, "contraseña": contraseña, "estado": estado})
     db_session.commit()
+    db_session.close()
 
 def cambiar_rol_usuario_por_id(db_session: Session, id_usuario, nuevo_rol):
     query = text("""
@@ -695,6 +723,7 @@ def cambiar_rol_usuario_por_id(db_session: Session, id_usuario, nuevo_rol):
 
     db_session.execute(query, {"id_usuario": id_usuario, "nuevo_rol": nuevo_rol})
     db_session.commit()
+    db_session.close()
 
 def actualizar_contraseña(db_session: Session, id_usuario, nueva_contraseña):
     query = text("""
@@ -705,8 +734,9 @@ def actualizar_contraseña(db_session: Session, id_usuario, nueva_contraseña):
 
     db_session.execute(
         query, {"nueva_contraseña": nueva_contraseña, "id_usuario": id_usuario})
+    
     db_session.commit()
-
+    db_session.close()
 
 def cambiar_estado_usuario(db_session: Session, id_usuario, nuevo_estado):
     query = text("""
@@ -718,6 +748,7 @@ def cambiar_estado_usuario(db_session: Session, id_usuario, nuevo_estado):
     db_session.execute(
         query, {"id_usuario": id_usuario, "nuevo_estado": nuevo_estado})
     db_session.commit()
+    db_session.close()
 
 
 def cambiar_estado_reservacion(db_session: Session, id_reservacion, nuevo_estado):
@@ -730,6 +761,7 @@ def cambiar_estado_reservacion(db_session: Session, id_reservacion, nuevo_estado
     db_session.execute(
         query, {"id_reservacion": id_reservacion, "nuevo_estado": nuevo_estado})
     db_session.commit()
+    db_session.close()
 
 
 def obtener_servicios_activos(db_session: Session):
@@ -748,16 +780,19 @@ def consultar_servicios(db_session: Session, filtro_id=None):
     """)
 
     result = db_session.execute(query, {"filtro_id": filtro_id}).fetchall()
+    db_session.close()
     return result
 
 
 def obtener_productos(db_session):
     query = text("SELECT * FROM producto WHERE estado = 1 AND tipo IN(1,3)")
     productos = db_session.execute(query).fetchall()
+    db_session.close()
     return productos
 def obtener_todos_productos(db_session):
     query = text("SELECT * FROM producto ")
     productos = db_session.execute(query).fetchall()
+    db_session.close()
     return productos
 
 
@@ -765,6 +800,7 @@ def obtener_precioproductos(db_session):
     query = text(
         "SELECT pp.*,p.id AS producto, p.nombre, p.logo FROM precio pp INNER JOIN producto p ON p.id = pp.id_producto")
     precios = db_session.execute(query).fetchall()
+    db_session.close()
     return precios
 
 
@@ -795,7 +831,7 @@ def obtener_productos_ventas(db_session):
         (producto_id, producto_info)
         for producto_id, producto_info in productos_agrupados.items()
     ]
-
+    db_session.close()
     return productos_resultado
 def obtener_productos_consumibless(db_session):
     query = text("""
@@ -822,13 +858,14 @@ def obtener_productos_consumibless(db_session):
         (producto_id, producto_info)
         for producto_id, producto_info in productos_agrupados.items()
     ]
-
+    db_session.close()
     return productos_resultado
 
 
 def obtener_tipo_venta(db_session):
     query = text("""SELECT * FROM tipo_venta WHERE estado = 1""")
     ventas = db_session.execute(query).fetchall()
+    db_session.close()
     return ventas
 
 
@@ -888,10 +925,11 @@ ORDER BY
    
 """)
     ventas = db_session.execute(query).fetchall()
+    db_session.close() 
     return ventas
 
 
-def obtener_reservacion(db_session: session):
+def obtener_reservacion(db_session: Session):
     query = text("""SELECT r.*, p.nombre AS cliente,s.nombre AS servicio, p.celular,tv.nombre AS metodo
 FROM reservacion r
 INNER JOIN clientes c ON c.id = r.idcliente
@@ -900,10 +938,11 @@ LEFT JOIN tipo_venta tv ON tv.id=r.id_metodo_pago
 LEFT JOIN persona p ON c.id_persona = p.id
 """)
     result = db_session.execute(query).fetchall()
+    db_session.close() 
     return result
 
 
-def obtener_reservacion_hoy(db_session: sessionmaker):
+def obtener_reservacion_hoy(db_session: Session):
     # Obtener la fecha actual
     fecha_actual = datetime.now().date()
 
@@ -918,8 +957,9 @@ def obtener_reservacion_hoy(db_session: sessionmaker):
 
     result = db_session.execute(
         query, {"fecha_actual": fecha_actual}).fetchall()
+    db_session.close() 
     return result
-def obtener_reservacion_hoy_admin(db_session: sessionmaker):
+def obtener_reservacion_hoy_admin(db_session: Session):
     # Obtener la fecha actual
     fecha_actual = datetime.now().date()
 
@@ -934,8 +974,9 @@ def obtener_reservacion_hoy_admin(db_session: sessionmaker):
 
     result = db_session.execute(
         query, {"fecha_actual": fecha_actual}).fetchall()
+    db_session.close() 
     return result
-def obtener_reservacion_hoy_admin_estado(db_session: sessionmaker):
+def obtener_reservacion_hoy_admin_estado(db_session: Session):
     # Obtener la fecha actual
     fecha_actual = datetime.now().date()
 
@@ -950,6 +991,7 @@ def obtener_reservacion_hoy_admin_estado(db_session: sessionmaker):
 
     result = db_session.execute(
         query, {"fecha_actual": fecha_actual}).fetchall()
+    db_session.close() 
     return result
 
 
@@ -968,7 +1010,7 @@ def obtener_cantidad_reservaciones_hoy(db_session):
 
         # Obtener la cantidad de reservaciones del resultado
         cantidad_reservaciones = resultado[0]  # Usar el índice numérico
-
+        db_session.close() 
         return cantidad_reservaciones
     except Exception as e:
         # Manejar la excepción según tus necesidades
@@ -995,6 +1037,7 @@ def actualizar_estados(db_session):
         'hora_20_min_atras': hace_20_minutos.strftime("%H:%M:%S")
     })
     db_session.commit()
+    db_session.close() 
 
 def actualizar_estados_pasados(db_session):
     # Obtén la fecha y hora actuales
@@ -1008,17 +1051,20 @@ def actualizar_estados_pasados(db_session):
           AND estado = 1
     """), {'fecha_actual': now.date()})
     db_session.commit()
+    db_session.close() 
 
 
 def ValidarNumeroCelularExistente(numero):
     query = text("SELECT id FROM persona WHERE celular = :numero")
     exists = db_session.execute(query, {"numero": numero}).scalar()
+    db_session.close() 
     return exists
 
 
 def obtener_serviciossistema(db_session: Session):
     query = text("SELECT *  FROM servicios ")
     result = db_session.execute(query).fetchall()
+    db_session.close()
     return result
 
 
@@ -1033,6 +1079,7 @@ def obtener_servicios_sin_precio(db_session):
         )
     """)
     productos_sin_precio = db_session.execute(query).fetchall()
+    db_session.close()
     return productos_sin_precio
 
 
@@ -1040,10 +1087,11 @@ def obtener_precios_servicios(db_session):
     query = text(
         "SELECT pp.*,p.id AS producto, p.nombre FROM precio_servicios pp INNER JOIN servicios p ON p.id = pp.id_servicios ")
     precios = db_session.execute(query).fetchall()
+    db_session.close() 
     return precios
 
 
-def ObtenerTrabajadores(db_session: session):
+def ObtenerTrabajadores(db_session: Session):
     query = text("""
             SELECT 
                 t.id AS trabajador_id, t.codigo, t.foto, t.estado,
@@ -1054,10 +1102,11 @@ def ObtenerTrabajadores(db_session: session):
             JOIN persona_natural pn ON pn.id_persona = p.id
         """)
     result = db_session.execute(query).fetchall()
+    db_session.close() 
     return result
 
 
-def ObtenerEmpleadoSinUsuario(db_session: session):
+def ObtenerEmpleadoSinUsuario(db_session: Session):
     consulta = text("""
            SELECT p.id AS persona_id, p.nombre, p.correo
             FROM persona p
@@ -1066,6 +1115,7 @@ def ObtenerEmpleadoSinUsuario(db_session: session):
             WHERE t.id IS NOT NULL AND u.id IS NULL AND t.estado = 1
         """)
     result = db_session.execute(consulta).fetchall()
+    db_session.close() 
     return result
 
 
@@ -1079,11 +1129,11 @@ def obtener_info_persona(id_persona):
 
     # Obtener los resultados
     datos = result.fetchone()
-
+    db_session.close()
     return datos
 
 
-def mostra_clientes(db_session: session):
+def mostra_clientes(db_session: Session):
     query = text("""
          SELECT
             c.id,
@@ -1112,21 +1162,23 @@ def mostra_clientes(db_session: session):
      
     """)
     result = db_session.execute(query).fetchall()
-
+    db_session.close()
     return result
 
 
-def obtenerusuarios(db_session: session):
+def obtenerusuarios(db_session: Session):
     query = text(""" SELECT s.*, p.nombre,pn.apellido FROM usuario s
 INNER JOIN persona p ON p.id = s.id_persona
 INNER JOIN persona_natural pn ON pn.id =s.id_persona """)
     result = db_session.execute(query).fetchall()
+    db_session.close()
     return result
 
 
-def horariosistema(db_session: session):
+def horariosistema(db_session: Session):
     query = text(""" SELECT * FROM horarios ORDER BY id ASC """)
     result = db_session.execute(query).fetchall()
+    db_session.close()
     return result
 
 
@@ -1151,6 +1203,7 @@ def actualizar_horario(db_session: Session, horario_id, hora_apertura, hora_cier
     if result.rowcount > 0:
         # Se actualizó al menos una fila, lo cual indica éxito
         db_session.commit()
+        db_session.close()
         return True
     else:
         # No se encontró el horario con el ID proporcionado
@@ -1175,6 +1228,7 @@ def cambiar_estado_horario(db_session: Session, horario_id, nuevo_estado):
     if result.rowcount > 0:
         # Se actualizó al menos una fila, lo cual indica éxito
         db_session.commit()
+        db_session.close()
         return True
     else:
         # No se encontró el horario con el ID proporcionado
@@ -1244,6 +1298,7 @@ def obtener_cupos_disponibles():
         horarios_resultado.append(horario_info)
 
     # Retorna la lista de horarios y cupos disponibles
+    db_session.close()
     return horarios_resultado
 
 
@@ -1260,7 +1315,7 @@ def obtener_cupos_hoy(horario, fecha_hoy):
 
     cupos_hoy = db_session.execute(query_reservas_hoy, {
                                    "fecha_actual": fecha_actual_str, "id_horario": id_horario}).scalar()
-
+    db_session.close()
     return cupos_hoy
 
 
@@ -1282,7 +1337,7 @@ def mostrar_fechas_y_horas_reservas():
     # Mostrar las fechas y horas de las reservas
     fechas_horas_reservas = [(reserva[0].strftime(
         "%Y-%m-%d"), reserva[1].strftime("%H:%M:%S")) for reserva in result]
-
+    db_session.close() 
     return fechas_horas_reservas
 
 
@@ -1416,6 +1471,7 @@ def BuscarPorIdPersona(db_session: Session, id):
         """)
 
     resultado = db_session.execute(query, {"id": id}).fetchone()
+    db_session.close()
     return resultado
 
 
@@ -1462,13 +1518,14 @@ LEFT JOIN
         }
 
         lotes.append(lote)
-
+    db_session.close()     
     return lotes
 
 
 def obtener_datos_sucursal():
     query = text(""" SELECT * FROM sucursal """)
     result = db_session.execute(query).first()
+    db_session.close() 
     return result
 
 
@@ -1482,11 +1539,17 @@ def agregar_notificaciones():
 @app.context_processor
 def agregar_notificacion():
     return dict(numero=contar_notificaciones_estado_1(db_session))
+@app.context_processor
+def agregar_notificacion():
+    return dict(numeros=contar_notificaciones_lista(db_session))
+@app.context_processor
+def agregar_notificaciones():
+    return dict(lista=mostrar_lista(db_session))
 
-@app.before_request
 def before_request():
  
     estadisticas_resultantes = actualizar_estado_lotes(db_session)
+    print(f"Estadísticas de los lotes: {estadisticas_resultantes}")
     actualizar_estados(db_session)
     actualizar_estados_pasados(db_session)
 
@@ -2138,6 +2201,7 @@ def validar():
             text("SELECT * FROM usuario WHERE usuario = :usuario"),
             {"usuario": usuario}
         )
+        db_session.close() 
         usuario_db = result.fetchone()
 
         if usuario_db and check_password_hash(usuario_db[4], contraseña):
@@ -2167,6 +2231,8 @@ def cambiar_contraseña():
         text("SELECT * FROM usuario WHERE id = :id"),
         {"id": id}
     )
+    db_session.close() 
+    
     usuario_db = result.fetchone()
 
     if usuario_db and check_password_hash(usuario_db[3], contraseña):
@@ -2244,6 +2310,7 @@ def insertar_solicitud_producto(db_session, id_trabajador, fecha_solicitud, moti
     result = db_session.execute(query, {'id_trabajador': id_trabajador, 'fecha_solicitud': fecha_solicitud, 'motivo': motivo})
     id_solicitud = result.fetchone()[0]
     db_session.commit()
+    db_session.close() 
     return id_solicitud
 
 def actualizar_solicitud_producto(db_session, id_solicitud, id_trabajador, fecha_solicitud, motivo):
@@ -2254,6 +2321,7 @@ def actualizar_solicitud_producto(db_session, id_solicitud, id_trabajador, fecha
     """)
     db_session.execute(query, {'id_trabajador': id_trabajador, 'fecha_solicitud': fecha_solicitud, 'motivo': motivo, 'id_solicitud': id_solicitud})
     db_session.commit()
+    db_session.close() 
 
 def cambiar_estado_solicitud(db_session, id_solicitud, nuevo_estado):
     query = text("""
@@ -2263,6 +2331,7 @@ def cambiar_estado_solicitud(db_session, id_solicitud, nuevo_estado):
     """)
     db_session.execute(query, {'nuevo_estado': nuevo_estado, 'id_solicitud': id_solicitud})
     db_session.commit()
+    db_session.close() 
 def obtener_productos_consumibles(db_session):
     query = text("""
     SELECT id, nombre, descripcion, logo, tipo, estado
@@ -2271,6 +2340,7 @@ def obtener_productos_consumibles(db_session):
     """)
     result = db_session.execute(query)
     productos_consumibles = result.fetchall()
+    db_session.close() 
     return productos_consumibles
 def obtener_solicitudes_con_trabajador(db_session):
     query = text("""
@@ -2286,6 +2356,7 @@ def obtener_solicitudes_con_trabajador(db_session):
     """)
     result = db_session.execute(query)
     solicitudes_con_trabajador = result.fetchall()
+    db_session.close() 
     return solicitudes_con_trabajador
 def obtener_solicitudes_(db_session):
     query = text("""
@@ -2301,6 +2372,7 @@ def obtener_solicitudes_(db_session):
     """)
     result = db_session.execute(query)
     solicitudes_con_trabajador = result.fetchall()
+    db_session.close() 
     return solicitudes_con_trabajador
 def insertar_detalle_solicitud(db_session, id_solicitud, id_producto, cantidad):
     query = text("""
@@ -2311,6 +2383,7 @@ def insertar_detalle_solicitud(db_session, id_solicitud, id_producto, cantidad):
     result = db_session.execute(query, {'id_solicitud': id_solicitud, 'id_producto': id_producto, 'cantidad': cantidad})
     id_detalle_solicitud = result.fetchone()[0]
     db_session.commit()
+    db_session.close() 
     return id_detalle_solicitud
 @app.route("/solicitudes",methods=['GET','POST'])
 @login_required
@@ -2330,6 +2403,7 @@ def obtener_detalles_solicitud(db_session, id_solicitud):
     """)
     result = db_session.execute(query, {'id_solicitud': id_solicitud})
     
+    db_session.close() 
     # Convertir manualmente los resultados a una lista de diccionarios
     detalles = []
     for row in result:
@@ -2439,7 +2513,7 @@ def insertar_sucursal(db_session, nombre_sucursal, razon_social, direccion_escri
     })
 
     db_session.commit()
-
+    db_session.close() 
     return true
 
 
@@ -2450,7 +2524,7 @@ def obtener_sucursales(db_session):
     """)
 
     sucursales = db_session.execute(query).fetchall()
-
+    db_session.close() 
     return sucursales
 
 
@@ -2520,6 +2594,7 @@ def actualizar_sucursal(db_session, id_sucursal, nombre_sucursal, razon_social, 
     })
 
     db_session.commit()
+    db_session.close()
 
     return true
 
@@ -2535,6 +2610,7 @@ def eliminar_sucursal(id):
     })
 
     db_session.commit()
+    db_session.close()
 
     return true
 
@@ -2602,6 +2678,7 @@ ORDER BY
             'hora_cierre': row[11]
         }
         sucursal['horarios'].append(horario)
+    db_session.close()    
 
     return sucursales
 
@@ -2661,6 +2738,7 @@ def insertar_lote():
         # Insertar el movimiento en el inventario
         insertar_movimiento_inventario(
             db_session, lote_id, "Lote nuevo", cantidad)
+        db_session.close()
 
         flash('Se ha creado el lote', 'success')
         return redirect(url_for('lotes'))
@@ -2701,7 +2779,7 @@ def editar_lote(lote_id):
             db_session.commit()
             # Determinar el tipo de movimiento
             tipo_movimiento = "Se incrementó la cantidad" if nueva_cantidad > cantidad_actual else "Se redujo la cantidad"
-
+            db_session.close()
             # Calcular la cantidad de cambio en el inventario
             cantidad_cambio = abs(nueva_cantidad - cantidad_actual)
 
@@ -2723,6 +2801,7 @@ def editar_lote(lote_id):
             })
 
             db_session.commit()
+            db_session.close() 
 
         flash('Se ha actualizado el lote', 'success')
     return redirect(url_for('lotes'))
@@ -3201,6 +3280,7 @@ WHERE
         'correo': resultado[5],
         'tipo_persona': resultado[6]
     }
+    db_session.close()
 
     return datosCliente
 
@@ -3214,8 +3294,9 @@ def guardar_reservacion(db_session: Session, id_cliente, id_servicio, idevento_c
     result = db_session.execute(query, {"id_cliente": id_cliente,"id_servicio": id_servicio,"idevento_calendar":idevento_calendar,"codigo": codigo,"fecha": fecha,"hora_inicio": hora_inicio, "hora_fin":hora_final, "subtotal": subtotal,"estado": estado,"id_metodo_pago":id_metodo_pago})
     id_reservacion = result.fetchone()[0]
 
-    db_session.commit()
 
+    db_session.commit()
+    db_session.close()
     return codigo
 
     # Devolver el ID de la reservación
@@ -3228,6 +3309,7 @@ def recuperar_id_cliente(db_session, codigo_cliente):
     """)
 
     id_cliente = db_session.execute(query, {'codigo_cliente': codigo_cliente}).scalar()
+    db_session.close()
 
     return id_cliente
 
@@ -3239,6 +3321,7 @@ def recuperar_id_servicio(db_session, nombre_servicio):
     """)
 
     id_servicio = db_session.execute(query, {'nombre_servicio': nombre_servicio}).scalar()
+    db_session.close()
 
     return id_servicio
 
@@ -3250,6 +3333,7 @@ def recuperar_precio_servicio(db_session, id):
     """)
 
     id_servicio = db_session.execute(query, {'id': id}).scalar()
+    db_session.close()
 
     return id_servicio
 
@@ -3799,6 +3883,7 @@ def obtener_reservaciones_estado_1(telefono):
         {"codigo": reserva.codigo, "fecha": reserva.fecha}
         for reserva in reservaciones
     ]
+    db_session.close()
 
     return jsonify(reservaciones_resultado)
 def eliminar_evento_google_calendar(service, evento_id):
@@ -3833,8 +3918,7 @@ def cancelar_reserva(codigo_reserva):
                 eliminar_evento_google_calendar(service, idevento_calendar)
 
       
-                        
-
+            db_session.close()            
             return jsonify({"mensaje": "Reserva cancelada exitosamente."}), 200
         else:
             return jsonify({"mensaje": "No se pudo cancelar la reserva. Verifica el código de reserva o el estado actual."}), 404
@@ -3931,6 +4015,7 @@ def cambiar_estado_reserva():
         query = text("UPDATE reservacion SET estado = 5 WHERE codigo = :codigo_reserva AND estado = 1")
         result = db_session.execute(query, {"codigo_reserva": codigo_reserva})
         db_session.commit()
+        db_session.close()
 
         # Verificar si la reserva fue actualizada
         if result.rowcount > 0:
@@ -3945,6 +4030,7 @@ def obtener_informacion_venta_por_codigo(db_session, codigo):
     # Lógica para obtener información necesaria para la venta usando el código
     query = text("SELECT idcliente, subtotal, id,id_metodo_pago FROM reservacion WHERE codigo = :codigo")
     result = db_session.execute(query, {"codigo": codigo}).fetchone()
+    db_session.close()
 
     return result
 @cross_origin()
@@ -4001,40 +4087,109 @@ def cotizacionproducto():
         return jsonify({'message': 'Se ha consultado'}), 200
     else:
         return jsonify({'error': 'Método no permitido'}), 405
-    
+
+def verificar_telefono_en_lista_negra(db_session, telefono):
+    query = text("SELECT COUNT(*) FROM lista_negra WHERE telefono = :telefono")
+    resultado = db_session.execute(query, {"telefono": telefono}).fetchone()
+    print(resultado)
+    db_session.close()
+    # Devuelve True si el teléfono está en la lista negra (resultado es mayor que 0), False en caso contrario
+    return resultado[0] > 0
 @cross_origin()
 @app.route("/cambiarcotizacionproducto/<int:id>", methods=['GET', 'POST'])
 def cambiarcotizacionproducto(id):
-    if request.method == 'GET':
-        cambiar_estado_notificacion(db_session, id, 2)
+    if request.method == 'POST':
+        telefono=request.form['telefono']
+        telefono_en_lista_negra = verificar_telefono_en_lista_negra(db_session, telefono)
+        if telefono_en_lista_negra:
+            cambiar_estado_notificacion(db_session, id, 2)
+            actualizar_estado_lista_negra(db_session, telefono,0)
+            return redirect("/")
+        else:
+            cambiar_estado_notificacion(db_session, id, 2)
+            insertar_lista_negra(db_session,telefono)
+            return redirect("/")
+    else:
+        return jsonify({'error': 'Método no permitido'}), 405
+@cross_origin()
+@app.route("/cambiarlista/<int:id>", methods=['GET', 'POST'])
+def lista(id):
+    if request.method == 'POST':
+        telefono=request.form['telefono']
+        actualizar_estado_lista_negra(db_session, telefono,1)
         return redirect("/")
     else:
         return jsonify({'error': 'Método no permitido'}), 405
+
+def mostrar_lista(db_session):
+    try:
+        query = text("SELECT * FROM lista_negra where estado=0")
+        result = db_session.execute(query)
+        lista_negra = result.fetchall()
+        db_session.close()
+        return lista_negra
+    except Exception as e:
+        print(f"Error al mostrar la lista negra: {str(e)}")
+        return []
+
 
 
 def insertar_notificacion(db_session, id_producto, telefono, estado):
     query = text("INSERT INTO notificarproducto (id_producto, telefono, estado) VALUES (:id_producto, :telefono, :estado)")
     db_session.execute(query, {"id_producto": id_producto, "telefono": telefono, "estado": estado})
     db_session.commit()
+    db_session.close()
 
 def cambiar_estado_notificacion(db_session, id_notificacion, nuevo_estado):
     query = text("UPDATE notificarproducto SET estado = :nuevo_estado WHERE id = :id_notificacion")
     db_session.execute(query, {"nuevo_estado": nuevo_estado, "id_notificacion": id_notificacion})
     db_session.commit()
+    db_session.close()
 
 def obtener_notificaciones(db_session):
     query = text("SELECT np.*, p.nombre AS nombre_producto, p.logo AS logo_producto FROM notificarproducto np "
                  "JOIN producto p ON np.id_producto = p.id WHERE np.estado = 1")
     result = db_session.execute(query)
     notificaciones = result.fetchall()
+    db_session.close()
+    db_session.close()
     return notificaciones
 
 def contar_notificaciones_estado_1(db_session):
     query = text("SELECT COUNT(*) FROM notificarproducto WHERE estado = 1")
     result = db_session.execute(query)
     numero_notificaciones_estado_1 = result.scalar()
+    db_session.close()
     return numero_notificaciones_estado_1
 
+def contar_notificaciones_lista(db_session):
+    query = text("SELECT COUNT(*) FROM lista_negra WHERE estado = 0")
+    result = db_session.execute(query)
+    numero_notificaciones_estado_1 = result.scalar()
+    db_session.close()
+    return numero_notificaciones_estado_1
+def insertar_lista_negra(db_session, telefono):
+    try:
+        query = text("INSERT INTO lista_negra (telefono, estado) VALUES (:telefono, :estado)")
+        db_session.execute(query, {"telefono": telefono, "estado": 0})  # Estado predeterminado 0
+        db_session.commit()
+        db_session.close()
+        print("Número insertado correctamente en la lista negra.")
+    except Exception as e:
+        db_session.rollback()
+        print(f"Error al insertar el número en la lista negra: {str(e)}")
+
+
+def actualizar_estado_lista_negra(db_session, telefono, nuevo_estado):
+    try:
+        query = text("UPDATE lista_negra SET estado = :nuevo_estado WHERE telefono = :telefono")
+        db_session.execute(query, {"nuevo_estado": nuevo_estado, "telefono": telefono})
+        db_session.commit()
+        db_session.close()
+        print("Estado actualizado correctamente en la lista negra.")
+    except Exception as e:
+        db_session.rollback()
+        print(f"Error al actualizar el estado en la lista negra: {str(e)}")
 # Esa ruta debe de usarse si y solamente si el token de la API de Google Calendar expira
 # O es primara instalación
 # @app.route('/generar_API_KEY_CALENDAR', methods=['GET', 'POST'])
@@ -4045,9 +4200,55 @@ def contar_notificaciones_estado_1(db_session):
 #     except Exception as e:
 #         print(e)
 #         return 'No se puedo generar la API KEY!'
+        
+@cross_origin()
+@app.route('/lista_negra', methods=['GET'])
+def obtener_lista_negra():
+    try:
+       
+       query = text("SELECT telefono FROM lista_negra where estado = 0")
+       result = db_session.execute(query)
+       registros = result.fetchall()
 
+        # Cerrar la sesión
+       db_session.close()
 
+       if not registros:  # Si la lista de registros está vacía
+            lista_negra = [{'telefono': '12345678'}]
+            return jsonify({'lista_negra': lista_negra})
+       else:
+            lista_negra = [{'telefono': registro.telefono} for registro in registros]    
+            return jsonify({'lista_negra': lista_negra})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500  
+    
+@cross_origin()
+@app.route("/validar_usuario_por_telefono", methods=['POST'])
+def validar_usuario_por_telefono():
+    if request.method == 'POST':
+        # Obtener el número de teléfono del cuerpo de la solicitud
+        telefono = request.json.get('telefono')
+        # Consulta SQL para verificar si el número de teléfono está presente en la tabla persona
+        query_persona = text("SELECT id, nombre FROM persona WHERE celular = :telefono")
+        result_persona = db_session.execute(query_persona, {'telefono': telefono}).fetchone()
+        
+        if result_persona:
+            id_persona, nombre = result_persona
+
+            # Consulta SQL para verificar si el id_persona existe en la tabla usuario y tiene el rol número 3
+            query_usuario = text("SELECT id FROM usuario WHERE id_persona = :id_persona AND rol = 3")
+            result_usuario = db_session.execute(query_usuario, {'id_persona': id_persona}).fetchone()
+            db_session.close()
+
+            if result_usuario:
+                return jsonify({'nombre': nombre}),200
+            else:
+                return jsonify({'mensaje': 'El usuario no tiene el rol número 3'})
+        else:
+            return jsonify({'mensaje': 'El número de teléfono no está asociado a ningún usuario'})
+    else:
+        return jsonify({'error': 'Método no permitido'}), 405
 
 if __name__ == '__main__':
 
-    app.run(host='127.0.0.1', port=8000, debug=True)
+    app.run(host='127.0.0.1', port=5000, debug=True)
