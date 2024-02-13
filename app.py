@@ -2018,6 +2018,7 @@ def crearprecioservicios():
     precio = request.form.get('precio')
     estado = request.form.get('estado')
     insertar_precio_servicio(db_session, idproducto, precio, estado)
+    generar_pdf_servicios(db_session) 
     flash("Se ha registrado correctamente el precio", "success")
     return redirect('/precio_servicios')
 
@@ -2029,7 +2030,7 @@ def cambiaprecioservicios(id):
     estado = request.form.get('estado')
 
     insertar_precio_servicio(db_session, idproducto, precio, estado)
-
+    generar_pdf_servicios(db_session)
     cambiar_estado_precio_servicio(db_session, id, 2)
     flash("Se ha registrado correctamente el precio", "success")
     return redirect('/precio_servicios')
@@ -2039,6 +2040,7 @@ def cambiaprecioservicios(id):
 def cambiaprecioproductoestadoservcios(id):
 
     cambiar_estado_precio_servicio(db_session, id, 2)
+    generar_pdf_servicios(db_session)
     flash("Se ha desactivado  correctamente el precio", "success")
     return redirect('/precio_servicios')
 
