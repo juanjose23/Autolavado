@@ -790,7 +790,7 @@ def obtener_productos(db_session):
     db_session.close()
     return productos
 def obtener_todos_productos(db_session):
-    query = text("SELECT * FROM producto ")
+    query = text("SELECT * FROM producto ORDER BY id")
     productos = db_session.execute(query).fetchall()
     db_session.close()
     return productos
