@@ -46,7 +46,7 @@
                         <table id="example1" class="table table-bordered table-striped">
                             <thead>
                                 <tr>
-
+                                    <th>#</th>
                                     <th>Producto</th>
                                     <th>Descripción</th>
                                     <th>Tipo</th>
@@ -58,7 +58,7 @@
                             <tbody>
                                 {% for productos in productos %}
                                 <tr>
-
+                                    <td>{{productos.id}}</td>
                                     <td>{{ productos.nombre }}</td>
                                     <td>{{ productos.descripcion }}</td>
                                     <td>
