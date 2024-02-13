@@ -785,7 +785,7 @@ def consultar_servicios(db_session: Session, filtro_id=None):
 
 
 def obtener_productos(db_session):
-    query = text("SELECT * FROM producto WHERE estado = 1 AND tipo IN(1,3)")
+    query = text("SELECT * FROM producto WHERE estado = 1 AND tipo IN(1,3) ORDER BY id")
     productos = db_session.execute(query).fetchall()
     db_session.close()
     return productos
