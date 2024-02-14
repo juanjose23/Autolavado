@@ -111,6 +111,12 @@ CREATE TABLE horarios(
     estado INTEGER NOT NULL
 );
 
+CREATE TABLE categoria(
+    id SERIAL PRIMARY KEY,
+    nombre varchar not null,
+    descripcion varchar,
+    estado INTEGER
+);
 
 CREATE TABLE servicios(
     id SERIAL PRIMARY KEY,
@@ -118,7 +124,8 @@ CREATE TABLE servicios(
     descripcion VARCHAR(250),
     foto VARCHAR(250),
     realizacion TIME NOT NUll,
-    estado INTEGER
+    estado INTEGER,
+    id_categoria INTEGER REFERENCES categoria(id)
 );
 
 CREATE TABLE precio_servicios(
