@@ -101,8 +101,12 @@
                         <div class="form-group">
                             <label>Servicios: </label>
                             <select name="idproducto" id="producto" class="form-control select2bs4">
-                                {% for productos in servicios %}
-                                <option value="{{productos.id}}"> {{productos.nombre}}</option>
+                                {% for categoria_id, categoria_data in servicios.items() %}
+                                <optgroup label="{{ categoria_data.nombre }}">
+                                    {% for subcategoria in categoria_data.subcategorias %}
+                                    <option value="{{ subcategoria.id }}">{{ subcategoria.nombre }}</option>
+                                    {% endfor %}
+                                </optgroup>
                                 {% endfor %}
                             </select>
 
@@ -139,6 +143,11 @@
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                     </div>
                     <div class="modal-body">
+                        <div class="form-group">
+                            <label>Categoría: </label>
+                          
+                            <input type="text" class="form-control" value="{{productos.categoria}}" disabled>
+                        </div>
                         <div class="form-group">
                             <label>Servicio: </label>
                             <input type="text" name="idproducto" value="{{productos.producto}}" hidden>
