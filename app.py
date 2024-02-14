@@ -775,7 +775,18 @@ def obtener_servicios_activos(db_session: Session, id_categoria):
     result = db_session.execute(query, {'id_categoria': id_categoria}).fetchall()
     db_session.close()
     return result
-
+def obtener_servicios_activos_pdf(db_session: Session):
+    query = text('''
+        SELECT s.id, s.descripcion, s.nombre, s.realizacion, ps.precio 
+        FROM servicios s 
+        LEFT JOIN precio_servicios ps ON s.id = ps.id_servicios 
+        LEFT JOIN categoria c ON s.id_categoria = c.id
+        WHERE s.estado = 1 AND ps.estado = 1
+    ''')
+    
+    result = db_session.execute(query).fetchall()
+    db_session.close()
+    return result
 
 def consultar_servicios(db_session: Session, filtro_id=None):
     query = text("""
@@ -3353,7 +3364,7 @@ def ver_servicios_clientes():
 def generar_pdf_servicios(db_session):
     # Aquí es donde se renderiza tu plantilla HTML con Jinja
     # Se obtiene la lista de productos
-    servicios = obtener_servicios_activos(db_session)
+    servicios = obtener_servicios_activos_pdf(db_session)
 
     rendered = render_template('servicios_generador.html', servicios=servicios)
     # Aquí es donde se convierte el HTML renderizado a PDF
