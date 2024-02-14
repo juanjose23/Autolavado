@@ -1103,7 +1103,7 @@ def obtener_servicios_sin_precio(db_session):
 
 def obtener_precios_servicios(db_session):
     query = text(
-        "SELECT pp.*,p.id AS producto, p.nombre,c.nombre AS Categoria FROM precio_servicios pp INNER JOIN servicios p ON p.id = pp.id_servicios INNER JOIN categoria c ON c.id =s.id_categoria ")
+        "SELECT pp.*,p.id AS producto, p.nombre,c.nombre AS Categoria FROM precio_servicios pp left JOIN servicios p ON p.id = pp.id_servicios INNER JOIN categoria c ON c.id =s.id_categoria ")
     precios = db_session.execute(query).fetchall()
     db_session.close() 
     return precios
