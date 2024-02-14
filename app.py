@@ -4224,13 +4224,13 @@ def enviar_mensajes_whatsapp(numero, texto):
     webbrowser.open(f'https://web.whatsapp.com/send?phone={codigo}{numero[3:]}')
     print(f'https://web.whatsapp.com/send?phone={codigo}{numero[3:]}')
     # Esperamos unos segundos para que se abra WhatsApp Web y cargue la página
-    sleep(10)
+    sleep(15)
 
     # Enviamos la cantidad especificada de mensajes
  
     pyautogui.typewrite(texto)
     pyautogui.press('enter')
-    sleep(2)
+    sleep(3)
 
     # Cierra la ventana del navegador (puede ser diferente según el sistema operativo)
     pyautogui.hotkey('ctrl', 'w')  # Cier
