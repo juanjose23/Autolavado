@@ -91,7 +91,7 @@
             <div class="modal-content">
                 <form action="/agregarTipoVenta" method="post">
                     <div class="modal-header">
-                        <h4 class="modal-title">Crear Categoria</h4>
+                        <h4 class="modal-title">Crear método de pago</h4>
                         <button type="button" class="close" data-dismiss="modal"
                             aria-label="Close">
                             <span aria-hidden="true">&times;</span>
@@ -130,13 +130,13 @@
         </div>
         <!-- /.modal-dialog -->
     </div>
-    {% for categoria in categorias %}
+    {% for categoria in tipos %}
     <div class="modal fade" id="modal-default{{categoria.id}}">
         <div class="modal-dialog">
             <div class="modal-content">
                 <form action="/modificartipoventa/{{categoria.id}}" method="post">
                     <div class="modal-header">
-                        <h4 class="modal-title">Actualizar Categoria</h4>
+                        <h4 class="modal-title">Actualizar Método</h4>
                         <button type="button" class="close" data-dismiss="modal"
                             aria-label="Close">
                             <span aria-hidden="true">&times;</span>
@@ -177,13 +177,13 @@
         <!-- /.modal-dialog -->
     </div>
     {% endfor %}
-    {%for categoria in categorias%}
+    {%for categoria in tipos%}
     <div class="modal fade" id="modal-danger{{categoria.id}}">
         <div class="modal-dialog">
             <div class="modal-content bg-danger">
                 <form action="/cambiarmetodo" method="post">
                     <div class="modal-header">
-                        <h4 class="modal-title">Eliminar categoria</h4>
+                        <h4 class="modal-title">Eliminar Método de pago</h4>
                         <button type="button" class="close" data-dismiss="modal"
                             aria-label="Close">
                             <span aria-hidden="true">&times;</span>
