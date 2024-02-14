@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" type="image/png" href="{{ datos_sucursal.logo }}">
+    <link rel="icon" type="image/png" href="{{datos_sucursal.logo }}">
     <title>{{ datos_sucursal.nombre }}{% block title %}/Inicio{% endblock %}</title>
     <!-- Google Font: Source Sans Pro -->
     <link rel="stylesheet"
@@ -193,6 +193,12 @@
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="/categoria" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Categorias</p>
+                                    </a>
+                                </li>
                                 <li class="nav-item">
                                     <a href="/servicios" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
@@ -464,15 +470,7 @@
             });
         });
     </script>
-    <!-- ChartJS -->
-    <script src="{{ url_for('static', filename='plugins/chart.js/Chart.min.js') }}"></script>
-    <!-- Sparkline -->
-    <script src="{{ url_for('static', filename='plugins/sparklines/sparkline.js') }}"></script>
-    <!-- JQVMap -->
-    <script src="{{ url_for('static', filename='plugins/jqvmap/jquery.vmap.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='plugins/jqvmap/maps/jquery.vmap.usa.js') }}"></script>
-    <!-- jQuery Knob Chart -->
-    <script src="{{ url_for('static', filename='plugins/jquery-knob/jquery.knob.min.js') }}"></script>
+   
     <!-- daterangepicker -->
     <script src="{{ url_for('static', filename='plugins/moment/moment.min.js') }}"></script>
     <script src="{{ url_for('static', filename='plugins/daterangepicker/daterangepicker.js') }}"></script>
