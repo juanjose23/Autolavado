@@ -18,13 +18,13 @@
             <div class="col-sm-6">
                 <h1>Reservación de servicios</h1>
             </div>
-            
+
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
-                     <li class="breadcrumb-item"><a href="#">Gestión de reservación</a></li>
+                    <li class="breadcrumb-item"><a href="#">Gestión de reservación</a></li>
                     <li class="breadcrumb-item active">Reservación</li>
-                    
-                   
+
+
                 </ol>
             </div>
         </div>
@@ -33,7 +33,7 @@
 <section class="content">
     <div class="container-fluid slider-container">
         <div class="row slider" id="slider">
-         
+
             <div class="col-md-12 slide">
                 <div class="card">
                     <div class="card-header">
@@ -48,7 +48,7 @@
                                 <tr>
                                     <th>Código</th>
                                     <th>Cliente</th>
-                                  
+
                                     <th>Celular</th>
                                     <th>Fecha</th>
                                     <th>Hora inicio</th>
@@ -57,6 +57,7 @@
                                     <th>Valor</th>
                                     <th>Método de pago</th>
                                     <th>Estado</th>
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -89,7 +90,9 @@
                                         <span class="badge bg-gradient-lightblue">Realizado</span>
                                         {% endif %}
                                     </td>
-
+                                    <td> <a data-toggle="modal" data-target="#modal-default{{reservacion.id}}"><i
+                                                class="fas fa-pencil-alt"></i></a>
+                                            </td>
 
 
 
@@ -118,6 +121,61 @@
 
         </div>
     </div>
+    {% for categoria in reservaciones %}
+    <div class="modal fade" id="modal-default{{categoria.id}}">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="/cancelarcitas" method="post" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Cancelar  Reservación de {{categoria.servicio}}</h4>
+                        <button type="button" class="close" data-dismiss="modal"
+                            aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Cliente</label>
+                          <input type="text" class="form-control" value="{{categoria.cliente}}" readonly>
+                        </div>
+                        <input type="text" name="celular" value="{{categoria.celular}}" hidden>
+                        <input type="text" name="idevents" value="{{categoria.idevento_calendar}}" hidden>
+                        <input type="text" name="id" value="{{categoria.id}}" hidden>
+                        <div class="form-group">
+                            <label>Fecha</label>
+                            <input type="text" name="nombre" id="nombre"
+                                value="{{categoria.fecha}}"
+                                class="form-control" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Hora de inicio</label>
+                            <input type="text" name="nombre" id="nombre"
+                                value="{{categoria.hora_inicio}}"
+                                class="form-control" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="">Hora de finalización</label>
+                            <input type="text" class="{{categoria.hora_fin}}">
+                        </div>
+                        <div class="form-group">
+                            <label>Motivo</label>
+                            <textarea id="descripcion" name="motivo"
+                                class="form-control" required></textarea>
+                        </div>
+                       
+                    </div>
+                    <div class="modal-footer justify-content-between">
+                        <button type="button" class="btn btn-danger"
+                            data-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">Guardar</button>
+                    </div>
+                </form>
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
+    {% endfor %}
     <style>
         /* Añade estilo a los botones */
         .embed-responsive .btn {
