@@ -379,27 +379,27 @@ def cambiar_estado_horario(db_session: Session, id_horario, nuevo_estado):
     db_session.close()
 
 
-def insertar_servicio(db_session: Session, nombre, descripcion, foto, realizacion, estado):
+def insertar_servicio(db_session: Session, nombre, descripcion, foto, realizacion, estado,id_categoria):
     query = text("""
-        INSERT INTO servicios (nombre, descripcion, foto,realizacion, estado)
-        VALUES (:nombre, :descripcion, :foto,:realizacion, :estado)
+        INSERT INTO servicios (nombre, descripcion, foto,realizacion, estado,id_categoria)
+        VALUES (:nombre, :descripcion, :foto,:realizacion, :estado,:id_categoria)
     """)
 
     db_session.execute(query, {"nombre": nombre, "descripcion": descripcion,
-                       "foto": foto, "realizacion": realizacion, "estado": estado})
+                       "foto": foto, "realizacion": realizacion, "estado": estado, "id_categoria":id_categoria})
     db_session.commit()
     db_session.close() 
 
 
-def update_servicio(db_session: Session, id_servicio, nombre, descripcion, foto, realizacion, estado):
+def update_servicio(db_session: Session, id_servicio, nombre, descripcion, foto, realizacion, estado,id_categoria):
     query = text("""
         UPDATE servicios
-        SET nombre = :nombre, descripcion = :descripcion, foto = :foto,realizacion =:realizacion, estado = :estado
+        SET nombre = :nombre, descripcion = :descripcion, foto = :foto,realizacion =:realizacion, estado = :estado,id_categoria=:id_categoria
         WHERE id = :id_servicio
     """)
 
     db_session.execute(query, {"id_servicio": id_servicio, "nombre": nombre,
-                       "descripcion": descripcion, "foto": foto, "realizacion": realizacion, "estado": estado})
+                       "descripcion": descripcion, "foto": foto, "realizacion": realizacion, "estado": estado, "id_categoria":id_categoria})
     db_session.commit()
     db_session.close() 
 
@@ -764,9 +764,16 @@ def cambiar_estado_reservacion(db_session: Session, id_reservacion, nuevo_estado
     db_session.close()
 
 
-def obtener_servicios_activos(db_session: Session):
-    query = text('SELECT s.id, s.descripcion, s.nombre, s.realizacion, ps.precio FROM servicios s LEFT JOIN precio_servicios ps ON s.id = ps.id_servicios WHERE s.estado = 1 and ps.estado = 1')
-    result = db_session.execute(query).fetchall()
+def obtener_servicios_activos(db_session: Session, id_categoria):
+    query = text('''
+        SELECT s.id, s.descripcion, s.nombre, s.realizacion, ps.precio 
+        FROM servicios s 
+        LEFT JOIN precio_servicios ps ON s.id = ps.id_servicios 
+        WHERE s.estado = 1 AND ps.estado = 1 AND s.id_categoria = :id_categoria
+    ''')
+    
+    result = db_session.execute(query, {'id_categoria': id_categoria}).fetchall()
+    db_session.close()
     return result
 
 
@@ -1062,7 +1069,7 @@ def ValidarNumeroCelularExistente(numero):
 
 
 def obtener_serviciossistema(db_session: Session):
-    query = text("SELECT *  FROM servicios ")
+    query = text("SELECT s.*,c.nombre AS catnombre FROM servicios s LEFT JOIN categoria c ON s.id_categoria  =c.id")
     result = db_session.execute(query).fetchall()
     db_session.close()
     return result
@@ -1686,12 +1693,28 @@ def obtenerHorariosSucursalesUbicaciones():
 
     return true
 
-
 @cross_origin()
-@app.route('/api/getservicios', methods=['GET'])
-def obtener_servicios():
+@app.route('/api/getcategorias', methods=['GET'])
+def obtener_categorias():
     try:
-        result = obtener_servicios_activos(db_session)
+        result = mostrar_categorias_estado_1(db_session)
+        servicios = []
+        for row in result:
+            servicio = {
+                "id": row.id,
+                "descripcion": row.descripcion,
+                "nombre": row.nombre
+            }
+            servicios.append(servicio)
+        return jsonify(servicios)
+    except Exception as error:
+        print('Error:', str(error))
+        return jsonify({'error': 'Ocurrió un error al obtener las categorias'}), 500
+@cross_origin()
+@app.route('/api/getservicios/<int:id>', methods=['GET'])
+def obtener_servicios(id):
+    try:
+        result = obtener_servicios_activos(db_session,id)
         servicios = []
         for row in result:
             servicio = {
@@ -1828,6 +1851,149 @@ def inicio():
     actualizar_estado_lotes(db_session)
     return render_template("index.html")
 
+def insertar_categoria(db_session: Session, nombre, descripcion=None, estado=None):
+    try:
+        query = text("""
+            INSERT INTO categoria (nombre, descripcion, estado)
+            VALUES (:nombre, :descripcion, :estado)
+        """)
+
+        db_session.execute(query, {
+            "nombre": nombre,
+            "descripcion": descripcion,
+            "estado": estado
+        })
+        db_session.commit()
+        return True, "Categoría insertada correctamente"
+    except Exception as e:
+        db_session.rollback()
+        return False, f"Error al insertar la categoría: {str(e)}"
+    finally:
+        db_session.close()
+
+def actualizar_categoria(db_session: Session, categoria_id, nombre=None, descripcion=None, estado=None):
+    try:
+        query = text("""
+            UPDATE categoria
+            SET nombre = :nombre, descripcion = :descripcion, estado = :estado
+            WHERE id = :id
+        """)
+
+        db_session.execute(query, {
+            "id": categoria_id,
+            "nombre": nombre,
+            "descripcion": descripcion,
+            "estado": estado
+        })
+        db_session.commit()
+        return True, "Categoría actualizada correctamente"
+    except Exception as e:
+        db_session.rollback()
+        return False, f"Error al actualizar la categoría: {str(e)}"
+    finally:
+        db_session.close()
+
+def cambiar_estado_categoria(db_session: Session, categoria_id, nuevo_estado):
+    try:
+        query = text("""
+            UPDATE categoria
+            SET estado = :estado
+            WHERE id = :id
+        """)
+
+        db_session.execute(query, {
+            "id": categoria_id,
+            "estado": nuevo_estado
+        })
+        db_session.commit()
+      
+        return True, "Estado de la categoría cambiado correctamente"
+    except Exception as e:
+        db_session.rollback()
+        return False, f"Error al cambiar el estado de la categoría: {str(e)}"
+    finally:
+        db_session.close()
+def mostrar_categorias(db_session: Session):
+    try:
+        query = text("""
+            SELECT * FROM categoria
+        """)
+
+        resultados = db_session.execute(query)
+        categorias = resultados.fetchall()
+        
+        return categorias
+    except Exception as e:
+        return f"Error al recuperar las categorías: {str(e)}"
+    finally:
+        db_session.close()
+
+def mostrar_categorias_estado_1(db_session: Session):
+    try:
+        query = text("""
+            SELECT * FROM categoria WHERE estado = 1
+        """)
+
+        resultados = db_session.execute(query)
+        categorias = resultados.fetchall()
+        
+        return categorias
+    except Exception as e:
+        return f"Error al recuperar las categorías: {str(e)}"
+    finally:
+        db_session.close()
+
+@app.route('/categoria',methods=['GET','POST'])
+@login_required
+@role_required([1,2])
+def categoria():
+    categorias = mostrar_categorias(db_session)
+    return render_template('categoria.html', categorias=categorias)
+
+@app.route("/crear_categoria", methods=["GET", "POST"])
+@login_required
+def crear_categoria():
+    if request.method == "POST":
+        nombre = request.form.get('nombre')
+        descripcion = request.form.get('descripcion')
+        estado = request.form.get('estado')
+        categoria = insertar_categoria(db_session,
+            nombre=nombre, descripcion=descripcion, estado=estado)
+        flash("Se ha creado la nueva categoria", "success")
+        return redirect(url_for('categoria'))
+    else:
+        flash("No se ha creado la categoria", "error")
+        return redirect(url_for('categoria'))
+
+
+@app.route("/editar_categoria/<int:id>", methods=["GET", "POST"])
+@login_required
+def editar_categoria(id):
+    if request.method == "POST":
+        nombre = request.form.get('nombre')
+        descripcion = request.form.get('descripcion')
+        estado = request.form.get('estado')
+        actualizar_categoria(db_session,id,nombre=nombre,descripcion=descripcion,estado=estado)
+        flash("Se ha actualizado la categoria", "success")
+        return redirect(url_for('categoria'))
+    else:
+        flash("No se ha actualizado la categoria", "error")
+        return redirect(url_for('categoria'))
+
+
+@app.route("/eliminar_categoria", methods=["POST"])
+@login_required
+def eliminar_categoria():
+    categoria_id = request.form.get("id")
+    categoria = cambiar_estado_categoria(db_session,categoria_id,2)
+
+
+    flash("Se ha desactivado la categoria", "success")
+
+
+   
+    return redirect(url_for('categoria'))
+
 
 @app.route('/productos', methods=['GET', 'POST'])
 @login_required
@@ -1945,11 +2111,13 @@ def cambiaprecioproductoestado(id):
 @role_required([1,2])
 def servicios():
     servicios = obtener_serviciossistema(db_session)
-    return render_template("servicios.html", servicios=servicios)
+    categorias=mostrar_categorias_estado_1(db_session)
+    return render_template("servicios.html", servicios=servicios,categorias=categorias)
 
 
 @app.route("/crearservicio", methods=["POST"])
 def crearservicios():
+    id_categoria = request.form.get('categoria')
     nombre = request.form.get('nombre')
     descripcion = request.form.get('descripcion')
     estado = request.form.get('estado')
@@ -1958,7 +2126,7 @@ def crearservicios():
     carpeta_destino = 'static/img/servicios'
     logo = guardar_imagen(archivo, carpeta_destino)
     insertar_servicio(db_session, nombre, descripcion,
-                      logo, realizacion, estado)
+                      logo, realizacion, estado,id_categoria)
     generar_pdf_servicios(db_session)
     flash("Se ha registrado correctamente el servicios", "success")
     return redirect('/servicios')
@@ -1966,6 +2134,7 @@ def crearservicios():
 
 @app.route('/actualizar_servicios/<int:servicio_id>', methods=['POST', 'GET'])
 def actualizar_servicio(servicio_id):
+    id_categoria = request.form.get('categoria')
     nombre = request.form.get('nombre')
     descripcion = request.form.get('descripcion')
     estado = request.form.get('estado')
@@ -1984,12 +2153,12 @@ def actualizar_servicio(servicio_id):
             print(f"No se pudo eliminar la imagen anterior: {e}")
 
         update_servicio(db_session, servicio_id, nombre,
-                        descripcion, logo, realizacion, estado)
+                        descripcion, logo, realizacion, estado,id_categoria)
         flash("Se ha actualizado correctamente el servicio, recuerda de actualizar el PDF para los usuarios del BOT!", "success")
         return redirect(url_for('servicios'))
 
     update_servicio(db_session, servicio_id, nombre,
-                    descripcion, logos, realizacion, estado)
+                    descripcion, logos, realizacion, estado,id_categoria)
     flash("Se ha actualizado correctamente el servicio, recuerda de actualizar el PDF para los usuarios del BOT!", "success")
     generar_pdf_servicios(db_session)
     return redirect(url_for('servicios'))
@@ -3871,7 +4040,7 @@ def convertir_a_12_horas(hora):
 def obtener_reservaciones_estado_1(telefono):
     # Query para obtener reservaciones en estado 1 filtradas por número de teléfono
     query = text("""
-        SELECT r.codigo, r.fecha
+        SELECT r.codigo, r.fecha,r.hora_inicio,r.hora_fin
         FROM reservacion r
         JOIN clientes c ON r.idcliente = c.id
         JOIN persona p ON c.id_persona = p.id
@@ -3882,7 +4051,7 @@ def obtener_reservaciones_estado_1(telefono):
 
     # Procesar los resultados según tu necesidad
     reservaciones_resultado = [
-        {"codigo": reserva.codigo, "fecha": reserva.fecha}
+        {"codigo": reserva.codigo, "fecha": reserva.fecha.strftime("%Y-%m-%d"),"Hora de llegada":str(reserva.hora_inicio),"Hora finalizacion":str(reserva.hora_fin)}
         for reserva in reservaciones
     ]
     db_session.close()
@@ -3927,13 +4096,13 @@ def cancelar_reserva(codigo_reserva):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 @cross_origin()
 @app.route('/reservaciones_hoy_admin', methods=['GET'])
 def obtener_reservaciones_hoy_admin():
     try:
         # Obtener las reservaciones de hoy para el administrador
         reservaciones = obtener_reservacion_hoy_admin(db_session)
-        print(reservaciones)
         # Procesar los resultados según tu necesidad
         reservaciones_resultado = [
             {
@@ -3949,10 +4118,11 @@ def obtener_reservaciones_hoy_admin():
             for reserva in reservaciones
         ]
 
-        return jsonify(reservaciones_resultado)
+        return jsonify(reservaciones_resultado),200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
 @cross_origin()
 @app.route('/reservaciones_hoy_admin_estado', methods=['GET'])
 def obtener_reservaciones_hoy_admin_estado():
@@ -3977,7 +4147,7 @@ def obtener_reservaciones_hoy_admin_estado():
             for reserva in reservaciones
         ]
 
-        return jsonify(reservaciones_resultado)
+        return jsonify(reservaciones_resultado),200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500  
@@ -4033,7 +4203,6 @@ def obtener_informacion_venta_por_codigo(db_session, codigo):
     query = text("SELECT idcliente, subtotal, id,id_metodo_pago FROM reservacion WHERE codigo = :codigo")
     result = db_session.execute(query, {"codigo": codigo}).fetchone()
     db_session.close()
-
     return result
 @cross_origin()
 @app.route('/realizar_venta', methods=['POST'])
