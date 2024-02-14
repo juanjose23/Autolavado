@@ -48,3 +48,12 @@ uritemplate==4.1.1
 urllib3==2.1.0
 Werkzeug==3.0.1
 matplotlib
+pyasn1==0.5.1
+pyasn1-modules==0.3.0
+PyAutoGUI==0.9.54
+PyGetWindow==0.0.9
+PyMsgBox==1.0.9
+pyparsing==3.1.1
+pyperclip==1.8.2
+PyRect==0.2.0
+PyScreeze==0.1.30
