@@ -4689,8 +4689,124 @@ def validar_usuario_por_telefono():
             return jsonify({'mensaje': 'El número de teléfono no está asociado a ningún usuario'})
     else:
         return jsonify({'error': 'Método no permitido'}), 405
+def insertar_tipo_venta(db_session: Session, nombre,descripcion, estado):
+    # Consulta SQL para insertar un nuevo tipo de venta
+    query = text("""
+        INSERT INTO tipo_venta (nombre, descripcion, estado)
+        VALUES (:nombre, :descripcion, :estado)
+    """)
+
+    # Ejecutamos la consulta con los parámetros proporcionados
+    db_session.execute(query, {
+        "nombre": nombre,
+        "descripcion": descripcion,
+        "estado": estado
+    })
+
+    # Commit de la transacción
+    db_session.commit()
+    db_session.close()
+
+def actualizar_tipo_venta(db_session: Session, tipo_venta_id: int, nombre: str, descripcion: str = None, estado: int = None):
+    # Consulta SQL para actualizar un tipo de venta
+    query = text("""
+        UPDATE tipo_venta
+        SET nombre = :nombre, descripcion = :descripcion, estado = :estado
+        WHERE id = :tipo_venta_id
+    """)
+
+    # Ejecutamos la consulta con los parámetros proporcionados
+    result = db_session.execute(query, {
+        "tipo_venta_id": tipo_venta_id,
+        "nombre": nombre,
+        "descripcion": descripcion,
+        "estado": estado
+    })
+
+    # Verificamos si se realizó la actualización correctamente
+    if result.rowcount > 0:
+        # Se actualizó al menos una fila, lo cual indica éxito
+        db_session.commit()
+        db_session.close()
+        return True
+    else:
+        # No se encontró el tipo de venta con el ID proporcionado
+        return False
+
+def cambiar_estado_tipo_venta(db_session: Session, tipo_venta_id: int, nuevo_estado: int):
+    # Consulta SQL para cambiar el estado de un tipo de venta
+    query = text("""
+        UPDATE tipo_venta
+        SET estado = :nuevo_estado
+        WHERE id = :tipo_venta_id
+    """)
+
+    # Ejecutamos la consulta con los parámetros proporcionados
+    result = db_session.execute(query, {
+        "tipo_venta_id": tipo_venta_id,
+        "nuevo_estado": nuevo_estado
+    })
+
+    # Verificamos si se realizó el cambio de estado correctamente
+    if result.rowcount > 0:
+        # Se actualizó al menos una fila, lo cual indica éxito
+        db_session.commit()
+        db_session.close()
+        return True
+    else:
+        # No se encontró el tipo de venta con el ID proporcionado
+        return False
+
+def mostrar_tipos_venta(db_session: Session):
+    # Consulta SQL para mostrar todos los tipos de venta
+    query = text("""
+        SELECT * FROM tipo_venta
+    """)
+
+    # Ejecutamos la consulta
+    result = db_session.execute(query).fetchall()
+    return  result
+
+@app.route("/metodos",methods=['GET','POST'])
+@login_required
+@role_required([1,2])
+def metodos():
+    tipos=mostrar_tipos_venta(db_session)
+    return render_template("tipoventas.html",tipos=tipos)
 
 
+@app.route('/agregarTipoVenta', methods=['POST'])
+def  agregar_tipo_venta():
+    if  request.method == 'POST':
+        nombre=request.form["nombre"]
+        descripcion=request.form["descripcion"]
+        estado=request.form["estado"]
+        insertar_tipo_venta(db_session, nombre,descripcion, estado)
+        flash('success','Se ha registrado un nuevo Tipo de Venta exitosamente!')
+        return redirect("/metodos")
+
+@app.route('/modificartipoventa/<int:id>', methods=['GET', 'POST'])
+def editar_tipo_venta(id):
+    if request.method=='POST':
+        nombre=request.form["nombre"]
+        descripcion=request.form["descripcion"]
+        estado=request.form["estado"]
+        actualizar_tipo_venta(db_session,id,nombre,descripcion,estado)
+        flash("success","Se ha actualizado")
+        return redirect("/metodos")
+    
+
+@app.route("cambiarmetodo",methods=['GET','POST'])
+def cambiarmetodo():
+    id=request.form("id")
+    cambiar_estado_tipo_venta(db_session,id,2)
+    flash("success","Se ha realizado  el cambio correctamente.")
+    return redirect("/metodos")
+
+       
+
+
+    
 if __name__ == '__main__':
 
     app.run(host='127.0.0.1', port=5000, debug=True)
