@@ -47,6 +47,7 @@
                         <table id="example1" class="table table-bordered table-striped">
                             <thead>
                                 <tr>
+                                    <th>Categoria</th>
                                     <th>Servicios</th>
                                     <th>Precio </th>
                                     <th>Fecha de registro</th>
@@ -57,6 +58,7 @@
                             <tbody>
                                 {% for productos in Preciosservicios %}
                                 <tr>
+                                    <td>{{productos.categoria}}</td>
                                     <td>{{ productos.nombre }}</td>
                                     <td>{{ productos.precio }}</td>
                                     <td>{{ productos.fecha_registro }}</td>
