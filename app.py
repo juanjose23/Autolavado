@@ -4707,7 +4707,7 @@ def insertar_tipo_venta(db_session: Session, nombre,descripcion, estado):
     db_session.commit()
     db_session.close()
 
-def actualizar_tipo_venta(db_session: Session, tipo_venta_id: int, nombre: str, descripcion: str = None, estado: int = None):
+def actualizar_tipo_venta(db_session: Session, tipo_venta_id, nombre, descripcion,estado):
     # Consulta SQL para actualizar un tipo de venta
     query = text("""
         UPDATE tipo_venta
@@ -4733,7 +4733,7 @@ def actualizar_tipo_venta(db_session: Session, tipo_venta_id: int, nombre: str, 
         # No se encontró el tipo de venta con el ID proporcionado
         return False
 
-def cambiar_estado_tipo_venta(db_session: Session, tipo_venta_id: int, nuevo_estado: int):
+def cambiar_estado_tipo_venta(db_session: Session, tipo_venta_id, nuevo_estado):
     # Consulta SQL para cambiar el estado de un tipo de venta
     query = text("""
         UPDATE tipo_venta
@@ -4782,7 +4782,7 @@ def  agregar_tipo_venta():
         descripcion=request.form["descripcion"]
         estado=request.form["estado"]
         insertar_tipo_venta(db_session, nombre,descripcion, estado)
-        flash('success','Se ha registrado un nuevo Tipo de Venta exitosamente!')
+        flash('Se ha registrado un nuevo Tipo de Venta exitosamente!',"success")
         return redirect("/metodos")
 
 @app.route('/modificartipoventa/<int:id>', methods=['GET', 'POST'])
@@ -4792,15 +4792,15 @@ def editar_tipo_venta(id):
         descripcion=request.form["descripcion"]
         estado=request.form["estado"]
         actualizar_tipo_venta(db_session,id,nombre,descripcion,estado)
-        flash("success","Se ha actualizado")
+        flash("Se ha actualizado","success")
         return redirect("/metodos")
     
 
-@app.route("cambiarmetodo",methods=['GET','POST'])
+@app.route("/cambiarmetodo",methods=['GET','POST'])
 def cambiarmetodo():
-    id=request.form("id")
+    id=request.form["id"]
     cambiar_estado_tipo_venta(db_session,id,2)
-    flash("success","Se ha realizado  el cambio correctamente.")
+    flash("Se ha realizado  el cambio correctamente.","success")
     return redirect("/metodos")
 
        
