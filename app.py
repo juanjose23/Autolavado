@@ -4230,7 +4230,7 @@ def enviar_mensajes_whatsapp(numero, texto):
  
     pyautogui.typewrite(texto)
     pyautogui.press('enter')
-    sleep(3)
+    sleep(6)
 
     # Cierra la ventana del navegador (puede ser diferente según el sistema operativo)
     pyautogui.hotkey('ctrl', 'w')  # Cier
