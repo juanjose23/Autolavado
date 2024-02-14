@@ -4198,6 +4198,64 @@ def cambiar_estado_reserva():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
+import pyautogui, webbrowser, re
+from time import sleep
+
+def enviar_mensajes_whatsapp(numero, texto):
+    # Si el código de país no tiene el signo "+", lo agregamos
+    codigo= numero[:3]
+    print(codigo)
+    print(numero)
+    if not codigo.startswith('+'):
+        codigo = '+' + codigo
+
+    # Abrimos WhatsApp Web en el navegador
+    webbrowser.open(f'https://web.whatsapp.com/send?phone={codigo}{numero[3:]}')
+    print(f'https://web.whatsapp.com/send?phone={codigo}{numero[3:]}')
+    # Esperamos unos segundos para que se abra WhatsApp Web y cargue la página
+    sleep(10)
+
+    # Enviamos la cantidad especificada de mensajes
+ 
+    pyautogui.typewrite(texto)
+    pyautogui.press('enter')
+    sleep(2)
+
+    # Cierra la ventana del navegador (puede ser diferente según el sistema operativo)
+    pyautogui.hotkey('ctrl', 'w')  # Cier
+   
+@app.route('/cancelarcitas', methods=['POST'])
+def cambiar_estado_reservsa():
+    try:
+        # Obtener el código de reserva del cuerpo de la solicitud
+        codigo_reserva = request.form.get("id")
+        evento=request.form.get("idevents")
+        numero=request.form.get("celular")
+        motivo=request.form.get("motivo")
+        # Validar si se proporcionó el código de reserva
+        if not codigo_reserva:
+            return jsonify({"error": "Se requiere el código de reserva"}), 400
+
+        # Realizar la actualización en la base de datos para cambiar el estado de la reserva a 5
+        query = text("UPDATE reservacion SET estado = 2 WHERE id = :id AND estado = 1")
+        result = db_session.execute(query, {"id": codigo_reserva})
+        db_session.commit()
+        db_session.close()
+        service = obtener_APIKEY_GCALENDAR()
+         # Llamar a la función para eliminar el evento de Google Calendar
+        eliminar_evento_google_calendar(service, evento)
+        enviar_mensajes_whatsapp(numero,motivo)
+
+        # Verificar si la reserva fue actualizada
+        if result.rowcount > 0:
+            flash("Se notificado la cancelacion de la cita")
+            return  redirect("/citas")
+        else:
+            return jsonify({"mensaje": "No se pudo cambiar el estado de la reserva. Verifica el código de reserva o el estado actual."}), 404
+
+    except Exception as e:
+        return print({"error": str(e)}), 500
+    
 def obtener_informacion_venta_por_codigo(db_session, codigo):
     # Lógica para obtener información necesaria para la venta usando el código
     query = text("SELECT idcliente, subtotal, id,id_metodo_pago FROM reservacion WHERE codigo = :codigo")
