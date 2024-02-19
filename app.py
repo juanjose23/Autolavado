@@ -4726,6 +4726,53 @@ def mostrar_tipos_venta(db_session: Session):
     result = db_session.execute(query).fetchall()
     return  result
 
+def mostrar_comprobantes(db_session: Session):
+    # Consulta SQL para mostrar todos los tipos de venta
+    query = text("""
+        SELECT * FROM comprobantes ORDER BY id ASC
+    """)
+
+    # Ejecutamos la consulta
+    result = db_session.execute(query).fetchall()
+    return  result
+
+def cambiar_estado_comprobante(db_session: Session,id, nuevo_estado):
+    # Consulta SQL para cambiar el estado de un tipo de venta
+    query = text("""
+        UPDATE comprobantes
+        SET estado = :nuevo_estado
+        WHERE id = :id
+    """)
+
+    # Ejecutamos la consulta con los parámetros proporcionados
+    result = db_session.execute(query, {
+        "id": id,
+        "nuevo_estado": nuevo_estado
+    })
+
+    # Verificamos si se realizó el cambio de estado correctamente
+    if result.rowcount > 0:
+        # Se actualizó al menos una fila, lo cual indica éxito
+        db_session.commit()
+        db_session.close()
+        return True
+    else:
+        # No se encontró el tipo de venta con el ID proporcionado
+        return False
+
+@app.route("/comprobantes",methods=['GET','POST'])
+@login_required
+@role_required([1,2])
+def comprobantes():
+    tipos=mostrar_comprobantes(db_session)
+    return render_template("comprobantes.html",tipos=tipos)
+
+@app.route("/modificarcomprobante/<int:id>",methods=['GET','POST'])
+def cambiarmetodocomporbantes(id):
+    cambiar_estado_comprobante(db_session,id,2)
+    flash("Se ha realizado  el cambio correctamente.","success")
+    return redirect("/comprobantes")
+
 @app.route("/metodos",methods=['GET','POST'])
 @login_required
 @role_required([1,2])
@@ -4762,8 +4809,53 @@ def cambiarmetodo():
     flash("Se ha realizado  el cambio correctamente.","success")
     return redirect("/metodos")
 
+@cross_origin()
+@app.route("/sinpe", methods=['POST'])
+def sinpe():
+    try:
+        # Verificar si hay un archivo de imagen en la solicitud
+        if 'foto' not in request.files:
+            return jsonify({"error": "No se proporcionó ningún archivo de imagen"}), 400
 
-    
+        foto = request.files['foto']
+        carpeta_destino = 'static/img/comprobantes'
+        logo = guardar_imagen(foto, carpeta_destino)
+        telefono = request.form["telefono"]
+        insertar_comprobante(db_session, telefono, logo, 1)
+
+        # Devolver un mensaje de éxito
+        return jsonify({"mensaje": "Se ha recibido el comprobante exitosamente"}), 200
+    except Exception as e:
+        # Devolver un mensaje de error
+        return jsonify({"error": str(e)}), 500
+
+
+def insertar_comprobante(db_session: Session,telefono,comprobante, estado):
+    fecha_actual = datetime.now()
+
+# Formatear la fecha según el formato deseado
+    fecha_formateada = fecha_actual.strftime('%Y-%m-%d')
+    # Consulta SQL para insertar un nuevo tipo de venta
+    query = text("""
+        INSERT INTO comprobantes (telefono,comprobante,fecha, estado)
+        VALUES (:telefono, :comprobante, :fecha,:estado)
+    """)
+
+    # Ejecutamos la consulta con los parámetros proporcionados
+    db_session.execute(query, {
+        "telefono": telefono,
+        "comprobante": comprobante,
+        "fecha":fecha_formateada,
+        "estado": estado
+    })
+
+    # Commit de la transacción
+    db_session.commit()
+    db_session.close()
+
+
+
+
 if __name__ == '__main__':
 
     app.run(host='127.0.0.1', port=5000, debug=True)
