@@ -30,10 +30,8 @@ import string
 import locale
 import pickle
 import arrow
-
 # Configura el locale a español
 locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
-
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
@@ -4763,8 +4761,6 @@ def cambiarmetodo():
     cambiar_estado_tipo_venta(db_session,id,2)
     flash("Se ha realizado  el cambio correctamente.","success")
     return redirect("/metodos")
-
-       
 
 
     
