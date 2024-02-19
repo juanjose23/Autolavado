@@ -218,3 +218,12 @@ CREATE TABLE notificarproducto(
     telefono VARCHAR(50),
     estado INTEGER 
 );
+
+
+CREATE TABLE comprobantes(
+    id SERIAL PRIMARY KEY,
+    telefono VARCHAR(50) NOT NULL,
+    comprobante TEXT,
+    fecha DATE,
+    estado INTEGER
+);
