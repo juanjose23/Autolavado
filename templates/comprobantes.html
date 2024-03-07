@@ -60,7 +60,9 @@
                                     <td>
                                         {{categoria.telefono}}
                                     </td>
-                                    <td><img src="{{categoria.comprobante}}" alt="" class="img-size-50">
+                                    <td>
+                                        <embed src="{{ categoria.comprobante }}" type="application/pdf" width="40%" height="600px" />
+
                                         <a href="{{ categoria.comprobante }}" download>Descargar Comprobante</a></td>
                                     <td>{{categoria.fecha}}</td>
                                     <td>

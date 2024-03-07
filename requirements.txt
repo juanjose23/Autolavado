@@ -57,3 +57,5 @@ pyparsing==3.1.1
 pyperclip==1.8.2
 PyRect==0.2.0
 PyScreeze==0.1.30
+pytesseract
+Pillow

@@ -1,2 +1,7 @@
 /env/
 env
+# Ignorar credentials.json
+credentials.json
+
+# Ignorar el archivo .env
+.env

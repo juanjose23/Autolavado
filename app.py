@@ -5,6 +5,9 @@ from time import sleep
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+import pickle
+from google.oauth2.credentials import Credentials
+import google.auth
 import os
 from decimal import *
 import datetime
@@ -1644,9 +1647,8 @@ def agregar_notificacion():
 def agregar_notificaciones():
     return dict(lista=mostrar_lista(db_session))
 
-
+@app.before_request
 def before_request():
-
     estadisticas_resultantes = actualizar_estado_lotes(db_session)
     print(f"Estadísticas de los lotes: {estadisticas_resultantes}")
     actualizar_estados(db_session)
@@ -3706,12 +3708,13 @@ def api_consultaDatosCliente():
 # Define los alcances de la API de Google Calendar
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
-'''def obtener_servicio():
+def obtener_APIKEY_GCALENDAR():
     creds = None
     if os.path.exists('token.pickle'):
         with open('token.pickle', 'rb') as token:
             creds = pickle.load(token)
     
+    # Verificar la validez de las credenciales y refrescarlas si es necesario
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
@@ -3719,25 +3722,21 @@ SCOPES = ['https://www.googleapis.com/auth/calendar']
             flow = InstalledAppFlow.from_client_secrets_file(
                 'credentials.json', SCOPES)
             creds = flow.run_local_server(port=0)
-
-        # Guardar el refresh token junto con las credenciales
-        if hasattr(creds, 'refresh_token'):
-            token_info = {
-                'token': creds.token,
-                'refresh_token': creds.refresh_token,
-                'token_uri': creds.token_uri,
-                'client_id': creds.client_id,
-                'client_secret': creds.client_secret,
-                'scopes': creds.scopes
-            }
-            with open('token.pickle', 'wb') as token_file:
-                pickle.dump(token_info, token_file)
+        
+        # Guardar las credenciales actualizadas
+        with open('token.pickle', 'wb') as token_file:
+            pickle.dump(creds, token_file)
+    elif creds.expired:
+        # Si las credenciales están a punto de caducar, refrescarlas
+        creds.refresh(Request())
+        # Guardar las credenciales actualizadas
+        with open('token.pickle', 'wb') as token_file:
+            pickle.dump(creds, token_file)
     
+    # Construir el servicio de Google Calendar
     service = build('calendar', 'v3', credentials=creds)
-    return service'''
-
-
-def obtener_APIKEY_GCALENDAR():
+    return service
+'''def obtener_APIKEY_GCALENDAR():
     creds = None
     if os.path.exists('token.pickle'):
         with open('token.pickle', 'rb') as token:
@@ -3752,7 +3751,8 @@ def obtener_APIKEY_GCALENDAR():
         with open('token.pickle', 'wb') as token:
             pickle.dump(creds, token)
     service = build('calendar', 'v3', credentials=creds)
-    return service
+    return service'''
+
 
 def obtener_eventos_google_calendar(service, fecha):
     # Formatear la fecha en el formato requerido por la API de Google Calendar

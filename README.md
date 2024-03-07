@@ -64,13 +64,13 @@ Para ejecutar este proyecto, necesitarás configurar algunas variables de entorn
 - **Descripción:**  Esta variable almacena la dirección de correo electrónico que se utilizará para enviar mensajes desde la aplicación.
 - **Ejemplo:**
      ```bash
-        export correo="ingsoftwar123@gmail.com"
+        export correo="ejemplo@gmail.com"
 
 ## `clave`
 - **Descripción:** Contiene la contraseña asociada a la cuenta de correo electrónico utilizada para enviar mensajes desde la aplicación.
 - **Ejemplo:**
      ```bash
-        export clave="xishvjfvtnrabdpj"
+        export clave="12345678"
 ## `FLASK_APP`
 - **Descripción:** Especifica el archivo principal de la aplicación Flask que se debe ejecutar.
 - **Ejemplo:**
