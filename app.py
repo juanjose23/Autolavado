@@ -3714,28 +3714,11 @@ def obtener_APIKEY_GCALENDAR():
         with open('token.pickle', 'rb') as token:
             creds = pickle.load(token)
     
-    # Verificar la validez de las credenciales y refrescarlas si es necesario
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        
-        # Guardar las credenciales actualizadas
-        with open('token.pickle', 'wb') as token_file:
-            pickle.dump(creds, token_file)
-    elif creds.expired:
-        # Si las credenciales están a punto de caducar, refrescarlas
-        creds.refresh(Request())
-        # Guardar las credenciales actualizadas
-        with open('token.pickle', 'wb') as token_file:
-            pickle.dump(creds, token_file)
-    
     # Construir el servicio de Google Calendar
     service = build('calendar', 'v3', credentials=creds)
+    print(service)
     return service
+
 '''def obtener_APIKEY_GCALENDAR():
     creds = None
     if os.path.exists('token.pickle'):
@@ -3990,6 +3973,7 @@ def api_duracionLavado_dia():
 
             # Obtiene el servicio de Google Calendar TOKEN
             service = obtener_APIKEY_GCALENDAR()
+            print(service)
             # Especifica la zona horaria
             tz = timezone('America/Managua')
 
@@ -4583,16 +4567,15 @@ def actualizar_estado_lista_negra(db_session, telefono, nuevo_estado):
     except Exception as e:
         db_session.rollback()
         print(f"Error al actualizar el estado en la lista negra: {str(e)}")
-# Esa ruta debe de usarse si y solamente si el token de la API de Google Calendar expira
-# O es primara instalación
-# @app.route('/generar_API_KEY_CALENDAR', methods=['GET', 'POST'])
-# def generar_API_KEY_CALENDAR():
-#     try:
-#         obtener_APIKEY_GCALENDAR()
-#         return 'Se ha generado la API KEY de Google Calendar'
-#     except Exception as e:
-#         print(e)
-#         return 'No se puedo generar la API KEY!'
+
+@app.route('/generar_API_KEY_CALENDAR', methods=['GET', 'POST'])
+def generar_API_KEY_CALENDAR():
+    try:
+        obtener_APIKEY_GCALENDAR()
+        return 'Se ha generado la API KEY de Google Calendar'
+    except Exception as e:
+         print(e)
+         return 'No se puedo generar la API KEY!'
 
 
 @cross_origin()
