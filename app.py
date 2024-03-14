@@ -3719,7 +3719,7 @@ def obtener_APIKEY_GCALENDAR():
     print(service)
     return service
 
-'''def obtener_APIKEY_GCALENDAR():
+def Generartokennuevo():
     creds = None
     if os.path.exists('token.pickle'):
         with open('token.pickle', 'rb') as token:
@@ -3734,7 +3734,7 @@ def obtener_APIKEY_GCALENDAR():
         with open('token.pickle', 'wb') as token:
             pickle.dump(creds, token)
     service = build('calendar', 'v3', credentials=creds)
-    return service'''
+    return service
 
 
 def obtener_eventos_google_calendar(service, fecha):
@@ -4571,7 +4571,7 @@ def actualizar_estado_lista_negra(db_session, telefono, nuevo_estado):
 @app.route('/generar_API_KEY_CALENDAR', methods=['GET', 'POST'])
 def generar_API_KEY_CALENDAR():
     try:
-        obtener_APIKEY_GCALENDAR()
+        Generartokennuevo()
         return 'Se ha generado la API KEY de Google Calendar'
     except Exception as e:
          print(e)
